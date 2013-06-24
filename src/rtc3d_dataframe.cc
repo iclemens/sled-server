@@ -27,11 +27,11 @@ uint64_t htonll(uint64_t value)
 uint32_t compute_data_size(uint32_t type, uint32_t count)
 {
   switch(type) {
-    case CTYPE_3D: return count * sizeof(ndi_3d_t);
-    case CTYPE_ANALOG: return count * sizeof(ndi_analog_t);
-    case CTYPE_FORCE: return count * sizeof(ndi_forceplate_t);
-    case CTYPE_6D: return count * sizeof(ndi_6d_t);
-    case CTYPE_EVENT: return count * sizeof(ndi_event_t);
+    case CTYPE_3D: return count * sizeof(rtc3d_3d_t);
+    case CTYPE_ANALOG: return count * sizeof(rtc3d_analog_t);
+    case CTYPE_FORCE: return count * sizeof(rtc3d_forceplate_t);
+    case CTYPE_6D: return count * sizeof(rtc3d_6d_t);
+    case CTYPE_EVENT: return count * sizeof(rtc3d_event_t);
   }
 
   return 0;
@@ -41,9 +41,9 @@ uint32_t compute_data_size(uint32_t type, uint32_t count)
 /**
  * Sets-up dataframe component
  */
-ndi_component_t *ndi_df_create_component(uint32_t type, uint32_t frame, uint64_t time, uint32_t count, const void *data)
+rtc3d_component_t *rtc3d_df_create_component(uint32_t type, uint32_t frame, uint64_t time, uint32_t count, const void *data)
 {
-  ndi_component_t *component = (ndi_component_t *) malloc(sizeof(ndi_component_t));
+  rtc3d_component_t *component = (rtc3d_component_t *) malloc(sizeof(rtc3d_component_t));
 
   // Compute data size
   uint32_t data_size = compute_data_size(type, count);
@@ -68,9 +68,9 @@ ndi_component_t *ndi_df_create_component(uint32_t type, uint32_t frame, uint64_t
 /**
  * Frees memory associated with a single component
  */
-void ndi_df_destroy_component(ndi_component_t **component_v)
+void rtc3d_df_destroy_component(rtc3d_component_t **component_v)
 {
-  ndi_component_t *component = *component_v;
+  rtc3d_component_t *component = *component_v;
 
   if(component->data)
     free(component->data);
@@ -83,9 +83,9 @@ void ndi_df_destroy_component(ndi_component_t **component_v)
 /**
  * Create dataframe structure without any components
  */
-ndi_dataframe_t *ndi_df_create_frame()
+rtc3d_dataframe_t *rtc3d_df_create_frame()
 {
-  ndi_dataframe_t *frame = (ndi_dataframe_t *) malloc(sizeof(ndi_dataframe_t));
+  rtc3d_dataframe_t *frame = (rtc3d_dataframe_t *) malloc(sizeof(rtc3d_dataframe_t));
   frame->first_component = NULL;
   return frame;
 }
@@ -94,13 +94,13 @@ ndi_dataframe_t *ndi_df_create_frame()
 /**
  * Frees memory associated with data frame
  */
-void ndi_df_destroy_frame(ndi_dataframe_t **dataframe)
+void rtc3d_df_destroy_frame(rtc3d_dataframe_t **dataframe)
 {
   // First make sure all components are destroyed
-  ndi_component_t *component = (*dataframe)->first_component;
+  rtc3d_component_t *component = (*dataframe)->first_component;
   while(component) {
-    ndi_component_t *next_component = component->next_component;
-    ndi_df_destroy_component(&component);
+    rtc3d_component_t *next_component = component->next_component;
+    rtc3d_df_destroy_component(&component);
     component = next_component;
   }
 
@@ -113,7 +113,7 @@ void ndi_df_destroy_frame(ndi_dataframe_t **dataframe)
 /**
  * Adds a component to the dataframe.
  */
-void ndi_df_add_component(ndi_dataframe_t *dataframe, ndi_component_t *component)
+void rtc3d_df_add_component(rtc3d_dataframe_t *dataframe, rtc3d_component_t *component)
 {
   component->next_component = dataframe->first_component;
   dataframe->first_component = component;
@@ -123,10 +123,10 @@ void ndi_df_add_component(ndi_dataframe_t *dataframe, ndi_component_t *component
 /**
  * Add 3D component to dataframe
  */
-ndi_component_t *ndi_df_add_3d_component(ndi_dataframe_t *dataframe, uint32_t frame, uint64_t time, uint32_t num_markers, ndi_3d_t *data)
+rtc3d_component_t *rtc3d_df_add_3d_component(rtc3d_dataframe_t *dataframe, uint32_t frame, uint64_t time, uint32_t num_markers, rtc3d_3d_t *data)
 {
-  ndi_component_t *component = ndi_df_create_component(CTYPE_3D, frame, time, num_markers, (void *) data);
-  ndi_df_add_component(dataframe, component);
+  rtc3d_component_t *component = rtc3d_df_create_component(CTYPE_3D, frame, time, num_markers, (void *) data);
+  rtc3d_df_add_component(dataframe, component);
   return component;
 }
 
@@ -134,22 +134,22 @@ ndi_component_t *ndi_df_add_3d_component(ndi_dataframe_t *dataframe, uint32_t fr
 /**
  * Add 6D component to dataframe
  */
-ndi_component_t *ndi_df_add_6d_component(ndi_dataframe_t *dataframe, uint32_t frame, uint64_t time, uint32_t num_tools, ndi_6d_t *data)
+rtc3d_component_t *rtc3d_df_add_6d_component(rtc3d_dataframe_t *dataframe, uint32_t frame, uint64_t time, uint32_t num_tools, rtc3d_6d_t *data)
 {
-  ndi_component_t *component = ndi_df_create_component(CTYPE_6D, frame, time, num_tools, (void *) data);
-  ndi_df_add_component(dataframe, component);
+  rtc3d_component_t *component = rtc3d_df_create_component(CTYPE_6D, frame, time, num_tools, (void *) data);
+  rtc3d_df_add_component(dataframe, component);
   return component;
 }
 
 #define write_uint32(b, p, v, e) *((uint32_t *)&b[p]) = (e==byo_big_endian?htonl(v):v); p += 4;
 #define write_uint64(b, p, v, e) *((uint64_t *)&b[p]) = (e==byo_big_endian?htonll(v):v); p += 8;
 
-void ndi_df_send(ndi_connection_t *ndi_conn, ndi_dataframe_t *frame)
+void rtc3d_df_send(rtc3d_connection_t *rtc3d_conn, rtc3d_dataframe_t *frame)
 {
   uint32_t num_components = 0;
   uint32_t component_size = 0;
 
-  ndi_component_t *component = frame->first_component;
+  rtc3d_component_t *component = frame->first_component;
   while(component) {
     num_components++;
     component_size += component->size;
@@ -165,23 +165,23 @@ void ndi_df_send(ndi_connection_t *ndi_conn, ndi_dataframe_t *frame)
   write_uint32(buffer, ptr, PTYPE_DATAFRAME, byo_big_endian);
 
   // Dataframe header
-  write_uint32(buffer, ptr, num_components, ndi_conn->byte_order);
+  write_uint32(buffer, ptr, num_components, rtc3d_conn->byte_order);
 
   component = frame->first_component;
   while(component) {
     // Write component header
-    write_uint32(buffer, ptr, component->size, ndi_conn->byte_order);
-    write_uint32(buffer, ptr, component->type, ndi_conn->byte_order);
-    write_uint32(buffer, ptr, component->frame, ndi_conn->byte_order);
-    write_uint64(buffer, ptr, component->time, ndi_conn->byte_order);
+    write_uint32(buffer, ptr, component->size, rtc3d_conn->byte_order);
+    write_uint32(buffer, ptr, component->type, rtc3d_conn->byte_order);
+    write_uint32(buffer, ptr, component->frame, rtc3d_conn->byte_order);
+    write_uint64(buffer, ptr, component->time, rtc3d_conn->byte_order);
 
-    write_uint32(buffer, ptr, component->count, ndi_conn->byte_order);
+    write_uint32(buffer, ptr, component->count, rtc3d_conn->byte_order);
 
     // Write component
     memcpy(&(buffer[ptr]), component->data, component->size - 24);
     uint32_t *data = (uint32_t *) &(buffer[ptr]);
 
-    if(ndi_conn->byte_order == byo_big_endian) {
+    if(rtc3d_conn->byte_order == byo_big_endian) {
       for(uint32_t i = 0; i < (component->size / 4); i++)
         data[i] = htonl(data[i]);
     }
@@ -189,14 +189,14 @@ void ndi_df_send(ndi_connection_t *ndi_conn, ndi_dataframe_t *frame)
     component = component->next_component;
   }
 
-  net_send(ndi_conn->net_conn, buffer, 8 + 4 + component_size, F_ADOPT_BUFFER);
+  net_send(rtc3d_conn->net_conn, buffer, 8 + 4 + component_size, F_ADOPT_BUFFER);
 }
 
 
 /**
  * Old way to send data...
  */
-void ndi_send_data(ndi_connection_t *ndi_conn, uint32_t frame, uint64_t time, float point)
+void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t time, float point)
 {
   char *buffer = (char *) malloc(8 + 4 + 20 + 4 + 16);
 
@@ -231,7 +231,4 @@ void ndi_send_data(ndi_connection_t *ndi_conn, uint32_t frame, uint64_t time, fl
   *mcount = htonl(1);
   *x = point;
   *xi = htonl(*xi);
-
-
 }
-

@@ -3,58 +3,58 @@
 
 #include <stdint.h>
 
-struct ndi_3d_t
+struct rtc3d_3d_t
 {
-  float x;
-  float y;
-  float z;
-  float reliability;
+	float x;
+	float y;
+	float z;
+	float reliability;
 };
 
-struct ndi_6d_t
+struct rtc3d_6d_t
 {
-  float q0;
-  float qx;
-  float qy;
-  float qz;
-  float x;
-  float y;
-  float error;
+	float q0;
+	float qx;
+	float qy;
+	float qz;
+	float x;
+	float y;
+	float error;
 };
 
-struct ndi_analog_t
+struct rtc3d_analog_t
 {
-  uint32_t voltage;
+	uint32_t voltage;
 };
 
-struct ndi_forceplate_t
+struct rtc3d_forceplate_t
 {
-  float fx; // Force
-  float fy;
-  float fz;
-  float mx; // Moment
-  float my;
-  float mz;
+	float fx; // Force
+	float fy;
+	float fz;
+	float mx; // Moment
+	float my;
+	float mz;
 };
 
-struct ndi_event_t
+struct rtc3d_event_t
 {
-  uint32_t id;
-  uint32_t param1;
-  uint32_t param2;
-  uint32_t param3;
+	uint32_t id;
+	uint32_t param1;
+	uint32_t param2;
+	uint32_t param3;
 };
 
 
-struct ndi_dataframe_t;
-struct ndi_component_t;
+struct rtc3d_dataframe_t;
+struct rtc3d_component_t;
 
-ndi_dataframe_t *ndi_df_create_frame();
-ndi_component_t *ndi_df_add_3d_component(ndi_dataframe_t *dataframe, uint32_t frame, uint64_t time, uint32_t num_markers, ndi_3d_t *data);
-ndi_component_t *ndi_df_add_6d_component(ndi_dataframe_t *dataframe, uint32_t frame, uint64_t time, uint32_t num_tools, ndi_6d_t *data);
-void ndi_df_send(ndi_connection_t *ndi_conn, ndi_dataframe_t *frame);
+rtc3d_dataframe_t *rtc3d_df_create_frame();
+rtc3d_component_t *rtc3d_df_add_3d_component(rtc3d_dataframe_t *dataframe, uint32_t frame, uint64_t time, uint32_t num_markers, rtc3d_3d_t *data);
+rtc3d_component_t *rtc3d_df_add_6d_component(rtc3d_dataframe_t *dataframe, uint32_t frame, uint64_t time, uint32_t num_tools, rtc3d_6d_t *data);
+void rtc3d_df_send(rtc3d_connection_t *rtc3d_conn, rtc3d_dataframe_t *frame);
 
 // Deprecated
-void ndi_send_data(ndi_connection_t *ndi_conn, uint32_t frame, uint64_t time, float point);
+void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t time, float point);
 
 #endif

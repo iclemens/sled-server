@@ -19,9 +19,9 @@
 #define CTYPE_6D 4
 #define CTYPE_EVENT 5
 
-struct ndi_server_t;
+struct rtc3d_server_t;
 
-struct ndi_connection_t {
+struct rtc3d_connection_t {
   // Connection
   net_connection_t *net_conn;
 
@@ -38,17 +38,16 @@ struct ndi_connection_t {
   byte_order_t byte_order;
 };
 
-struct ndi_server_t {
+struct rtc3d_server_t {
   net_server_t *net_server;
   void *user_context;
 
-  ndi_connect_handler_t connect_handler;
-  ndi_disconnect_handler_t disconnect_handler;
+  rtc3d_connect_handler_t connect_handler;
+  rtc3d_disconnect_handler_t disconnect_handler;
 
-  ndi_error_handler_t error_handler;
-  ndi_command_handler_t command_handler;
-  ndi_data_handler_t data_handler;
+  rtc3d_error_handler_t error_handler;
+  rtc3d_command_handler_t command_handler;
+  rtc3d_data_handler_t data_handler;
 };
 
 #endif
-
