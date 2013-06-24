@@ -426,62 +426,62 @@ void *net_get_local_data(net_connection_t *conn)
  */
 int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 {
-  if(conn == NULL) {
-    if(flags & F_ADOPT_BUFFER)
-      free(buf);
-    return -1;
-  }
+	if((conn == NULL) && (flags & F_ADOPT_BUFFER)) {
+		free(buf);
+		return -1;
+	}
 
-  if(conn->server == NULL) {
-    fprintf(stderr, "Server not set in connection structure\n"); 
-    if(flags & F_ADOPT_BUFFER)
-      free(buf);
-    return -1;
-  }
+	if(conn->server == NULL) {
+		fprintf(stderr, "Server not set in connection structure\n"); 
+		if(flags & F_ADOPT_BUFFER)
+			free(buf);
+		return -1;
+	}
 
-  // Setup fragment
-  fragment_t *frag = (fragment_t *) malloc(sizeof(fragment_t));
-  if(frag == NULL) {
-    perror("malloc()");
-    if(flags & F_ADOPT_BUFFER)
-      free(buf);
-    return -1;
-  }
+	// Setup fragment
+	fragment_t *frag = (fragment_t *) malloc(sizeof(fragment_t));
+	if(frag == NULL) {
+		perror("malloc()");
+		if(flags & F_ADOPT_BUFFER)
+			free(buf);
+		return -1;
+	}
 
-  if(flags & F_ADOPT_BUFFER) {
-    frag->data = buf;
-  } else {
-    frag->data = (char *) malloc(size + 1);
-	frag->data[size] = 0;
-    if(frag->data == NULL) {
-      perror("malloc()");
-      free(frag);
-      return -1;
-    }
-	memcpy(frag->data, buf, size);
+	if(flags & F_ADOPT_BUFFER) {
+		frag->data = buf;
+	} else {
+		frag->data = (char *) malloc(size + 1);
+		frag->data[size] = 0;
+		if(frag->data == NULL) {
+			perror("malloc()");
+			free(frag);
+			return -1;
+		}
+		memcpy(frag->data, buf, size);
 
-#ifdef DEBUG
-	printf("Writing: %s (%d)\n", buf, size);
-#endif
-  }
+		#ifdef DEBUG
+		printf("Writing: %s (%d)\n", buf, size);
+		#endif
+	}
 
-  frag->offset = 0;
-  frag->size = size;
-  frag->next = NULL;
+	frag->offset = 0;
+	frag->size = size;
+	frag->next = NULL;
 
-  // Add fragment to list
-  if(conn->frags_head == NULL) {
-    conn->frags_head = frag;
-    conn->frags_tail = frag;
-  } else {   
-    conn->frags_tail->next = frag;
-    conn->frags_tail = frag;
-  }
+	// Add fragment to list
+	if(conn->frags_head == NULL) {
+		conn->frags_head = frag;
+		conn->frags_tail = frag;
+	} else {   
+		conn->frags_tail->next = frag;
+		conn->frags_tail = frag;
+	}
 
-  // If buffer not empty, add flag
-  if(conn->frags_head != NULL) {
+	// If buffer not empty, add flag
+	if(conn->frags_head != NULL) {
+		if(conn->write_event != NULL) 
+			return 0;
 
-	  if(conn->write_event == NULL) {		  
 		event *event = event_new(conn->server->event_base, conn->fd, EV_WRITE | EV_ET | EV_PERSIST, net_on_write, (void *) conn->server);
 		int result = event_add(event, NULL);
 
@@ -489,10 +489,9 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 			perror("event_add()");
 			return 0;
 		}
-	  }
-  }
+	}
 
-  return 0;
+	return 0;
 }
 
 
