@@ -26,7 +26,6 @@ uint64_t htonll(uint64_t value)
  */
 uint32_t compute_data_size(uint32_t type, uint32_t count)
 {
-  uint32_t single;
   switch(type) {
     case CTYPE_3D: return count * sizeof(ndi_3d_t);
     case CTYPE_ANALOG: return count * sizeof(ndi_analog_t);
@@ -183,7 +182,7 @@ void ndi_df_send(ndi_connection_t *ndi_conn, ndi_dataframe_t *frame)
     uint32_t *data = (uint32_t *) &(buffer[ptr]);
 
     if(ndi_conn->byte_order == byo_big_endian) {
-      for(int i = 0; i < (component->size / 4); i++)
+      for(uint32_t i = 0; i < (component->size / 4); i++)
         data[i] = htonl(data[i]);
     }
 

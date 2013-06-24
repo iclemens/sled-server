@@ -339,5 +339,3 @@ void ndi_send_error(ndi_connection_t *ndi_conn, char *error)
 
   net_send(ndi_conn->net_conn, buffer, 8 + err_size, F_ADOPT_BUFFER);
 }
-
-
