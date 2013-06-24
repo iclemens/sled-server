@@ -14,7 +14,6 @@
 
 // Include networking
 #ifdef WIN32
-//#include <winsock.h>
 #include <WS2tcpip.h>
 #else
 #include <sys/socket.h>
@@ -34,54 +33,53 @@
 #define strncpy(d, s, n) strncpy_s(d, n, s, n);
 #endif
 
-#define MAX_EVENTS 10
 
 /**
  * Creates a new server socket
  */
 int setup_server_socket(int port)
 {
-  int sock;
-  int optval;
-  sockaddr_in addr;
+	int sock;
+	int optval;
+	sockaddr_in addr;
 
-  // Open IPv4 TCP socket
-  sock = socket(AF_INET, SOCK_STREAM, 0);
+	// Open IPv4 TCP socket
+	sock = socket(AF_INET, SOCK_STREAM, 0);
 
-  if(sock == -1) {
-    perror("socket()");
-    return -1;
-  }
+	if(sock == -1) {
+		perror("socket()");
+		return -1;
+	}
 
-#ifndef WIN32
-  // Disable blocking
-  int flags = fcntl(sock, F_GETFL, 0);
-  fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-#endif
+	#ifndef WIN32
+	// Disable blocking
+	int flags = fcntl(sock, F_GETFL, 0);
+	fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+	#endif
 
-  // Disable nagling and allow reuse of address
-  optval = 1;
-  setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &optval, sizeof(optval));
-  setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *) &optval, sizeof(optval));
+	// Disable nagling and allow reuse of address
+	optval = 1;
+	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &optval, sizeof(optval));
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *) &optval, sizeof(optval));
 
-  memset(&addr, 0, sizeof(sockaddr_in));
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(port);
-  addr.sin_addr.s_addr = INADDR_ANY;
+	memset(&addr, 0, sizeof(sockaddr_in));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port);
+	addr.sin_addr.s_addr = INADDR_ANY;
 
-  if(bind(sock, (sockaddr *) &addr, sizeof(sockaddr_in)) == -1) {
-    perror("bind()");
-    close(sock);
-    return -1;
-  }
+	if(bind(sock, (sockaddr *) &addr, sizeof(sockaddr_in)) == -1) {
+		perror("bind()");
+		close(sock);
+		return -1;
+	}
 
-  if(listen(sock, 0) == -1) {
-    perror("listen()");
-    close(sock);
-    return -1;
-  }
+	if(listen(sock, 0) == -1) {
+		perror("listen()");
+		close(sock);
+		return -1;
+	}
 
-  return sock;
+	return sock;
 }
 
 
@@ -90,32 +88,32 @@ int setup_server_socket(int port)
  */
 int accept_client(int sock)
 {
-  int client;
-  int optval;
-  sockaddr_in addr;
-  socklen_t addr_size;
+	int client;
+	int optval;
+	sockaddr_in addr;
+	socklen_t addr_size;
 
-  addr_size = sizeof(sockaddr_in);
+	addr_size = sizeof(sockaddr_in);
 
-  // Accept connection
-  client = accept(sock, (struct sockaddr *) &addr, &addr_size);
+	// Accept connection
+	client = accept(sock, (struct sockaddr *) &addr, &addr_size);
 
-  if(client == -1) {
-    perror("accept()");
-    return -1;
-  }
+	if(client == -1) {
+		perror("accept()");
+		return -1;
+	}
 
-  // Disable blocking
-#ifndef WIN32
-  int flags = fcntl(sock, F_GETFL, 0);
-  fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-#endif
+	// Disable blocking
+	#ifndef WIN32
+	int flags = fcntl(sock, F_GETFL, 0);
+	fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+	#endif
 
-  // Disable nagling
-  optval = 1;
-  setsockopt(client, IPPROTO_TCP, TCP_NODELAY, (char *) &optval, sizeof(optval));
+	// Disable nagling
+	optval = 1;
+	setsockopt(client, IPPROTO_TCP, TCP_NODELAY, (char *) &optval, sizeof(optval));
 
-  return client;
+	return client;
 }
 
 
@@ -124,34 +122,38 @@ int accept_client(int sock)
  */
 void net_on_read(evutil_socket_t fd, short events, void *server_v)
 {
-  net_server_t *server = (net_server_t *) server_v;
+	net_server_t *server = (net_server_t *) server_v;
 
-  char buffer[1024];
-  size_t nread = read(fd, buffer, 1023);
+	char buffer[1024];
+	size_t nread = read(fd, buffer, 1023);
 
-  if(nread == -1) {
-    perror("read()");
-    disconnect(server->connection_data[fd]);
-    return;
-  }
+	if(nread == -1) {
+		perror("read()");
+		disconnect(server->connection_data[fd]);
+		return;
+	}
 
-  // Read did not succeed or connection was terminated
-  if(nread == 0) {
-    disconnect(server->connection_data[fd]);
-  }
+	// Read did not succeed or connection was terminated
+	if(nread == 0) {
+		disconnect(server->connection_data[fd]);
+	}
 
-  // Read succeeded
-  buffer[nread] = '\0';
+	// Read succeeded
+	buffer[nread] = '\0';
 
-  if(server->read_handler) {
-    net_connection_t *conn = server->connection_data[fd];
-    server->read_handler(conn, buffer, nread);
-  }
+	if(server->read_handler) {
+		net_connection_t *conn = server->connection_data[fd];
+		server->read_handler(conn, buffer, nread);
+	}
 
-  return;
+	return;
 }
 
 
+/**
+ * Called when a new connection is pending. Accepts the connection and starts
+ * listening to incoming data.
+ */
 void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
 {
 	net_server_t *server = (net_server_t *) server_v;
@@ -172,18 +174,18 @@ void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
 	}
     
     net_connection_t *conn = new net_connection_t();
-    conn->fd = client;
-    conn->server = server;
+	conn->fd = client;
+	conn->server = server;
 	conn->read_event = event;
 	conn->write_event = NULL;
-    conn->local = NULL;
-    conn->frags_head = NULL;
-    conn->frags_tail = NULL;
+	conn->local = NULL;
+	conn->frags_head = NULL;
+	conn->frags_tail = NULL;
 
-    if(server->connect_handler)
-      conn->local = server->connect_handler(conn);
+	if(server->connect_handler)
+		conn->local = server->connect_handler(conn);
 
-    server->connection_data[client] = conn;        
+	server->connection_data[client] = conn;        
 }
 
 
@@ -245,11 +247,11 @@ net_server_t *net_setup_server(event_base *event_base, void *context, int port)
  */
 int disconnect(net_connection_t *conn)
 {
-  net_server_t *server = conn->server;
+	net_server_t *server = conn->server;
 
-  if(server->disconnect_handler)
-    server->disconnect_handler(conn, &(conn->local));
-  server->connection_data.erase(conn->fd);
+	if(server->disconnect_handler)
+		server->disconnect_handler(conn, &(conn->local));
+	server->connection_data.erase(conn->fd);
   
   /*FIXME! epoll_event event;
   if(epoll_ctl(server->epoll_set, EPOLL_CTL_DEL, conn->fd, &event) == -1) {
@@ -257,21 +259,21 @@ int disconnect(net_connection_t *conn)
     return -1;
   }*/
 
-  /* Free buffer */
-  fragment_t *frag = conn->frags_head;
+	/* Free buffer */
+	fragment_t *frag = conn->frags_head;
 
-  while(frag) {
-    free(frag);
-    frag = frag->next;
-  }
+	while(frag) {
+		free(frag);
+		frag = frag->next;
+	}
 
-  conn->frags_head = NULL;
-  conn->frags_tail = NULL;
+	conn->frags_head = NULL;
+	conn->frags_tail = NULL;
 
-  close(conn->fd);
-  delete conn;
+	close(conn->fd);
+	delete conn;
 
-  return 0;
+	return 0;
 }
 
 
