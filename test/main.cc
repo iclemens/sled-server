@@ -1,19 +1,20 @@
 
+#include <event2/event.h>
 #include "../src/server.h"
 #include <stdio.h>
 
-void *connect_handler(net_connection_t *conn)
+void *on_connect(net_connection_t *conn)
 {
 	printf("Client connected...\n");
 	return NULL;
 }
 
-void disconnect_handler(net_connection_t *conn, void **ctx)
+void on_disconnect(net_connection_t *conn, void **ctx)
 {
 	printf("Client disconnected...\n");
 }
 
-void read_handler(net_connection_t *conn, char *buf, int size)
+void on_read(net_connection_t *conn, char *buf, int size)
 {
 	buf[size] = 0;
 	printf("Received: %s\n", buf);
@@ -21,15 +22,30 @@ void read_handler(net_connection_t *conn, char *buf, int size)
 
 int main(int argc, char **argv)
 {
-	net_server_t *server = net_setup_server(NULL, 3375);
+	#ifdef WIN32
+	WSADATA wsa_data;
+	if(WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
+		perror("WSAStartup()");
+		return NULL;
+	}  
+	#endif
 
-	net_set_connect_handler(server, connect_handler);
-	net_set_disconnect_handler(server, disconnect_handler);
-	net_set_read_handler(server, read_handler);
+	event_base *event_base = event_base_new();
+	net_server_t *server = net_setup_server(event_base, NULL, 3375);
+
+	if(!server) {
+		fprintf(stderr, "Oops\n");
+		while(true) { }
+	}
+
+	net_set_connect_handler(server, on_connect);
+	net_set_disconnect_handler(server, on_disconnect);
+	net_set_read_handler(server, on_read);
 
 	printf("Server started...\n");
 
 	while(true) {
+		event_base_dispatch(event_base);
 	}
 
 	net_teardown_server(&server);

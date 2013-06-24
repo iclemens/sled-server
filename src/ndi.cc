@@ -192,7 +192,7 @@ ndi_server_t *ndi_setup_server(void *user_context, int port)
 
   ndi_server->user_context = user_context;
 
-  ndi_server->net_server = net_setup_server(ndi_server, 3375);
+  ndi_server->net_server = net_setup_server(NULL, ndi_server, 3375);
   if(!ndi_server->net_server) {
     fprintf(stderr, "net_setup_server() failed\n");
     delete ndi_server;

@@ -14,7 +14,7 @@
 
 // Include networking
 #ifdef WIN32
-#include <winsock.h>
+//#include <winsock.h>
 #include <WS2tcpip.h>
 #else
 #include <sys/socket.h>
@@ -86,57 +86,154 @@ int setup_server_socket(int port)
 
 
 /**
+ * Accepts a pending client
+ */
+int accept_client(int sock)
+{
+  int client;
+  int optval;
+  sockaddr_in addr;
+  socklen_t addr_size;
+
+  addr_size = sizeof(sockaddr_in);
+
+  // Accept connection
+  client = accept(sock, (struct sockaddr *) &addr, &addr_size);
+
+  if(client == -1) {
+    perror("accept()");
+    return -1;
+  }
+
+  // Disable blocking
+#ifndef WIN32
+  int flags = fcntl(sock, F_GETFL, 0);
+  fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+#endif
+
+  // Disable nagling
+  optval = 1;
+  setsockopt(client, IPPROTO_TCP, TCP_NODELAY, (char *) &optval, sizeof(optval));
+
+  return client;
+}
+
+
+/**
+ * Handles a read event.
+ */
+void net_on_read(evutil_socket_t fd, short events, void *server_v)
+{
+  net_server_t *server = (net_server_t *) server_v;
+
+  char buffer[1024];
+  size_t nread = read(fd, buffer, 1023);
+
+  if(nread == -1) {
+    perror("read()");
+    disconnect(server->connection_data[fd]);
+    return;
+  }
+
+  // Read did not succeed or connection was terminated
+  if(nread == 0) {
+    disconnect(server->connection_data[fd]);
+  }
+
+  // Read succeeded
+  buffer[nread] = '\0';
+
+  if(server->read_handler) {
+    net_connection_t *conn = server->connection_data[fd];
+    server->read_handler(conn, buffer, nread);
+  }
+
+  return;
+}
+
+
+void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
+{
+	net_server_t *server = (net_server_t *) server_v;
+
+	if(!server)
+		return;
+
+	int client = accept_client(server->sock);
+
+    // Register handle
+	event *event = event_new(server->event_base, client, EV_READ | EV_ET, net_on_read, (void *) server);
+	int result = event_add(event, NULL);
+
+	if(result == -1) {
+		perror("event_add()");
+		event_free(event);
+		close(client);
+	}
+
+    // Keep track of state
+    net_connection_t *conn = new net_connection_t();
+    conn->server = server;
+    conn->frags_head = NULL;
+    conn->frags_tail = NULL;
+    conn->fd = client;
+    conn->local = NULL;
+    if(server->connect_handler)
+      conn->local = server->connect_handler(conn);
+    server->connection_data[client] = conn;        
+}
+
+
+/**
  * Setup server state struct
  */
-net_server_t *net_setup_server(void *context, int port) {
-  net_server_t *server = NULL;
+net_server_t *net_setup_server(event_base *event_base, void *context, int port)
+{
+	 net_server_t *server = NULL;
 
-  try {
-    server = new net_server_t();
-  } catch(std::bad_alloc e) {
-    return NULL;
-  }
+	// Initialize windows sockets
+	#ifdef WIN32
+	WSADATA wsa_data;
+	if(WSAStartup(MAKEWORD(2, 2), &wsa_data) != 0) {
+		perror("WSAStartup()");
+		return NULL;
+	}
+	#endif
 
-  server->context = context;
+	try {
+		server = new net_server_t();
+	} catch(std::bad_alloc e) {
+		return NULL;
+	}
 
-  // Create lib event base
-  server->event_base = event_base_new();
+	server->context = context;
+	server->event_base = event_base;
 
-  if(server->event_base == NULL) {
-	  perror("event_base_new()");
-	  delete server;
-	  return NULL;
-  }
+	// Create server socket
+	server->sock = setup_server_socket(port);
 
-  // Create server socket
-  server->sock = setup_server_socket(port);
+	if(server->sock == -1) {
+		delete server;
+		return NULL;
+	}
 
-  if(server->sock == -1) {
-	event_base_free(server->event_base);
-	server->event_base = NULL;
-    delete server;
-    return NULL;
-  }
+	// Add server socket to libevent
+	event *event = event_new(server->event_base, server->sock, EV_READ | EV_ET, net_on_new_connection, (void *) server);
+	int result = event_add(event, NULL);
 
-  // Add server socket to libevent
-  // FIXME: Provide callback function
-  event *event = event_new(server->event_base, server->sock, EV_READ | EV_ET, NULL, NULL);
-  int result = event_add(event, NULL);
+	if(result == -1) {
+		perror("event_add()");
+		event_free(event);
+		delete server;
+		return NULL;
+	}
 
-  if(result == -1) {
-	  perror("event_add()");
-	  event_free(event);
-	  event_base_free(server->event_base);
-	  delete server;
-	  return NULL;
-  }
+	// Set all handler to NULL
+	server->connect_handler = NULL;
+	server->disconnect_handler = NULL;
+	server->read_handler = NULL;
 
-  // Set all handler to NULL
-  server->connect_handler = NULL;
-  server->disconnect_handler = NULL;
-  server->read_handler = NULL;
-
-  return server;
+	return server;
 }
 
 
@@ -209,73 +306,6 @@ int net_teardown_server(net_server_t **s) {
   // Free memory
   delete server;
   *s = NULL;
-
-  return 0;
-}
-
-
-/**
- * Accepts a pending client
- */
-int accept_client(int sock)
-{
-  int client;
-  int optval;
-  sockaddr_in addr;
-  socklen_t addr_size;
-
-  addr_size = sizeof(sockaddr_in);
-
-  // Accept connection
-  client = accept(sock, (struct sockaddr *) &addr, &addr_size);
-
-  if(client == -1) {
-    perror("accept()");
-    return -1;
-  }
-
-  // Disable blocking
-#ifndef WIN32
-  int flags = fcntl(sock, F_GETFL, 0);
-  fcntl(sock, F_SETFL, flags | O_NONBLOCK);
-#endif
-
-  // Disable nagling
-  optval = 1;
-  setsockopt(client, IPPROTO_TCP, TCP_NODELAY, (char *) &optval, sizeof(optval));
-
-  return client;
-}
-
-
-/**
- * Handles a read event.
- */
-int handle_read_event(evutil_socket_t fd, short events, void *server_v)
-{
-  net_server_t *server = (net_server_t *) server_v;
-
-  char buffer[1024];
-  size_t nread = read(fd, buffer, 1023);
-
-  if(nread == -1) {
-    perror("read()");
-    disconnect(server->connection_data[fd]);
-    return -1;
-  }
-
-  // Read did not succeed or connection was terminated
-  if(nread == 0) {
-    return disconnect(server->connection_data[fd]);
-  }
-
-  // Read succeeded
-  buffer[nread] = '\0';
-
-  if(server->read_handler) {
-    net_connection_t *conn = server->connection_data[fd];
-    server->read_handler(conn, buffer, nread);
-  }
 
   return 0;
 }
@@ -356,57 +386,6 @@ int handle_write_event(evutil_socket_t fd, short events, void *server_v)
     //event.events = EPOLLIN | EPOLLET;
     //epoll_ctl(server->epoll_set, EPOLL_CTL_MOD, event.data.fd, &event);
   }
-
-  return 0;
-}
-
-
-/**
- * Handles a single epoll event.
- */
-int handle_single_event(evutil_socket_t fd, short events, void *server_v)
-{
-  net_server_t *server = (net_server_t *) server_v;
-
-  if(!server)
-    return -1;
-
-  // Listening socket... accept connection
-  if(fd == server->sock) {
-    int client = accept_client(server->sock);
-
-    // Register handle
-    /*epoll_event event;
-    event.events = EPOLLIN | EPOLLET;
-    event.data.fd = client;
-
-    if(epoll_ctl(server->epoll_set, EPOLL_CTL_ADD, client, &event) == -1) {
-      perror("epoll_ctl()");
-      close(client);
-      return -1;
-    }*/
-
-    // Keep track of state
-    net_connection_t *conn = new net_connection_t();
-    conn->server = server;
-    conn->frags_head = NULL;
-    conn->frags_tail = NULL;
-    conn->fd = client;
-    conn->local = NULL;
-    if(server->connect_handler)
-      conn->local = server->connect_handler(conn);
-    server->connection_data[client] = conn;
-    
-    return 0;
-  }
-
-  // Read event on other socket
-  if(events & EV_READ)
-    return handle_read_event(fd, events, server);
-
-  // Write-ready event on other socket
-  if(events & EV_WRITE)
-    return handle_write_event(fd, events, server);
 
   return 0;
 }

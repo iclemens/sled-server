@@ -2,8 +2,6 @@
 #define __SERVER_INTERNAL_H__
 
 #include "server.h"
-
-#include <event2/event.h>
 #include <map>
 
 struct net_server_t;
@@ -40,6 +38,9 @@ struct net_server_t {
   disconnect_handler_t disconnect_handler;  // Destroys local context
   read_handler_t read_handler;              // Handles new data
 };
+
+
+int disconnect(net_connection_t *conn);
 
 
 #endif
