@@ -2,7 +2,7 @@
 #define __NDI_INTERNAL_H__
 
 #include "server.h"
-#include "ndi.h"
+#include "rtc3d.h"
 
 // Packet types
 #define PTYPE_ERROR 0

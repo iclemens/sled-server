@@ -1,7 +1,7 @@
 #ifndef __NDI_DATAFRAME_H__
 #define __NDI_DATAFRAME_H__
 
-#include<stdint.h>
+#include <stdint.h>
 
 struct ndi_3d_t
 {

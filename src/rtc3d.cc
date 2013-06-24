@@ -26,7 +26,7 @@
 #endif
 
 #include "server.h"
-#include "ndi_internal.h"
+#include "rtc3d_internal.h"
 
 
 /**

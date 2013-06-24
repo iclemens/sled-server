@@ -6,9 +6,9 @@
 #endif
 
 #include <string.h>
-#include "ndi_internal.h"
-#include "ndi_dataframe.h"
-#include "ndi_dataframe_internal.h"
+#include "rtc3d_internal.h"
+#include "rtc3d_dataframe.h"
+#include "rtc3d_dataframe_internal.h"
 
 
 uint64_t htonll(uint64_t value)
