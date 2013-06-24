@@ -1,10 +1,6 @@
 /**
- * Implements a simple single-threaded First Principles server.
+ * Implements a simple single-threaded realtime C3D server.
  */
-
-// The following to to get access to
-// the server's epoll file descriptor.
-#define __SERVER_LEAK_IMPL_DETAILS__
 
 #include <exception>
 #include <map>
