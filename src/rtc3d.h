@@ -54,4 +54,3 @@ __declspec(dllexport) void *rtc3d_get_local_data(rtc3d_connection_t *rtc3d_conn)
 __declspec(dllexport) void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t time, float point);
 
 #endif
-

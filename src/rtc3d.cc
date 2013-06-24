@@ -1,4 +1,4 @@
-/**
+/*
  * Implements a simple single-threaded realtime C3D server.
  */
 
@@ -26,42 +26,47 @@
 
 
 /**
- * Creates datastructure used to handle NDI
- * protocol communications with a single client.
- * A void-pointer to this data-structure is returned.
+ * Creates datastructure used to handle RT3CD protocol communications with a single client.
+ *
+ * @param net_conn Network connection that just connected.
+ * @return RTC3D client context structure.
  */
-void *connect_handler(net_connection_t *net_conn) {
-  rtc3d_server_t *rtc3d_server = (rtc3d_server_t *) net_get_global_data(net_conn);
-  rtc3d_connection_t *rtc3d_conn = NULL;
+void *connect_handler(net_connection_t *net_conn) 
+{
+	rtc3d_server_t *rtc3d_server = (rtc3d_server_t *) net_get_global_data(net_conn);
+	rtc3d_connection_t *rtc3d_conn = NULL;
 
-  try {
-    rtc3d_conn = new rtc3d_connection_t();
-  } catch(std::bad_alloc e) {
-    perror("malloc() in connect_handler()");
-    return NULL;
-  }
+	try {
+		rtc3d_conn = new rtc3d_connection_t();
+	} catch(std::bad_alloc e) {
+		perror("malloc() in connect_handler()");
+		return NULL;
+	}
 
-  // Store network connection and context  
-  rtc3d_conn->net_conn = net_conn;
-  rtc3d_conn->user_context = NULL;
+	// Store network connection and context  
+	rtc3d_conn->net_conn = net_conn;
+	rtc3d_conn->user_context = NULL;
 
-  // First step is to read packet size
-  rtc3d_conn->size_left = 4;
-  rtc3d_conn->size = 0;
+	// First step is to read packet size
+	rtc3d_conn->size_left = 4;
+	rtc3d_conn->size = 0;
 
-  // Set default byte order
-  rtc3d_conn->byte_order = byo_big_endian;
+	// Set default byte order
+	rtc3d_conn->byte_order = byo_big_endian;
 
-  // Invoke callback
-  if(rtc3d_server->connect_handler)
-    rtc3d_conn->user_context = rtc3d_server->connect_handler(rtc3d_conn);
+	// Invoke callback
+	if(rtc3d_server->connect_handler)
+	rtc3d_conn->user_context = rtc3d_server->connect_handler(rtc3d_conn);
 
-  return (void *) rtc3d_conn;
+	return (void *) rtc3d_conn;
 }
 
 
 /**
- * Frees all memory associated with the NDI connection.
+ * Frees all memory associated with the RTC3D connection.
+ *
+ * @param net_conn Network connection that just disconnected.
+ * @param rtc3d_conn_v RTC3D context to free.
  */
 void disconnect_handler(net_connection_t *net_conn, void **rtc3d_conn_v) {
   if(!rtc3d_conn_v)
@@ -80,6 +85,11 @@ void disconnect_handler(net_connection_t *net_conn, void **rtc3d_conn_v) {
 
 /**
  * Returns the uint32 located in the databuffer at the given offset.
+ *
+ * @param rtc3d_conn Connection to read the data from.
+ * @param offset Offset in bytes.
+ *
+ * @return 32-bit unsigned integer located at specified offset.
  */
 uint32_t get_uint32(rtc3d_connection_t *rtc3d_conn, int offset)
 {
@@ -89,7 +99,9 @@ uint32_t get_uint32(rtc3d_connection_t *rtc3d_conn, int offset)
 
 
 /**
- * Parses a full NDI package
+ * Parses the RTC3D package in the databuffer. Calls command and data handlers as needed.
+ *
+ * @param rtc3d_conn Connection to read the data from.
  */
 void packet_handler(rtc3d_connection_t *rtc3d_conn) {
   rtc3d_server_t *rtc3d_server = (rtc3d_server_t *) net_get_global_data(rtc3d_conn->net_conn); 
@@ -129,7 +141,12 @@ void packet_handler(rtc3d_connection_t *rtc3d_conn) {
 
 
 /**
- * Reads a packet from the stream and send it to the packet handler.
+ * Handles incoming data from the network. Waits until a full
+ * packet is in the buffer and then sends it to the packet parser.
+ *
+ * @param net_conn  Network connection the data was read from.
+ * @param buf  Data that we received.
+ * @param size  Number of bytes received.
  */
 void read_handler(net_connection_t *net_conn, char *buf, int size) {
   rtc3d_connection_t *rtc3d_conn = (rtc3d_connection_t *) net_get_local_data(net_conn);
@@ -174,7 +191,7 @@ void read_handler(net_connection_t *net_conn, char *buf, int size) {
 
 
 /**
- * Prepare TCP server handling the NDI FP protocol.
+ * Prepare TCP server handling the RTC3D protocol.
  */
 rtc3d_server_t *rtc3d_setup_server(event_base *event_base, void *user_context, int port)
 {
@@ -300,11 +317,16 @@ int rtc3d_disconnect(rtc3d_connection_t *rtc3d_conn)
 }
 
 
-/********************************
- * SENDING DATA TO AN NDI CLIENT
+/**********************************
+ * SENDING DATA TO AN RTC3D CLIENT
  */
 
-
+/**
+ * Sends a command to an RTC3D client.
+ *
+ * @param rtc3d_conn  Connection to send command to.
+ * @param command  Command to send (null-terminated string)
+ */
 void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, char *command)
 {
   int cmd_size = strlen(command);
@@ -321,6 +343,12 @@ void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, char *command)
 }
 
 
+/**
+ * Sends an error to an RTC3D client.
+ *
+ * @param rtc3d_conn  Connection to send error to.
+ * @param error  Error to send (null-terminated string)
+ */
 void rtc3d_send_error(rtc3d_connection_t *rtc3d_conn, char *error)
 {
   int err_size = strlen(error);
