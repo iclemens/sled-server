@@ -33,9 +33,6 @@
 #endif
 
 
-#define DEBUG
-
-
 /**
  * Creates a new server socket
  */
@@ -291,33 +288,34 @@ int net_disconnect(net_connection_t *conn)
 /**
  * Shuts down the server
  */
-int net_teardown_server(net_server_t **s) {
-  if(!s) 
-    return -1;
+int net_teardown_server(net_server_t **s) 
+{
+	if(!s) 
+		return -1;
 
-  net_server_t *server = *s;
+	net_server_t *server = *s;
 
-  if(!server)
-    return -1;
+	if(!server)
+		return -1;
 
-  while(!server->connection_data.empty()) {
-    std::map<int, net_connection_t *>::iterator it = server->connection_data.begin();
-    printf("Closing (%d)\n", it->first);
-    net_disconnect(it->second);
-  }
+	while(!server->connection_data.empty()) {
+		std::map<int, net_connection_t *>::iterator it = server->connection_data.begin();
+		printf("Closing (%d)\n", it->first);
+		net_disconnect(it->second);
+	}
 
-  server->connection_data.clear();
+	server->connection_data.clear();
 
-  // Close socket and libevent
-  event_base_free(server->event_base);
-  server->event_base = NULL;
-  close(server->sock);
+	// Close socket and libevent
+	event_base_free(server->event_base);
+	server->event_base = NULL;
+	close(server->sock);
 
-  // Free memory
-  delete server;
-  *s = NULL;
+	// Free memory
+	delete server;
+	*s = NULL;
 
-  return 0;
+	return 0;
 }
 
 
@@ -331,44 +329,44 @@ int net_teardown_server(net_server_t **s) {
  */
 int write_single_fragment(net_connection_t *conn)
 {
-  fragment_t *frag = conn->frags_head;
+	fragment_t *frag = conn->frags_head;
 
-  char *buf = &(frag->data[frag->offset]);
-  size_t size = frag->size - frag->offset;
+	char *buf = &(frag->data[frag->offset]);
+	size_t size = frag->size - frag->offset;
 
-  int retval = send(conn->fd, buf, size, 0);
-  //printf("Wrote %d of %d bytes to %d\n", retval, size, conn->fd);
+	int retval = send(conn->fd, buf, size, 0);
+	//printf("Wrote %d of %d bytes to %d\n", retval, size, conn->fd);
 
-  if(retval >= 0) {
-    frag->offset += retval;
+	if(retval >= 0) {
+		frag->offset += retval;
 
-    if(frag->offset < frag->size)
-      return 0;
+		if(frag->offset < frag->size)
+			return 0;
 
-    conn->frags_head = frag->next;
+		conn->frags_head = frag->next;
 
-    if(conn->frags_head == NULL)
-      conn->frags_tail = NULL;
+		if(conn->frags_head == NULL)
+			conn->frags_tail = NULL;
 
-    free(frag->data);
-    free(frag);
+		free(frag->data);
+		free(frag);
 
-    return 1;
-  }
+		return 1;
+	}
 
-  // Processing failed...
-  if(retval == -1) {
-    // Socket was not ready, try again later
-    if(errno == EAGAIN || errno == EWOULDBLOCK)
-      return 0;
+	// Processing failed...
+	if(retval == -1) {
+		// Socket was not ready, try again later
+		if(errno == EAGAIN || errno == EWOULDBLOCK)
+			return 0;
 
-    // Other error, disconnect
-    perror("send()");
-    net_disconnect(conn);
-    return -1;
-  }
+		// Other error, disconnect
+		perror("send()");
+		net_disconnect(conn);
+		return -1;
+	}
 
-  return 0;
+	return 0;
 }
 
 
@@ -411,7 +409,7 @@ void net_on_write(evutil_socket_t fd, short events, void *server_v)
  */
 void *net_get_global_data(net_connection_t *conn)
 {
-  return conn->server->context;
+	return conn->server->context;
 }
 
 
@@ -420,7 +418,7 @@ void *net_get_global_data(net_connection_t *conn)
  */
 void *net_get_local_data(net_connection_t *conn)
 {
-  return conn->local;
+	return conn->local;
 }
 
 
@@ -498,24 +496,27 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 }
 
 
-void net_set_connect_handler(net_server_t *server, connect_handler_t handler) {
-  if(!server)
-    return;
-  server->connect_handler = handler;
+void net_set_connect_handler(net_server_t *server, connect_handler_t handler) 
+{
+	if(!server)
+		return;
+	server->connect_handler = handler;
 }
 
 
-void net_set_disconnect_handler(net_server_t *server, disconnect_handler_t handler) {
-  if(!server)
-    return;
-  server->disconnect_handler = handler;
+void net_set_disconnect_handler(net_server_t *server, disconnect_handler_t handler) 
+{
+	if(!server)
+		return;
+	server->disconnect_handler = handler;
 }
 
 
-void net_set_read_handler(net_server_t *server, read_handler_t handler) {
-  if(!server)
-    return;
-  server->read_handler = handler;
+void net_set_read_handler(net_server_t *server, read_handler_t handler) 
+{
+	if(!server)
+		return;
+	server->read_handler = handler;
 }
 
 
