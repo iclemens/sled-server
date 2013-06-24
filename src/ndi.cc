@@ -207,14 +207,6 @@ ndi_server_t *ndi_setup_server(void *user_context, int port)
 }
 
 
-int ndi_run_event_loop(ndi_server_t *ndi_server)
-{
-  if(!ndi_server)
-    return -1;
-  return net_run_event_loop(ndi_server->net_server);
-}
-
-
 /**
  * Shutdown TCP server.
  */

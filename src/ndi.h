@@ -32,7 +32,6 @@ typedef void(*ndi_data_handler_t)(ndi_connection_t *ndi_conn);                //
 
 // API Functions
 ndi_server_t *ndi_setup_server(void *user_context, int port);
-int ndi_run_event_loop(ndi_server_t *ndi_server);
 void ndi_teardown_server(ndi_server_t **ndi_server);
 
 void ndi_set_connect_handler(ndi_server_t *ndi_server, ndi_connect_handler_t connect_handler);
@@ -49,17 +48,6 @@ void ndi_send_command(ndi_connection_t *ndi_conn, char *error);
 
 void *ndi_get_global_data(ndi_connection_t *ndi_conn);
 void *ndi_get_local_data(ndi_connection_t *ndi_conn);
-
-
-#ifdef __NDI_LEAK_IMPL_DETAILS__
-/**
- * These functions leak epoll file descriptors and should be
- * replaced by something better.
- */
-
-int ndi_get_epoll_fd(ndi_server_t *server);
-int ndi_handle_epoll_events(ndi_server_t *server);
-#endif
 
 
 #ifdef __NDI_EXPERIMENTAL__
