@@ -247,6 +247,9 @@ net_server_t *net_setup_server(event_base *event_base, void *context, int port)
  */
 int net_disconnect(net_connection_t *conn)
 {
+	if(!conn)
+		return 0;
+
 	net_server_t *server = conn->server;
 
 	if(server->disconnect_handler)
@@ -480,11 +483,12 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 
 	// If buffer not empty, add flag
 	if(conn->frags_head != NULL) {
+		// Already added
 		if(conn->write_event != NULL) 
 			return 0;
 
-		event *event = event_new(conn->server->event_base, conn->fd, EV_WRITE | EV_ET | EV_PERSIST, net_on_write, (void *) conn->server);
-		int result = event_add(event, NULL);
+		conn->write_event = event_new(conn->server->event_base, conn->fd, EV_WRITE | EV_ET | EV_PERSIST, net_on_write, (void *) conn->server);
+		int result = event_add(conn->write_event, NULL);
 
 		if(result == -1) {
 			perror("event_add()");

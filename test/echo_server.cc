@@ -16,9 +16,6 @@ void on_disconnect(net_connection_t *conn, void **ctx)
 
 void on_read(net_connection_t *conn, char *buf, int size)
 {
-	char *msg = "Received: ";
-
-	net_send(conn, msg, 9, 0);
 	net_send(conn, buf, size, 0);
 }
 
@@ -45,10 +42,7 @@ int main(int argc, char **argv)
 	net_set_read_handler(server, on_read);
 
 	printf("Server started...\n");
-
-	while(true) {
-		event_base_dispatch(event_base);
-	}
+	event_base_loop(event_base, 0);
 
 	net_teardown_server(&server);
 
