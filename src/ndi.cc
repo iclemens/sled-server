@@ -180,7 +180,7 @@ void read_handler(net_connection_t *net_conn, char *buf, int size) {
 /**
  * Prepare TCP server handling the NDI FP protocol.
  */
-ndi_server_t *ndi_setup_server(void *user_context, int port)
+ndi_server_t *ndi_setup_server(event_base *event_base, void *user_context, int port)
 {
   ndi_server_t *ndi_server = NULL;
 
@@ -192,7 +192,7 @@ ndi_server_t *ndi_setup_server(void *user_context, int port)
 
   ndi_server->user_context = user_context;
 
-  ndi_server->net_server = net_setup_server(NULL, ndi_server, 3375);
+  ndi_server->net_server = net_setup_server(event_base, ndi_server, 3375);
   if(!ndi_server->net_server) {
     fprintf(stderr, "net_setup_server() failed\n");
     delete ndi_server;

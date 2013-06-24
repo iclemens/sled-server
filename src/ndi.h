@@ -11,6 +11,7 @@
 
 struct ndi_server_t;
 struct ndi_connection_t;
+struct event;
 
 enum byte_order_t {
   byo_big_endian,
@@ -31,7 +32,7 @@ typedef void(*ndi_error_handler_t)(ndi_connection_t *ndi_conn, char *err);
 typedef void(*ndi_data_handler_t)(ndi_connection_t *ndi_conn);                // FIXME: Add data field
 
 // API Functions
-ndi_server_t *ndi_setup_server(void *user_context, int port);
+ndi_server_t *ndi_setup_server(event_base *event_base, void *user_context, int port);
 void ndi_teardown_server(ndi_server_t **ndi_server);
 
 void ndi_set_connect_handler(ndi_server_t *ndi_server, ndi_connect_handler_t connect_handler);
