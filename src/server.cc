@@ -252,12 +252,20 @@ int disconnect(net_connection_t *conn)
 	if(server->disconnect_handler)
 		server->disconnect_handler(conn, &(conn->local));
 	server->connection_data.erase(conn->fd);
-  
-  /*FIXME! epoll_event event;
-  if(epoll_ctl(server->epoll_set, EPOLL_CTL_DEL, conn->fd, &event) == -1) {
-    perror("epoll_ctl()");
-    return -1;
-  }*/
+
+	// Cancel monitoring of read events
+	if(conn->read_event) {
+		event_del(conn->read_event);
+		event_free(conn->read_event);
+		conn->read_event = NULL;
+	}
+
+	// Cancel monitoring of write events
+	if(conn->write_event) {
+		event_del(conn->write_event);
+		event_free(conn->write_event);
+		conn->write_event = NULL;
+	}
 
 	/* Free buffer */
 	fragment_t *frag = conn->frags_head;
