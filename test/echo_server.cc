@@ -1,3 +1,6 @@
+/**
+ * Echoes data right back at client.
+ */
 
 #include <event2/event.h>
 #include "../src/server.h"
