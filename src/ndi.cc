@@ -321,7 +321,7 @@ void ndi_send_command(ndi_connection_t *ndi_conn, char *command)
   *type = htonl(PTYPE_COMMAND);
   strncpy(&(buffer[8]), command, cmd_size);
 
-  net_send(ndi_conn->net_conn, buffer, 8 + cmd_size, FADOPTBUFFER);
+  net_send(ndi_conn->net_conn, buffer, 8 + cmd_size, F_ADOPT_BUFFER);
 }
 
 
@@ -337,7 +337,7 @@ void ndi_send_error(ndi_connection_t *ndi_conn, char *error)
   *type = htonl(PTYPE_ERROR);
   strncpy(&(buffer[8]), error, err_size);
 
-  net_send(ndi_conn->net_conn, buffer, 8 + err_size, FADOPTBUFFER);
+  net_send(ndi_conn->net_conn, buffer, 8 + err_size, F_ADOPT_BUFFER);
 }
 
 

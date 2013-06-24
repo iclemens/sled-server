@@ -30,8 +30,10 @@
 #ifdef WIN32
 #define close(x) closesocket(x)
 #define read(s, buf, len) recv(s, buf, len, NULL)
-#define strncpy(d, s, n) strncpy_s(d, n, s, n);
 #endif
+
+
+#define DEBUG
 
 
 /**
@@ -373,60 +375,32 @@ int write_single_fragment(net_connection_t *conn)
 /**
  * Attempts to write data to the socket.
  */
-int handle_write_event(evutil_socket_t fd, short events, void *server_v)
+void net_on_write(evutil_socket_t fd, short events, void *server_v)
 {
-  net_server_t *server = (net_server_t *) server_v;
-  net_connection_t *conn = server->connection_data[fd];
+	net_server_t *server = (net_server_t *) server_v;
+	net_connection_t *conn = server->connection_data[fd];
 
-  while(conn->frags_head) {
-    int retval = write_single_fragment(conn);
+	while(conn->frags_head) {
+		int retval = write_single_fragment(conn);
 
-    if(retval == 0)
-      break;
+		if(retval == 0)
+			break;
 
-    if(retval == -1)
-      break;
-  }
+		if(retval == -1)
+			break;
+	}
 
-  // If buffer empty, remove flag
-  if(conn->frags_head == NULL) {
-	// FIXME!
-    //event.events = EPOLLIN | EPOLLET;
-    //epoll_ctl(server->epoll_set, EPOLL_CTL_MOD, event.data.fd, &event);
-  }
+	// If buffer empty, remove flag
+	if(conn->frags_head == NULL) {
+		if(conn->write_event) {
+			event_del(conn->write_event);
+			event_free(conn->write_event);
+			conn->write_event = NULL;
+		}
+	}
 
-  return 0;
+	return;
 }
-
-
-/*int net_get_epoll_fd(net_server_t *server)
-{
-  return server->epoll_set;
-}*/
-
-
-/*int net_handle_epoll_events(net_server_t *server)
-{
-  epoll_event events[MAX_EVENTS];
-
-  int nfds = epoll_wait(server->epoll_set, events, MAX_EVENTS, -1);
-
-  printf("[tick] ");
-
-  if(nfds == -1) {
-    perror("epoll_pwait");
-    return -1;
-  }
-
-  for(int n = 0; n < nfds; n++) {
-    if(handle_single_event(server, events[n]) == -1) {
-      fprintf(stderr, "handle_single_event() failed\n");
-      //return -1;
-    }
-  }
-
-  return 0;
-}*/
 
 
 /**
@@ -453,14 +427,14 @@ void *net_get_local_data(net_connection_t *conn)
 int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 {
   if(conn == NULL) {
-    if(flags | FADOPTBUFFER)
+    if(flags & F_ADOPT_BUFFER)
       free(buf);
     return -1;
   }
 
   if(conn->server == NULL) {
     fprintf(stderr, "Server not set in connection structure\n"); 
-    if(flags | FADOPTBUFFER)
+    if(flags & F_ADOPT_BUFFER)
       free(buf);
     return -1;
   }
@@ -469,21 +443,26 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
   fragment_t *frag = (fragment_t *) malloc(sizeof(fragment_t));
   if(frag == NULL) {
     perror("malloc()");
-    if(flags | FADOPTBUFFER)
+    if(flags & F_ADOPT_BUFFER)
       free(buf);
     return -1;
   }
 
-  if(flags | FADOPTBUFFER) {
+  if(flags & F_ADOPT_BUFFER) {
     frag->data = buf;
   } else {
-    frag->data = (char *) malloc(size);
+    frag->data = (char *) malloc(size + 1);
+	frag->data[size] = 0;
     if(frag->data == NULL) {
       perror("malloc()");
       free(frag);
       return -1;
     }
-    strncpy(frag->data, buf, size);
+	memcpy(frag->data, buf, size);
+
+#ifdef DEBUG
+	printf("Writing: %s (%d)\n", buf, size);
+#endif
   }
 
   frag->offset = 0;
@@ -501,14 +480,16 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 
   // If buffer not empty, add flag
   if(conn->frags_head != NULL) {
-    /*epoll_event event;
-    event.data.fd = conn->fd;    
-    event.events = EPOLLIN | EPOLLOUT | EPOLLET;
 
-    if(epoll_ctl(conn->server->epoll_set, EPOLL_CTL_MOD, conn->fd, &event) == -1) {
-      perror("epoll_ctl()");
-      return -1;
-    }*/
+	  if(conn->write_event == NULL) {		  
+		event *event = event_new(conn->server->event_base, conn->fd, EV_WRITE | EV_ET | EV_PERSIST, net_on_write, (void *) conn->server);
+		int result = event_add(event, NULL);
+
+		if(result == -1) {
+			perror("event_add()");
+			return 0;
+		}
+	  }
   }
 
   return 0;

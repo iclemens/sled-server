@@ -190,7 +190,7 @@ void ndi_df_send(ndi_connection_t *ndi_conn, ndi_dataframe_t *frame)
     component = component->next_component;
   }
 
-  net_send(ndi_conn->net_conn, buffer, 8 + 4 + component_size, FADOPTBUFFER);
+  net_send(ndi_conn->net_conn, buffer, 8 + 4 + component_size, F_ADOPT_BUFFER);
 }
 
 

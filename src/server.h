@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-#define FADOPTBUFFER 1
+#define F_ADOPT_BUFFER 1
 
 struct event_base;
 struct net_server_t;

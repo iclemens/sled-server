@@ -16,8 +16,10 @@ void on_disconnect(net_connection_t *conn, void **ctx)
 
 void on_read(net_connection_t *conn, char *buf, int size)
 {
-	buf[size] = 0;
-	printf("Received: %s\n", buf);
+	char *msg = "Received: ";
+
+	net_send(conn, msg, 9, 0);
+	net_send(conn, buf, size, 0);
 }
 
 int main(int argc, char **argv)
