@@ -162,7 +162,7 @@ void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
 	int client = accept_client(server->sock);
 
     // Register handle
-	event *event = event_new(server->event_base, client, EV_READ | EV_ET, net_on_read, (void *) server);
+	event *event = event_new(server->event_base, client, EV_READ | EV_ET | EV_PERSIST, net_on_read, (void *) server);
 	int result = event_add(event, NULL);
 
 	if(result == -1) {
@@ -170,16 +170,19 @@ void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
 		event_free(event);
 		close(client);
 	}
-
-    // Keep track of state
+    
     net_connection_t *conn = new net_connection_t();
+    conn->fd = client;
     conn->server = server;
+	conn->read_event = event;
+	conn->write_event = NULL;
+    conn->local = NULL;
     conn->frags_head = NULL;
     conn->frags_tail = NULL;
-    conn->fd = client;
-    conn->local = NULL;
+
     if(server->connect_handler)
       conn->local = server->connect_handler(conn);
+
     server->connection_data[client] = conn;        
 }
 
@@ -218,7 +221,7 @@ net_server_t *net_setup_server(event_base *event_base, void *context, int port)
 	}
 
 	// Add server socket to libevent
-	event *event = event_new(server->event_base, server->sock, EV_READ | EV_ET, net_on_new_connection, (void *) server);
+	event *event = event_new(server->event_base, server->sock, EV_READ | EV_ET | EV_PERSIST, net_on_new_connection, (void *) server);
 	int result = event_add(event, NULL);
 
 	if(result == -1) {

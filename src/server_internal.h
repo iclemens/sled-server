@@ -5,7 +5,7 @@
 #include <map>
 
 struct net_server_t;
-
+struct event;
 
 struct fragment_t {
   int offset;
@@ -17,12 +17,22 @@ struct fragment_t {
 
 
 struct net_connection_t {
-  int fd;           // Socket file descriptor
-  net_server_t *server; // Server that owns connection
-  void *local;      // External local context
+	// Socket file descriptor
+	int fd;
 
-  fragment_t *frags_head;
-  fragment_t *frags_tail;
+	// Server that owns connection
+	net_server_t *server;
+
+	// Events
+	event *read_event;
+	event *write_event;
+
+	// Context for this connection
+	void *local;
+
+	// Fragments to be written
+	fragment_t *frags_head;
+	fragment_t *frags_tail;
 };
 
 
