@@ -380,6 +380,9 @@ void net_on_write(evutil_socket_t fd, short events, void *server_v)
 	net_server_t *server = (net_server_t *) server_v;
 	net_connection_t *conn = server->connection_data[fd];
 
+	if(!conn)
+		return;
+
 	while(conn->frags_head) {
 		int retval = write_single_fragment(conn);
 
