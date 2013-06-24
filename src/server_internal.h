@@ -50,7 +50,7 @@ struct net_server_t {
 };
 
 
-int disconnect(net_connection_t *conn);
+int net_disconnect(net_connection_t *conn);
 
 
 #endif

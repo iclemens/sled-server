@@ -129,13 +129,14 @@ void net_on_read(evutil_socket_t fd, short events, void *server_v)
 
 	if(nread == -1) {
 		perror("read()");
-		disconnect(server->connection_data[fd]);
+		net_disconnect(server->connection_data[fd]);
 		return;
 	}
 
 	// Read did not succeed or connection was terminated
 	if(nread == 0) {
-		disconnect(server->connection_data[fd]);
+		net_disconnect(server->connection_data[fd]);
+		return;
 	}
 
 	// Read succeeded
@@ -245,7 +246,7 @@ net_server_t *net_setup_server(event_base *event_base, void *context, int port)
 /**
  * Terminate a connection.
  */
-int disconnect(net_connection_t *conn)
+int net_disconnect(net_connection_t *conn)
 {
 	net_server_t *server = conn->server;
 
@@ -285,12 +286,6 @@ int disconnect(net_connection_t *conn)
 }
 
 
-int net_disconnect(net_connection_t *conn)
-{
-  return disconnect(conn);
-}
-
-
 /**
  * Shuts down the server
  */
@@ -306,7 +301,7 @@ int net_teardown_server(net_server_t **s) {
   while(!server->connection_data.empty()) {
     std::map<int, net_connection_t *>::iterator it = server->connection_data.begin();
     printf("Closing (%d)\n", it->first);
-    disconnect(it->second);
+    net_disconnect(it->second);
   }
 
   server->connection_data.clear();
@@ -367,7 +362,7 @@ int write_single_fragment(net_connection_t *conn)
 
     // Other error, disconnect
     perror("send()");
-    disconnect(conn);
+    net_disconnect(conn);
     return -1;
   }
 
