@@ -1,5 +1,5 @@
-#ifndef __CAN_H__
-#define __CAN_H__
+#ifndef __INTERFACE_H__
+#define __INTERFACE_H__
 
 struct event_base;
 struct intf_t;
@@ -11,7 +11,5 @@ int intf_open(intf_t *intf);
 int intf_close(intf_t *intf);
 
 //int intf_send_nmt(intf_t *intf, 
-
-
 
 #endif

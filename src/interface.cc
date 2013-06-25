@@ -1,23 +1,16 @@
 
 #include "interface.h"
+#include "interface_internal.h"
 
 #include <event2/event.h>
 #include <libpcan.h>
+
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
 
 #include <sys/stat.h>
-
-struct intf_t
-{
-  event_base *ev_base;
-  HANDLE handle;
-  int fd;
-  
-  event *read_event;
-};
-
-void intf_on_read(evutil_socket_t fd, short events, void *intf_v);
 
 
 /**
@@ -123,6 +116,29 @@ int intf_close(intf_t *intf)
   intf->fd = 0;
   
   return 0;
+}
+
+
+/**
+ * Writes a single message
+ */
+void intf_write(intf_t *intf, can_message_t msg)
+{
+  TPCANMsg cmsg;
+  cmsg.ID = msg.id;
+  cmsg.MSGTYPE = msg.type;
+  cmsg.LEN = msg.len;
+
+  for(int i = 0; i < 8; i++)
+    cmsg.DATA[i] = msg.data[i];
+
+  printf("Writing %04x %02x %02x (%02x %02x %02x %02x %02x %02x %02x %02x)\n", cmsg.ID, cmsg.MSGTYPE, cmsg.LEN, cmsg.DATA[0], cmsg.DATA[1], cmsg.DATA[2], cmsg.DATA[3], cmsg.DATA[4], cmsg.DATA[5], cmsg.DATA[6], cmsg.DATA[7]);
+
+  DWORD result = CAN_Write(intf->handle, &cmsg);
+
+  if(result == -1) {
+    fprintf(stderr, "Error while sending message: %s\n", strerror(errno));
+  }
 }
 
 
