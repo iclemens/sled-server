@@ -22,8 +22,8 @@ sled_t *sled_create()
 void sled_destroy(sled_t **handle)
 {
   sled_t *sled = *handle;
-  free(handle);
-
+  
+  free(*handle);
   *handle = NULL;
 }
 
