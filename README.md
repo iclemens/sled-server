@@ -4,6 +4,20 @@ libsled
 Sled control software.
 
 
+Modules
+-------
+
+* The "sled" files implement the external API
+* The "interface" files implement the low-level CAN/CANOpen interface.
+
+What is currently missing:
+* State machines (device, sdo, nmt, ds402)
+
+Interface functions will only be invoked through the state machine 
+(with the exception of intf.create and intf.destroy). Interface
+callbacks will only notify the state machines.
+
+
 Copyright and license
 ---------------------
 
