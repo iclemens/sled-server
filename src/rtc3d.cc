@@ -25,6 +25,11 @@
 #include "rtc3d_internal.h"
 
 
+//////////////////////
+//  Event handlers  //
+//////////////////////
+
+
 /**
  * Creates datastructure used to handle RT3CD protocol communications with a single client.
  *
@@ -177,8 +182,6 @@ void read_handler(net_connection_t *net_conn, char *buf, int size) {
       // Data is complete, process packet
       if(rtc3d_conn->data_left == 0) {
         packet_handler(rtc3d_conn);
-        //send_response(sock, info, &response);
-        //ndi_send_command_response(conn, (char *)"ok-setbyteorder");
 
         free(rtc3d_conn->data);
 
@@ -188,6 +191,11 @@ void read_handler(net_connection_t *net_conn, char *buf, int size) {
     }
   }
 }
+
+
+////////////////////////
+//  Server functions  //
+////////////////////////
 
 
 /**
@@ -243,6 +251,81 @@ void rtc3d_teardown_server(rtc3d_server_t **rtc3d_server)
 
 
 /**
+ * Set callback to be called when a client connects.
+ *
+ * @param rtc3d_server  Instance of the server.
+ * @param connect_handler  Function to be called when a client connects.
+ */
+void rtc3d_set_connect_handler(rtc3d_server_t *rtc3d_server, rtc3d_connect_handler_t connect_handler)
+{
+  if(!rtc3d_server)
+    return;
+  rtc3d_server->connect_handler = connect_handler;
+}
+
+
+/**
+ * Set callback to be called when a client disconnects.
+ *
+ * @param rtc3d_server  Instance of the server.
+ * @param disconnect_handler  Function to be called when the client disconnects.
+ */
+void rtc3d_set_disconnect_handler(rtc3d_server_t *rtc3d_server, rtc3d_disconnect_handler_t disconnect_handler)
+{
+  if(!rtc3d_server)
+    return;
+  rtc3d_server->disconnect_handler = disconnect_handler;
+}
+
+
+/**
+ * Set callback to be called when a client send an error.
+ *
+ * @param rtc3d_server  Instance of the server.
+ * @param error_handler  Function to be called when an error packet arrives.
+ */
+void rtc3d_set_error_handler(rtc3d_server_t *rtc3d_server, rtc3d_error_handler_t error_handler)
+{
+  if(!rtc3d_server)
+    return;
+  rtc3d_server->error_handler = error_handler;
+}
+
+
+/**
+ * Set callback to be called when a client invokes a command.
+ *
+ * @param rtc3d_server  Instance of the server.
+ * @param command_handler  Function to be called when a command packet arrives.
+ */
+void rtc3d_set_command_handler(rtc3d_server_t *rtc3d_server, rtc3d_command_handler_t command_handler)
+{
+  if(!rtc3d_server)
+    return;
+  rtc3d_server->command_handler = command_handler;
+}
+
+
+/**
+ * Set callback to be called when a client send data.
+ *
+ * @param rtc3d_server  Instance of the server.
+ * @param data_handler  Function to be called when a data packet arrives.
+ */
+void rtc3d_set_data_handler(rtc3d_server_t *rtc3d_server, rtc3d_data_handler_t data_handler)
+{
+  if(!rtc3d_server)
+    return;
+  rtc3d_server->data_handler = data_handler;
+}
+
+
+////////////////////////////
+//  Connection functions  //
+////////////////////////////
+
+
+/**
  * Set byte order for the given client.
  *
  * @param rtc3d_conn  Connection to set the byte-order for.
@@ -285,70 +368,11 @@ void *rtc3d_get_local_data(rtc3d_connection_t *rtc3d_conn)
 }
 
 
-/**
- * Set callback to be called when a client connects.
- */
-void rtc3d_set_connect_handler(rtc3d_server_t *rtc3d_server, rtc3d_connect_handler_t connect_handler)
-{
-  if(!rtc3d_server)
-    return;
-  rtc3d_server->connect_handler = connect_handler;
-}
-
-
-/**
- * Set callback to be called when a client disconnects.
- */
-void rtc3d_set_disconnect_handler(rtc3d_server_t *rtc3d_server, rtc3d_disconnect_handler_t disconnect_handler)
-{
-  if(!rtc3d_server)
-    return;
-  rtc3d_server->disconnect_handler = disconnect_handler;
-}
-
-
-/**
- * Set callback to be called when a client send an error
- */
-void rtc3d_set_error_handler(rtc3d_server_t *rtc3d_server, rtc3d_error_handler_t error_handler)
-{
-  if(!rtc3d_server)
-    return;
-  rtc3d_server->error_handler = error_handler;
-}
-
-
-/**
- * Set callback to be called when a client invokes a command
- */
-void rtc3d_set_command_handler(rtc3d_server_t *rtc3d_server, rtc3d_command_handler_t command_handler)
-{
-  if(!rtc3d_server)
-    return;
-  rtc3d_server->command_handler = command_handler;
-}
-
-
-/**
- * Set callback to be called when a client send data
- */
-void rtc3d_set_data_handler(rtc3d_server_t *rtc3d_server, rtc3d_data_handler_t data_handler)
-{
-  if(!rtc3d_server)
-    return;
-  rtc3d_server->data_handler = data_handler;
-}
-
-
 int rtc3d_disconnect(rtc3d_connection_t *rtc3d_conn)
 {
   return net_disconnect(rtc3d_conn->net_conn);
 }
 
-
-/**********************************
- * SENDING DATA TO AN RTC3D CLIENT
- */
 
 /**
  * Sends a command to an RTC3D client.
