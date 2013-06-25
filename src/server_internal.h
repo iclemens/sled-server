@@ -6,6 +6,7 @@
 
 struct net_server_t;
 struct event;
+struct evutil_socket_t;
 
 struct fragment_t {
   int offset;
@@ -50,8 +51,23 @@ struct net_server_t {
 };
 
 
-int net_disconnect(net_connection_t *conn);
+// Server functions
+net_server_t *net_setup_server(event_base *ev_base, void *context, int port);
+int net_teardown_server(net_server_t **s);
+void net_set_connect_handler(net_server_t *server, connect_handler_t handler);
+void net_set_disconnect_handler(net_server_t *server, disconnect_handler_t handler);
+void net_set_read_handler(net_server_t *server, read_handler_t handler);
 
+// Connection functions
+int write_single_fragment(net_connection_t *conn);
+int net_send(net_connection_t *conn, char *buf, size_t size, int flags);
+int net_disconnect(net_connection_t *conn);
+void *net_get_global_data(net_connection_t *conn);
+void *net_get_local_data(net_connection_t *conn);
+
+// Utility functions
+int setup_server_socket(int port);
+int accept_client(int sock);
 
 #endif
 
