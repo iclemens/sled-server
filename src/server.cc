@@ -32,6 +32,7 @@
 #define read(s, buf, len) recv(s, buf, len, NULL)
 #endif
 
+#define BUFFER_SIZE 1023
 
 /////////////////////
 //  Event handlers //
@@ -45,8 +46,9 @@ void net_on_read(evutil_socket_t fd, short events, void *server_v)
 {
 	net_server_t *server = (net_server_t *) server_v;
 
-	char buffer[1024];
-	size_t nread = read(fd, buffer, 1023);
+	// Add one to allow for (possible) zero-termination.
+	char buffer[BUFFER_SIZE + 1];
+	size_t nread = read(fd, buffer, BUFFER_SIZE);
 
 	if(nread == -1) {
 		perror("read()");
@@ -60,7 +62,7 @@ void net_on_read(evutil_socket_t fd, short events, void *server_v)
 		return;
 	}
 
-	// Read succeeded
+	// Add zero-terminator in case we decide the data is to be printed.
 	buffer[nread] = '\0';
 
 	if(server->read_handler) {
