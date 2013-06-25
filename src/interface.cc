@@ -26,6 +26,10 @@ intf_t *intf_create(event_base *ev_base)
   
   intf->read_event = NULL;
   
+  intf->read_resp_handler = NULL;
+  intf->write_resp_handler = NULL;
+  intf->abort_resp_handler = NULL;
+  
   return intf;
 }
 
@@ -122,7 +126,7 @@ int intf_close(intf_t *intf)
 /**
  * Writes a single message
  */
-void intf_write(intf_t *intf, can_message_t msg)
+int intf_write(intf_t *intf, can_message_t msg)
 {
   TPCANMsg cmsg;
   cmsg.ID = msg.id;
@@ -138,6 +142,82 @@ void intf_write(intf_t *intf, can_message_t msg)
 
   if(result == -1) {
     fprintf(stderr, "Error while sending message: %s\n", strerror(errno));
+    return -1;
+  }
+  
+  return 0;
+}
+
+
+/**
+ * Sends an NMT command
+ */
+int intf_send_nmt_command(intf_t *intf, uint8_t command)
+{
+  can_message_t msg;
+  msg.id = 0;
+  msg.type = mt_standard;
+  msg.len = 2;
+  msg.data[0] = command;
+  msg.data[1] = 1;
+  
+  return intf_write(intf, msg);
+}
+
+
+/**
+ * Send write request.
+ */
+int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size)
+{
+  can_message_t msg;
+  msg.id = (0x0C << 7) + 1;
+  msg.type = mt_standard;
+
+  msg.len = 8;
+  msg.data[0] = 0x2F - ((size - 1) * 4);
+  msg.data[1] = (index & 0x00FF);
+  msg.data[2] = (index & 0xFF00) >> 8;
+  msg.data[3] = subindex;
+  msg.data[4] = (value & 0x000000FF);
+  msg.data[5] = (value & 0x0000FF00) >> 8;
+  msg.data[6] = (value & 0x00FF0000) >> 16;
+  msg.data[7] = (value & 0xFF000000) >> 24;
+
+  return intf_write(intf, msg); 
+}
+
+
+/**
+ * Parses CAN message and invokes callbacks.
+ */
+void intf_dispatch_msg(intf_t *intf, can_message_t msg)
+{
+  int function = msg.id >> 7;
+  
+  // Node guard message
+  if(function == 0x0E && intf->nmt_state_handler) {
+    uint8_t state = msg.data[0] & 0x7F;
+    intf->nmt_state_handler(intf, state);
+  }
+  
+  // SDO response
+  if(function == 0x0B) {
+    uint16_t index = msg.data[1] + (msg.data[2] << 8);
+    uint8_t subindex = msg.data[3];
+    uint32_t value = msg.data[4] + (msg.data[5] << 8) + (msg.data[6] << 16) + (msg.data[7] << 24);
+    
+    // Write response
+    if(msg.data[0] == 0x60 && intf->write_resp_handler) {
+      intf->write_resp_handler(intf, index, subindex);
+    }
+    
+    // Read response
+    
+    // Abort response
+    if(msg.data[0] == 0x80 && intf->abort_resp_handler) {
+      intf->abort_resp_handler(intf, index, subindex, value);
+    }
   }
 }
 
@@ -191,13 +271,41 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
   uint64_t timestamp = message.dwTime * 1000 + message.wUsec;
 
   // Tell the world we've received a message?
-  //can_message msg;
-  //msg.id = message.Msg.ID;
-  //msg.type = message.Msg.MSGTYPE;
-  //msg.len = message.Msg.LEN;
+  can_message_t msg;
+  msg.id = message.Msg.ID;
+  msg.type = message.Msg.MSGTYPE;
+  msg.len = message.Msg.LEN;
 
-  //for(int i = 0; i < 8; i++)
-  //  msg.data[i] = message.Msg.DATA[i];
+  for(int i = 0; i < 8; i++)
+    msg.data[i] = message.Msg.DATA[i];
+  
+  intf_dispatch_msg(intf, msg);
 
   return;
 }
+
+
+
+void intf_set_nmt_state_handler(intf_t *intf, intf_nmt_state_handler_t handler)
+{
+  intf->nmt_state_handler = handler;
+}
+
+
+void intf_set_read_resp_handler(intf_t *intf, intf_read_resp_handler_t handler)
+{
+  intf->read_resp_handler = handler;
+}
+
+
+void intf_set_write_resp_handler(intf_t *intf, intf_write_resp_handler_t handler)
+{
+  intf->write_resp_handler = handler;
+}
+
+
+void intf_set_abort_resp_handler(intf_t *intf, intf_abort_resp_handler_t handler)
+{
+  intf->abort_resp_handler = handler;
+}
+

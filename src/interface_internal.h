@@ -5,6 +5,8 @@
 #include <libpcan.h>
 #include <event2/event.h>
 
+#include "interface.h"
+
 enum message_type_t
 {
 	mt_status = 0x80,
@@ -28,6 +30,13 @@ struct intf_t
   int fd;
   
   event *read_event;
+  
+  // Callbacks
+  intf_nmt_state_handler_t nmt_state_handler;
+  
+  intf_read_resp_handler_t read_resp_handler;
+  intf_write_resp_handler_t write_resp_handler;
+  intf_abort_resp_handler_t abort_resp_handler;
 };
 
 void intf_on_read(evutil_socket_t fd, short events, void *intf_v);
