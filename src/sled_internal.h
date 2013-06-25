@@ -2,6 +2,7 @@
 #define __SLED_INTERNAL_H__
 
 #include "sled.h"
+#include "sled_profile.h"
 
 #define MAX_PROFILES 100
 
