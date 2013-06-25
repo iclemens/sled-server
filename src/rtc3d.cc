@@ -191,7 +191,15 @@ void read_handler(net_connection_t *net_conn, char *buf, int size) {
 
 
 /**
- * Prepare TCP server handling the RTC3D protocol.
+ * Creates a new instance of a real-time C3D server.
+ *
+ * Note that the server is not operational until the event_base_loop() is started.
+ *
+ * @param event_base  Event base where file descriptor will be registered
+ * @param user_context  Pointer passed to all callback-functions
+ * @param port  TCP port on which the server listens
+ *
+ * @return Instance of the RTC3D server.
  */
 rtc3d_server_t *rtc3d_setup_server(event_base *event_base, void *user_context, int port)
 {
@@ -221,7 +229,9 @@ rtc3d_server_t *rtc3d_setup_server(event_base *event_base, void *user_context, i
 
 
 /**
- * Shutdown TCP server.
+ * Shutdown realtime C3D server.
+ *
+ * @param rtc3d_server  Instance of the server to shutdown.
  */
 void rtc3d_teardown_server(rtc3d_server_t **rtc3d_server)
 {
@@ -234,6 +244,11 @@ void rtc3d_teardown_server(rtc3d_server_t **rtc3d_server)
 
 /**
  * Set byte order for the given client.
+ *
+ * @param rtc3d_conn  Connection to set the byte-order for.
+ * @param byte_order  Byte-order (byo_big_endian or byo_little_endian).
+ *
+ * @return Zero indicates success, everything else failure.
  */
 int rtc3d_set_byte_order(rtc3d_connection_t *rtc3d_conn, byte_order_t byte_order)
 {
@@ -243,6 +258,13 @@ int rtc3d_set_byte_order(rtc3d_connection_t *rtc3d_conn, byte_order_t byte_order
 }
 
 
+/**
+ * Returns global pointer for an RTC3D connection.
+ *
+ * @param rtc3d_conn  RTC3D connection.
+ *
+ * @return Pointer to user context.
+ */
 void *rtc3d_get_global_data(rtc3d_connection_t *rtc3d_conn)
 {
   rtc3d_server_t *rtc3d_server = (rtc3d_server_t *) net_get_global_data(rtc3d_conn->net_conn);
@@ -250,6 +272,13 @@ void *rtc3d_get_global_data(rtc3d_connection_t *rtc3d_conn)
 }
 
 
+/**
+ * Returns per-connection pointer for an RTC3D connection.
+ *
+ * @param rtc3d_conn  RTC3D connection.
+ *
+ * @return Pointer to the per-connection data.
+ */
 void *rtc3d_get_local_data(rtc3d_connection_t *rtc3d_conn)
 {
   return rtc3d_conn->user_context;
