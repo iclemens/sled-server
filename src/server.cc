@@ -164,7 +164,7 @@ void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
 	int client = accept_client(server->sock);
 
     // Register handle
-	event *event = event_new(server->event_base, client, EV_READ | EV_ET | EV_PERSIST, net_on_read, (void *) server);
+	event *event = event_new(server->ev_base, client, EV_READ | EV_ET | EV_PERSIST, net_on_read, (void *) server);
 	int result = event_add(event, NULL);
 
 	if(result == -1) {
@@ -192,7 +192,7 @@ void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
 /**
  * Setup server state struct
  */
-net_server_t *net_setup_server(event_base *event_base, void *context, int port)
+net_server_t *net_setup_server(event_base *ev_base, void *context, int port)
 {
 	 net_server_t *server = NULL;
 
@@ -212,7 +212,7 @@ net_server_t *net_setup_server(event_base *event_base, void *context, int port)
 	}
 
 	server->context = context;
-	server->event_base = event_base;
+	server->ev_base = ev_base;
 
 	// Create server socket
 	server->sock = setup_server_socket(port);
@@ -223,7 +223,7 @@ net_server_t *net_setup_server(event_base *event_base, void *context, int port)
 	}
 
 	// Add server socket to libevent
-	event *event = event_new(server->event_base, server->sock, EV_READ | EV_ET | EV_PERSIST, net_on_new_connection, (void *) server);
+	event *event = event_new(server->ev_base, server->sock, EV_READ | EV_ET | EV_PERSIST, net_on_new_connection, (void *) server);
 	int result = event_add(event, NULL);
 
 	if(result == -1) {
@@ -310,8 +310,8 @@ int net_teardown_server(net_server_t **s)
 	server->connection_data.clear();
 
 	// Close socket and libevent
-	event_base_free(server->event_base);
-	server->event_base = NULL;
+	event_base_free(server->ev_base);
+	server->ev_base = NULL;
 	close(server->sock);
 
 	// Free memory
@@ -487,7 +487,7 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 		if(conn->write_event != NULL) 
 			return 0;
 
-		conn->write_event = event_new(conn->server->event_base, conn->fd, EV_WRITE | EV_ET | EV_PERSIST, net_on_write, (void *) conn->server);
+		conn->write_event = event_new(conn->server->ev_base, conn->fd, EV_WRITE | EV_ET | EV_PERSIST, net_on_write, (void *) conn->server);
 		int result = event_add(conn->write_event, NULL);
 
 		if(result == -1) {

@@ -40,7 +40,7 @@ struct net_server_t {
   void *context;                            // Pointer passed to all callbacks
 
   int sock;                                      // Listening socket
-  event_base *event_base;
+  event_base *ev_base;
   std::map<int, net_connection_t *> connection_data; // Per-client persistent data
 
   // Event handlers

@@ -12,5 +12,5 @@ OBJ = $(patsubst %.cc,.obj/%.o,$(SRC))
 	$(CPP) -c -g -fPIC -o $@ $<
 
 librtc3d-server.so: $(OBJ)
-	$(CC) -shared -Wl,-soname,libndiserver -o ../librtc3d-server.so $(OBJ)
+	$(CC) -shared -Wl,-soname,librtc3d-server -o ../librtc3d-server.so $(OBJ)
 
