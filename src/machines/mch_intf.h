@@ -1,5 +1,5 @@
-#ifndef __MCH_IFACE_H__
-#define __MCH_IFACE_H__
+#ifndef __MCH_INTF_H__
+#define __MCH_INTF_H__
 
 enum mch_intf_event_t {
   EV_INTF_OPEN,	// Open command

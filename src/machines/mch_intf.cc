@@ -24,20 +24,20 @@ mch_intf_t *mch_intf_create(intf_t *interface)
 }
 
 
-void mch_destroy(mch_intf_t **machine)
+void mch_intf_destroy(mch_intf_t **machine)
 {
   free(*machine);
   *machine = NULL;
 }
 
 
-mch_intf_state_t mch_active_state(mch_intf_t *machine)
+mch_intf_state_t mch_intf_active_state(mch_intf_t *machine)
 {
   return machine->state;
 }
 
 
-mch_intf_state_t mch_next_state_given_event(mch_intf_t *machine, mch_intf_event_t event)
+mch_intf_state_t mch_intf_next_state_given_event(mch_intf_t *machine, mch_intf_event_t event)
 {
   switch(machine->state) {
     case ST_INTF_CLOSED:      
@@ -65,7 +65,7 @@ mch_intf_state_t mch_next_state_given_event(mch_intf_t *machine, mch_intf_event_
 }
 
 
-void mch_on_enter(mch_intf_t *machine)
+void mch_intf_on_enter(mch_intf_t *machine)
 {
   switch(machine->state) {
     case ST_INTF_OPENING:
@@ -83,7 +83,7 @@ void mch_on_enter(mch_intf_t *machine)
 }
 
 
-void mch_on_exit(mch_intf_t *machine)
+void mch_intf_on_exit(mch_intf_t *machine)
 {
 }
 
@@ -101,13 +101,13 @@ const char *mch_intf_statename(mch_intf_state_t state)
 
 void mch_intf_handle_event(mch_intf_t *machine, mch_intf_event_t event)
 {
-  mch_intf_state_t next_state = mch_next_state_given_event(machine, event);
+  mch_intf_state_t next_state = mch_intf_next_state_given_event(machine, event);
   
   if(!(machine->state == next_state)) {
-    mch_on_exit(machine);
+    mch_intf_on_exit(machine);
     machine->state = next_state;
     printf("Interface machine changed state: %s\n", mch_intf_statename(machine->state));
-    mch_on_enter(machine);
+    mch_intf_on_enter(machine);
   }
 }
 
