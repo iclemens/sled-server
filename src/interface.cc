@@ -95,7 +95,18 @@ int intf_open(intf_t *intf)
   // Register handle with libevent
   intf->fd = LINUX_CAN_FileHandle(intf->handle);
   intf->read_event = event_new(intf->ev_base, intf->fd, EV_READ | EV_ET | EV_PERSIST, intf_on_read, (void *) intf);
-  event_add(intf->read_event, NULL);
+  event_add(intf->read_event, NULL);   
+  
+  return 0;
+}
+
+
+int intf_is_open(intf_t *intf)
+{
+  if(intf->handle)
+    return 1;
+  else
+    return 0;
 }
 
 
@@ -103,21 +114,29 @@ int intf_open(intf_t *intf)
  * Close the device connection.
  */
 int intf_close(intf_t *intf)
-{
+{ 
   // Remove event
-  event_del(intf->read_event);
-  event_free(intf->read_event);
-  intf->read_event = NULL;
-  
-  // Close connection
-  DWORD result = CAN_Close(intf->handle);
-  if(result != CAN_ERR_OK) {
-    fprintf(stderr, "Closing of CAN device failed\n");
-    return -1;
+  if(intf->read_event) {
+    event_del(intf->read_event);
+    event_free(intf->read_event);
+    intf->read_event = NULL;
   }
   
-  intf->handle = 0;
-  intf->fd = 0;
+  // Close connection
+  if(intf->handle) {
+    DWORD result = CAN_Close(intf->handle);
+    if(result != CAN_ERR_OK) {
+      fprintf(stderr, "Closing of CAN device failed\n");
+      return -1;
+    }  
+  
+    intf->handle = 0;
+    intf->fd = 0;
+  }
+  
+  if(intf->close_handler) {
+    intf->close_handler(intf, intf->payload);
+  }
   
   return 0;
 }
@@ -198,7 +217,7 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
   // Node guard message
   if(function == 0x0E && intf->nmt_state_handler) {
     uint8_t state = msg.data[0] & 0x7F;
-    intf->nmt_state_handler(intf, state);
+    intf->nmt_state_handler(intf, intf->payload, state);
   }
   
   // SDO response
@@ -209,14 +228,14 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
     
     // Write response
     if(msg.data[0] == 0x60 && intf->write_resp_handler) {
-      intf->write_resp_handler(intf, index, subindex);
+      intf->write_resp_handler(intf, intf->payload, index, subindex);
     }
     
     // Read response
     
     // Abort response
     if(msg.data[0] == 0x80 && intf->abort_resp_handler) {
-      intf->abort_resp_handler(intf, index, subindex, value);
+      intf->abort_resp_handler(intf, intf->payload, index, subindex, value);
     }
   }
 }
@@ -264,6 +283,7 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 
     printf("Received status %x\n", status);
     // Status received, ignore for now?
+    intf_close(intf);
 
     return;
   }
@@ -284,6 +304,11 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
   return;
 }
 
+
+void intf_set_callback_payload(intf_t *intf, void *payload)
+{
+  intf->payload = payload;
+}
 
 
 void intf_set_nmt_state_handler(intf_t *intf, intf_nmt_state_handler_t handler)
@@ -309,3 +334,8 @@ void intf_set_abort_resp_handler(intf_t *intf, intf_abort_resp_handler_t handler
   intf->abort_resp_handler = handler;
 }
 
+
+void intf_set_close_handler(intf_t *intf, intf_close_handler_t handler)
+{
+  intf->close_handler = handler;
+}

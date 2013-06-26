@@ -2,12 +2,12 @@
 CPP=g++
 CC=gcc
 
-SRC = sled.cc sled_profile.cc interface.cc
+SRC = sled.cc sled_profile.cc interface.cc machines/mch_intf.cc
 OBJ = $(patsubst %.cc,.obj/%.o,$(SRC))
 
 .obj:
 	mkdir .obj
-
+	
 .obj/%.o: %.cc .obj
 	$(CPP) -c -g -fPIC -o $@ $<
 
