@@ -13,6 +13,19 @@
 #include <sys/stat.h>
 
 
+void intf_debug_print_status(int status)
+{
+  if(status & 0x01) fprintf(stderr, "Chip-send-buffer full.\n");
+  if(status & 0x02) fprintf(stderr, "Chip-receive buffer overrun.\n");
+  if(status & 0x04) fprintf(stderr, "Bus warning.\n");
+  if(status & 0x08) fprintf(stderr, "Bus passive.\n");
+  if(status & 0x10) fprintf(stderr, "Bus off.\n");  
+  if(status & 0x20) fprintf(stderr, "Receive buffer is empty.\n");    
+  if(status & 0x40) fprintf(stderr, "Receive buffer overrun.\n");
+  if(status & 0x80) fprintf(stderr, "Send-buffer is full.\n");
+}
+
+
 /**
  * Setup CAN Interface
  */
@@ -281,9 +294,12 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
       return;
     }
 
-    printf("Received status %x\n", status);
-    // Status received, ignore for now?
-    intf_close(intf);
+    if(! (status == 0x20 && status == 0x00)) {
+      printf("Received status %x\n", status);    
+      intf_debug_print_status(status);        
+      // Status received, ignore for now?
+      intf_close(intf);
+    }
 
     return;
   }
