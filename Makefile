@@ -1,7 +1,7 @@
 
 SUBDIRS = src
 
-LIB = librt3cd-server.so
+LIB = librtc3d-server.so
 INC = src/rtc3d.h src/rtc3d_dataframe.h
 
 PREFIX=/usr/local
