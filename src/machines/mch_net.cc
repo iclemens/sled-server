@@ -18,9 +18,10 @@ mch_net_t *mch_net_create(intf_t *interface)
   if(machine == NULL)
     return NULL;
   
-  machine->state = ST_NET_DISABLED;
-  
+  machine->state = ST_NET_DISABLED;  
   machine->interface = interface;
+
+  return machine;
 }
 
 
@@ -39,34 +40,34 @@ mch_net_state_t mch_net_active_state(mch_net_t *machine)
 
 mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event_t event)
 {
-  switch(machine->state) {
-    case ST_NET_DISABLED:
-      if(event == EV_NET_INTF_OPENED)
-	return ST_NET_UNKNOWN;
-      break;
+	switch(machine->state) {
+		case ST_NET_DISABLED:
+			if(event == EV_NET_INTF_OPENED)
+				return ST_NET_UNKNOWN;
+			break;
 
-    case ST_NET_UNKNOWN:
-      if(event == EV_NET_STOPPED)
-	return ST_NET_STOPPED;
-      if(event == EV_NET_PREOPERATIONAL)
-	return ST_NET_PREOPERATIONAL;
-      if(event == EV_NET_OPERATIONAL)
-	return ST_NET_OPERATIONAL;
-      if(event == EV_NET_INTF_CLOSED:
-	return ST_NET_DISABLED;
-      break;
+		case ST_NET_UNKNOWN:
+			if(event == EV_NET_STOPPED)
+				return ST_NET_STOPPED;
+			if(event == EV_NET_PREOPERATIONAL)
+				return ST_NET_PREOPERATIONAL;
+			if(event == EV_NET_OPERATIONAL)
+				return ST_NET_OPERATIONAL;
+			if(event == EV_NET_INTF_CLOSED)
+				return ST_NET_DISABLED;
+			break;
       
-    case ST_NET_STARTREMOTENODE:
-      if(event == EV_NET_OPERATIONAL)
-	return ST_NET_OPERATIONAL;
-      break;
+		case ST_NET_STARTREMOTENODE:
+			if(event == EV_NET_OPERATIONAL)
+				return ST_NET_OPERATIONAL;
+			break;
       
-    case ST_NET_ENTERPREOPERATIONAL:
-      if(event == EV_NET_PREOPERATIONAL)
-	return ST_NET_PREOPERATIONAL;
-  }
+		case ST_NET_ENTERPREOPERATIONAL:
+			if(event == EV_NET_PREOPERATIONAL)
+				return ST_NET_PREOPERATIONAL;
+	}
   
-  return machine->state;
+	return machine->state;
 }
 
 
