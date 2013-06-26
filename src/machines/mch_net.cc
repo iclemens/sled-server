@@ -6,35 +6,35 @@
 #include <stdio.h>
 
 struct mch_net_t {
-  mch_net_state_t state;  
-  intf_t *interface;
+	mch_net_state_t state;  
+	intf_t *interface;
 };
 
 
 mch_net_t *mch_net_create(intf_t *interface)
 {
-  mch_net_t *machine = (mch_net_t *) malloc(sizeof(mch_net_t));
+	mch_net_t *machine = (mch_net_t *) malloc(sizeof(mch_net_t));
   
-  if(machine == NULL)
-    return NULL;
+	if(machine == NULL)
+		return NULL;
   
-  machine->state = ST_NET_DISABLED;  
-  machine->interface = interface;
+	machine->state = ST_NET_DISABLED;  
+	machine->interface = interface;
 
-  return machine;
+	return machine;
 }
 
 
 void mch_net_destroy(mch_net_t **machine)
 {
-  free(*machine);
-  *machine = NULL;
+	free(*machine);
+	*machine = NULL;
 }
 
 
 mch_net_state_t mch_net_active_state(mch_net_t *machine)
 {
-  return machine->state;
+	return machine->state;
 }
 
 
@@ -96,31 +96,31 @@ void mch_net_on_exit(mch_net_t *machine)
 
 const char *mch_net_statename(mch_net_state_t state)
 {
-  switch(state) {
-    case ST_NET_DISABLED: return "ST_NET_DISABLED";
-    case ST_NET_UNKNOWN: return "ST_NET_UNKNOWN";
+	switch(state) {
+		case ST_NET_DISABLED: return "ST_NET_DISABLED";
+		case ST_NET_UNKNOWN: return "ST_NET_UNKNOWN";
     
-    case ST_NET_STOPPED: return "ST_NET_STOPPED";
-    case ST_NET_PREOPERATIONAL: return "ST_NET_PREOPERATIONAL";
-    case ST_NET_OPERATIONAL: return "ST_NET_OPERATIONAL";
+		case ST_NET_STOPPED: return "ST_NET_STOPPED";
+		case ST_NET_PREOPERATIONAL: return "ST_NET_PREOPERATIONAL";
+		case ST_NET_OPERATIONAL: return "ST_NET_OPERATIONAL";
     
-    case ST_NET_ENTERPREOPERATIONAL: return "ST_NET_ENTERPREOPERATIONAL";
-    case ST_NET_STARTREMOTENODE: return "ST_NET_STARTREMOTENODE";
-  }
+		case ST_NET_ENTERPREOPERATIONAL: return "ST_NET_ENTERPREOPERATIONAL";
+		case ST_NET_STARTREMOTENODE: return "ST_NET_STARTREMOTENODE";
+	}
   
-  return "Invalid state";
+	return "Invalid state";
 }
 
 
 void mch_net_handle_event(mch_net_t *machine, mch_net_event_t event)
 {
-  mch_net_state_t next_state = mch_net_next_state_given_event(machine, event);
+	mch_net_state_t next_state = mch_net_next_state_given_event(machine, event);
   
-  if(!(machine->state == next_state)) {
-    mch_net_on_exit(machine);
-    machine->state = next_state;
-    printf("Network machine changed state: %s\n", mch_net_statename(machine->state));
-    mch_net_on_enter(machine);
-  }
+	if(!(machine->state == next_state)) {
+		mch_net_on_exit(machine);
+		machine->state = next_state;
+		printf("Network machine changed state: %s\n", mch_net_statename(machine->state));
+		mch_net_on_enter(machine);
+	}
 }
 
