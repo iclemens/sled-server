@@ -65,6 +65,7 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
 		case ST_NET_ENTERPREOPERATIONAL:
 			if(event == EV_NET_PREOPERATIONAL)
 				return ST_NET_PREOPERATIONAL;
+			break;
 	}
   
 	return machine->state;
@@ -73,10 +74,18 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
 
 void mch_net_on_enter(mch_net_t *machine)
 {
-  switch(machine->state) {
-    case ST_NET_DISABLED:
-      break;
-  }
+	switch(machine->state) {
+		case ST_NET_DISABLED:
+			break;
+
+		case ST_NET_STARTREMOTENODE:
+			intf_send_nmt_command(machine->interface, 0);	// FIXME: Send proper command!
+			break;
+
+		case ST_NET_ENTERPREOPERATIONAL:
+			intf_send_nmt_command(machine->interface, 0);   // FIXME: Send proper command!
+			break;
+	}
 }
 
 
