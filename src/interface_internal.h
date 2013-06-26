@@ -2,8 +2,13 @@
 #define __INTERFACE_INTERNAL_H__
 
 #include <stdint.h>
-#include <libpcan.h>
 #include <event2/event.h>
+
+#ifdef WIN32
+#include <PCANBasic.h>
+#else
+#include <libpcan.h>
+#endif
 
 #include "interface.h"
 
