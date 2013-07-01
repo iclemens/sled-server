@@ -202,6 +202,9 @@ int intf_send_nmt_command(intf_t *intf, uint8_t command)
   msg.len = 2;
   msg.data[0] = command;
   msg.data[1] = 1;
+
+	for(int i = 2; i < 8; i++)
+		msg.data[i] = 0;
   
   return intf_write(intf, msg);
 }
@@ -236,7 +239,14 @@ int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t
 void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 {
   int function = msg.id >> 7;
-  
+
+	if(function <= 1 || function >= 11)
+		fprintf(stderr, "Got message: %d\n", function);
+ 
+	// TPDO 2
+	if(function == 0x05) {
+	}
+ 
   // Node guard message
   if(function == 0x0E && intf->nmt_state_handler) {
     uint8_t state = msg.data[0] & 0x7F;
@@ -248,17 +258,25 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
     uint16_t index = msg.data[1] + (msg.data[2] << 8);
     uint8_t subindex = msg.data[3];
     uint32_t value = msg.data[4] + (msg.data[5] << 8) + (msg.data[6] << 16) + (msg.data[7] << 24);
-    
+   
     // Write response
-    if(msg.data[0] == 0x60 && intf->write_resp_handler) {
-      intf->write_resp_handler(intf, intf->payload, index, subindex);
+    if(msg.data[0] == 0x60) {
+			if(intf->write_resp_handler) {
+	      intf->write_resp_handler(intf, intf->payload, index, subindex);
+			} else {
+				fprintf(stderr, "Received write response, but no callback function has been set.\n");
+			}
     }
     
     // Read response
     
     // Abort response
-    if(msg.data[0] == 0x80 && intf->abort_resp_handler) {
-      intf->abort_resp_handler(intf, intf->payload, index, subindex, value);
+    if(msg.data[0] == 0x80) {
+			if(intf->abort_resp_handler) {
+	      intf->abort_resp_handler(intf, intf->payload, index, subindex, value);
+			} else {
+				fprintf(stderr, "Received abort response, but no callback function has been set.\n");
+			}
     }
   }
 }
@@ -276,7 +294,7 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 	// We've been closed down, stop.
 	if(!intf || !intf->fd)
 		return;
-  
+ 
 	TPCANRdMsg message;
 	DWORD result;
 

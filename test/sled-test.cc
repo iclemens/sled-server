@@ -42,6 +42,20 @@ void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 }
 
 
+void intf_on_write_response(intf_t *intf, void *payload, uint16_t index, uint8_t subindex)
+{
+	machines_t *machines = (machines_t *) payload;
+	mch_sdo_handle_event(machines->mch_sdo, EV_SDO_READ_RESPONSE);
+}
+
+
+void intf_on_abort_response(intf_t *intf, void *payload, uint16_t index, uint8_t subindex, uint32_t abort)
+{
+	machines_t *machines = (machines_t *) payload;
+	mch_sdo_handle_event(machines->mch_sdo, EV_SDO_ABORT_RESPONSE);
+}
+
+
 /**
  * Inform network interface that the interface has opened.
  */
@@ -112,6 +126,9 @@ int main(int argc, char *argv[])
 	// Set callbacks
 	intf_set_close_handler(intf, intf_on_close);
 	intf_set_nmt_state_handler(intf, intf_on_nmt);
+	intf_set_write_resp_handler(intf, intf_on_write_response);
+	intf_set_abort_resp_handler(intf, intf_on_abort_response);
+
 	mch_intf_set_opened_handler(machines.mch_intf, mch_intf_on_open);
 	mch_intf_set_closed_handler(machines.mch_intf, mch_intf_on_close);
 	mch_net_set_sdos_enabled_handler(machines.mch_net, mch_net_on_sdos_enabled);

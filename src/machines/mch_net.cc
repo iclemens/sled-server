@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+const char *mch_net_eventname(mch_net_event_t event);
 
 struct mch_net_t {
 	mch_net_state_t state;
@@ -102,6 +103,8 @@ mch_net_state_t mch_net_active_state(mch_net_t *machine)
 
 mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event_t event)
 {
+	fprintf(stderr, "Received event: %s\n", mch_net_eventname(event));
+
 	switch(machine->state) {
 		case ST_NET_DISABLED:
 			if(event == EV_NET_INTF_OPENED)
@@ -113,8 +116,13 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
 				return ST_NET_STOPPED;
 			if(event == EV_NET_PREOPERATIONAL)
 				return ST_NET_PREOPERATIONAL;
+
+			// This might seem counter-intuitive, but
+			// is to make sure the correct configuration 
+			// is uploaded before we accept the
+			// operational state.
 			if(event == EV_NET_OPERATIONAL)
-				return ST_NET_OPERATIONAL;
+				return ST_NET_ENTERPREOPERATIONAL;
 			if(event == EV_NET_INTF_CLOSED)
 				return ST_NET_DISABLED;
 			break;	
@@ -127,6 +135,8 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
 		case ST_NET_PREOPERATIONAL:
 			if(event == EV_NET_INTF_CLOSED)
 				return ST_NET_DISABLED;
+			if(event == EV_NET_SDO_QUEUE_EMPTY)
+				return ST_NET_STARTREMOTENODE;
 			break;
 
 		case ST_NET_OPERATIONAL:
@@ -194,6 +204,9 @@ void mch_net_on_enter(mch_net_t *machine)
 		case ST_NET_PREOPERATIONAL:
 			if(machine->sdos_enabled_handler)
 				machine->sdos_enabled_handler(machine, machine->payload);
+
+			mch_net_queue_setup(machine->mch_sdo);
+
 			break;
 	}
 }
@@ -206,6 +219,19 @@ void mch_net_on_exit(mch_net_t *machine)
 			if(machine->leave_operational_handler)
 				machine->leave_operational_handler(machine, machine->payload);
 			break;
+	}
+}
+
+
+const char *mch_net_eventname(mch_net_event_t event)
+{
+	switch(event) {
+		case EV_NET_INTF_OPENED: return "EV_NET_INTF_OPENED";
+		case EV_NET_INTF_CLOSED: return "EV_NET_INTF_CLOSED";
+		case EV_NET_SDO_QUEUE_EMPTY: return "EV_NET_SDO_QUEUE_EMPTY";
+		case EV_NET_STOPPED: return "EV_NET_STOPPED";
+		case EV_NET_OPERATIONAL: return "EV_NET_OPERATIONAL";
+		case EV_NET_PREOPERATIONAL: return "EV_NET_PREOPERATIONAL";
 	}
 }
 

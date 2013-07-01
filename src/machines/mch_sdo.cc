@@ -115,13 +115,11 @@ void mch_sdo_on_enter(mch_sdo_t *machine)
 			else
 				fprintf(stderr, "Ignoring read request...\n");
 			machine->sdo_queue.pop();
+
 			break;
 
 		case ST_SDO_WAITING:
-			if(machine->sdo_queue.empty()) {
-				if(machine->queue_empty_handler)
-					machine->queue_empty_handler(machine, machine->payload);				
-			} else {
+			if(!machine->sdo_queue.empty()) {
 				mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
 			}
 			break;
@@ -136,6 +134,12 @@ void mch_sdo_on_exit(mch_sdo_t *machine)
 		case ST_SDO_ERROR:
 			while(!machine->sdo_queue.empty())
 				machine->sdo_queue.pop();
+			break;
+
+		case ST_SDO_SENDING:
+			if(machine->sdo_queue.empty())
+				if(machine->queue_empty_handler)
+					machine->queue_empty_handler(machine, machine->payload);
 			break;
 	}
 }
@@ -161,7 +165,7 @@ void mch_sdo_handle_event(mch_sdo_t *machine, mch_sdo_event_t event)
 	if(!(machine->state == next_state)) {
 		mch_sdo_on_exit(machine);
 		machine->state = next_state;
-		printf("SDO machine changed state: %s\n", mch_sdo_statename(machine->state));
+		//printf("SDO machine changed state: %s\n", mch_sdo_statename(machine->state));
 		mch_sdo_on_enter(machine);
 	}
 }
