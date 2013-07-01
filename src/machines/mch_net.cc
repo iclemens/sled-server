@@ -65,7 +65,7 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
       if(event == EV_NET_PREOPERATIONAL)
 	return ST_NET_PREOPERATIONAL;
   }
-  
+
   return machine->state;
 }
 
@@ -113,4 +113,3 @@ void mch_net_handle_event(mch_net_t *machine, mch_net_event_t event)
     mch_net_on_enter(machine);
   }
 }
-
