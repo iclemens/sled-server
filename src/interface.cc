@@ -78,7 +78,7 @@ int intf_open(intf_t *intf)
 	struct stat buf;
 	if(stat(device, &buf) == -1)
 	{
-		fprintf(stderr, "Error while locating device node (%s)\n", device);
+		fprintf(stderr, "Error locating device node (%s)\n", device);
 		return -1;
 	}
 
