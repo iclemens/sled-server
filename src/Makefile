@@ -15,4 +15,4 @@ OBJ = $(patsubst %.cc,.obj/%.o,$(SRC))
 	$(CC) -c -g -fPIC -o $@ $<
 
 libsled.so: $(OBJ)
-	$(CC) -shared -Wl,-soname,libsled -o ../libsled.so $(OBJ)
+	$(CC) -shared -g -Wl,-soname,libsled -o ../libsled.so $(OBJ)

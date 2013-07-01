@@ -78,6 +78,8 @@ void mch_net_queue_setup(mch_sdo_t *mch_sdo)
 
 	mch_sdo_queue_write(mch_sdo, 0x1801, 0x01, 0x40000281, 0x04);
 	mch_sdo_queue_write(mch_sdo, 0x1801, 0x02, 0xFF, 0x01);			// On change (should be sync or timer?)
+	mch_sdo_queue_write(mch_sdo, 0x1801, 0x03, 0x0A, 0x02);
+	mch_sdo_queue_write(mch_sdo, 0x1801, 0x05, 0x0A, 0x02);
 
 	// Setup RPDO2 for IP mode
 	mch_sdo_queue_write(mch_sdo, 0x1601, 0x00, 0x00, 0x01);
@@ -176,6 +178,10 @@ void mch_net_on_enter(mch_net_t *machine)
 		case ST_NET_DISABLED:
 			if(machine->sdos_disabled_handler)
 				machine->sdos_disabled_handler(machine, machine->payload);
+			break;
+
+		case ST_NET_UNKNOWN:
+			intf_send_nmt_command(machine->interface, NMT_ENTERPREOPERATIONAL);
 			break;
 
 		case ST_NET_STOPPED:

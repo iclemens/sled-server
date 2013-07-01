@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <fcntl.h>
+#include <time.h>
 
 #include <sys/stat.h>
 
@@ -67,8 +69,6 @@ int intf_open(intf_t *intf)
 	#else
 	const char *device = "/dev/pcanusb0";
 
-	printf("Enabling CAN\n");
-
 	// Device is already open
 	if(intf->handle) {
 		return 0;
@@ -90,7 +90,7 @@ int intf_open(intf_t *intf)
 	}
 
 	// Try to open interface
-	intf->handle = LINUX_CAN_Open(device, 0);
+	intf->handle = LINUX_CAN_Open(device, O_RDWR);
 
 	if(!intf->handle) {
 		fprintf(stderr, "Opening of CAN device failed\n");
@@ -109,9 +109,9 @@ int intf_open(intf_t *intf)
    
 	// Register handle with libevent
 	intf->fd = LINUX_CAN_FileHandle(intf->handle);
-	intf->read_event = event_new(intf->ev_base, intf->fd, EV_READ | EV_ET | EV_PERSIST, intf_on_read, (void *) intf);
-	event_add(intf->read_event, NULL);   
-  
+	intf->read_event = event_new(intf->ev_base, intf->fd, EV_READ | EV_PERSIST, intf_on_read, (void *) intf);
+	event_add(intf->read_event, NULL);
+
 	return 0;
 #endif
 }
@@ -240,9 +240,6 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 {
   int function = msg.id >> 7;
 
-	if(function <= 1 || function >= 11)
-		fprintf(stderr, "Got message: %d\n", function);
- 
 	// TPDO 2
 	if(function == 0x05) {
 	}
@@ -300,6 +297,12 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 
 	result = LINUX_CAN_Read(intf->handle, &message);
 
+	/*count++;
+	if(count % 1000 == 0) {
+		double delta = get_time() - start;
+		printf("%d messages in %f seconds: %.0f Hz (%.4f sec/msg)\n", count, delta, double(count)/delta, delta/double(count));
+	}*/
+
 	// Receive queue was empty, no message read
 	if(result == CAN_ERR_QRCVEMPTY) {
 		fprintf(stderr, "CAN Queue was empty, but intf_on_read() was called.\n");
@@ -329,6 +332,8 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 			intf_debug_print_status(status);        
 			// Status received, ignore for now?
 			intf_close(intf);
+		} else {
+			printf("Status: %x\n", status);
 		}
 
 		return;

@@ -1,4 +1,10 @@
 
+#include <execinfo.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+
 #include <event2/event.h>
 #include <sled.h>
 #include <interface.h>
@@ -14,6 +20,17 @@ struct machines_t
 	mch_net_t *mch_net;
 	mch_sdo_t *mch_sdo;
 };
+
+
+void signal_handler(int signal)
+{
+	void *array[10];
+	size_t size;
+
+	size = backtrace(array, 10);
+	backtrace_symbols_fd(array, size, STDERR_FILENO);
+	exit(1);
+}
 
 
 void intf_on_close(intf_t *intf, void *payload)
@@ -108,8 +125,18 @@ void mch_sdo_on_queue_empty(mch_sdo_t *mch_sdo, void *payload)
 
 int main(int argc, char *argv[])
 {
+	signal(SIGSEGV, signal_handler);
+
 	machines_t machines;
-	event_base *ev_base = event_base_new();
+
+	event_config *cfg = event_config_new();
+	event_config_require_features(cfg, EV_FEATURE_FDS);
+	event_base *ev_base = event_base_new_with_config(cfg);
+
+	if(!ev_base) {
+		fprintf(stderr, "Unable to initialize event base\n");
+		exit(1);
+	}
 
 	// Construct state machines and interface
 	intf_t *intf = intf_create(ev_base); 
