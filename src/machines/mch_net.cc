@@ -239,6 +239,8 @@ const char *mch_net_eventname(mch_net_event_t event)
 		case EV_NET_OPERATIONAL: return "EV_NET_OPERATIONAL";
 		case EV_NET_PREOPERATIONAL: return "EV_NET_PREOPERATIONAL";
 	}
+
+	return "Unknown event";
 }
 
 
