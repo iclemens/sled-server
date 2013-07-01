@@ -77,9 +77,21 @@ void intf_on_abort_response(intf_t *intf, void *payload, uint16_t index, uint8_t
 
 void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 {
+	machines_t *machines = (machines_t *) payload;
+
 	if(pdo == 1) {
 		uint16_t status = (data[1] << 8) | data[0];
 		uint8_t mode = data[2];
+
+		if((status & 0x4F) == 0x40) mch_ds_handle_event(machines->mch_ds, EV_DS_NOT_READY_TO_SWITCH_ON);
+    if((status & 0x6F) == 0x21) mch_ds_handle_event(machines->mch_ds, EV_DS_READY_TO_SWITCH_ON);
+    if((status & 0x6F) == 0x23) mch_ds_handle_event(machines->mch_ds, EV_DS_SWITCHED_ON);
+    if((status & 0x6F) == 0x27) mch_ds_handle_event(machines->mch_ds, EV_DS_OPERATION_ENABLED);
+    if((status & 0x4F) == 0x08) mch_ds_handle_event(machines->mch_ds, EV_DS_FAULT);
+    if((status & 0x4F) == 0x0F) mch_ds_handle_event(machines->mch_ds, EV_DS_FAULT_REACTION_ACTIVE);
+    if((status & 0x6F) == 0x07) mch_ds_handle_event(machines->mch_ds, EV_DS_QUICK_STOP_ACTIVE);
+
+    if((status & 0x10) == 0x10) mch_ds_handle_event(machines->mch_ds, EV_DS_VOLTAGE_ENABLED);
 
 		//printf("Status: %04x\tMode: %02x\n", status, mode);
 	}
