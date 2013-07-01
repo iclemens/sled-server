@@ -33,6 +33,11 @@ void mch_net_destroy(mch_net_t **machine)
 }
 
 
+/**
+ * Enqueue controller configuration for transmission.
+ *
+ * @param mch_sdo  SDO state machine that owns the queue.
+ */
 void mch_net_queue_setup(mch_sdo_t *mch_sdo)
 {
 	// Setup TPDO1
@@ -111,12 +116,23 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
 				return ST_NET_DISABLED;
 			break;
 
+		case ST_NET_UPLOADCONFIG:
+			if(event == EV_NET_INTF_CLOSED)
+				return ST_NET_DISABLED;
+			if(event == EV_NET_SDO_QUEUE_EMPTY)
+				return ST_NET_STARTREMOTENODE;
+			break;
+
 		case ST_NET_STARTREMOTENODE:
+			if(event == EV_NET_INTF_CLOSED)
+				return ST_NET_DISABLED;
 			if(event == EV_NET_OPERATIONAL)
 				return ST_NET_OPERATIONAL;
 			break;
       
 		case ST_NET_ENTERPREOPERATIONAL:
+			if(event == EV_NET_INTF_CLOSED)
+				return ST_NET_DISABLED;
 			if(event == EV_NET_PREOPERATIONAL)
 				return ST_NET_PREOPERATIONAL;
 			break;
@@ -138,6 +154,10 @@ void mch_net_on_enter(mch_net_t *machine)
 
 		case ST_NET_ENTERPREOPERATIONAL:
 			intf_send_nmt_command(machine->interface, NMT_ENTERPREOPERATIONAL);
+			break;
+
+		case ST_NET_UPLOADCONFIG:
+			//mch_net_queue_setup(...);
 			break;
 	}
 }
