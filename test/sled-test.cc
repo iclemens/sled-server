@@ -20,6 +20,13 @@ void intf_on_close(intf_t *intf, void *payload)
 }
 
 
+/**
+ * Handle network management state notification.
+ *
+ * @param intf  Interface that changed state
+ * @param payload  Void pointer to state machine struct
+ * @param state  New state
+ */
 void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 {
 	machines_t *machines = (machines_t *) payload;

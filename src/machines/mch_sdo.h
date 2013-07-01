@@ -1,0 +1,23 @@
+#ifndef __MCH_SDO_H__
+#define __MCH_SDO_H__
+
+enum mch_sdo_event_t {
+	EV_INTF_SDO_DISABLED,
+	EV_INTF_SDO_ENABLED,
+
+	EV_SDO_READ_RESPONSE,
+	EV_SDO_WRITE_RESPONSE,
+	EV_SDO_ABORT_RESPONSE
+};
+
+enum mch_intf_state_t {
+	ST_SDO_DISABLED,
+	ST_SDO_ERROR,
+	ST_SDO_WAITING,
+	ST_SDO_SENDING
+};
+
+
+
+#endif
+

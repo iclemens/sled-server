@@ -55,8 +55,23 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
 				return ST_NET_OPERATIONAL;
 			if(event == EV_NET_INTF_CLOSED)
 				return ST_NET_DISABLED;
+			break;	
+
+		case ST_NET_STOPPED:
+			if(event == EV_NET_INTF_CLOSED)
+				return ST_NET_DISABLED;
 			break;
-      
+
+		case ST_NET_PREOPERATIONAL:
+			if(event == EV_NET_INTF_CLOSED)
+				return ST_NET_DISABLED;
+			break;
+
+		case ST_NET_OPERATIONAL:
+			if(event == EV_NET_INTF_CLOSED)
+				return ST_NET_DISABLED;
+			break;
+
 		case ST_NET_STARTREMOTENODE:
 			if(event == EV_NET_OPERATIONAL)
 				return ST_NET_OPERATIONAL;
