@@ -43,6 +43,7 @@ struct intf_t
   intf_read_resp_handler_t read_resp_handler;
   intf_write_resp_handler_t write_resp_handler;
   intf_abort_resp_handler_t abort_resp_handler;
+	intf_tpdo_handler_t tpdo_handler;
   intf_close_handler_t close_handler;
 };
 

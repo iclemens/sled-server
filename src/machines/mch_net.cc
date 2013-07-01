@@ -105,7 +105,7 @@ mch_net_state_t mch_net_active_state(mch_net_t *machine)
 
 mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event_t event)
 {
-	fprintf(stderr, "Received event: %s\n", mch_net_eventname(event));
+	//fprintf(stderr, "Received event: %s\n", mch_net_eventname(event));
 
 	switch(machine->state) {
 		case ST_NET_DISABLED:

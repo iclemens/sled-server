@@ -16,6 +16,7 @@ typedef void(*intf_nmt_state_handler_t)(intf_t *intf, void *payload, uint8_t sta
 typedef void(*intf_read_resp_handler_t)(intf_t *intf, void *payload, uint16_t index, uint8_t subindex, uint32_t value);
 typedef void(*intf_write_resp_handler_t)(intf_t *intf, void *payload, uint16_t index, uint8_t subindex);
 typedef void(*intf_abort_resp_handler_t)(intf_t *intf, void *payload, uint16_t index, uint8_t subindex, uint32_t abort);
+typedef void(*intf_tpdo_handler_t)(intf_t *intf, void *payload, int pdo, uint8_t *data);
 typedef void(*intf_close_handler_t)(intf_t *intf, void *payload);
 
 // Functions
@@ -36,6 +37,7 @@ void intf_set_nmt_state_handler(intf_t *intf, intf_nmt_state_handler_t handler);
 void intf_set_read_resp_handler(intf_t *intf, intf_read_resp_handler_t handler);
 void intf_set_write_resp_handler(intf_t *intf, intf_write_resp_handler_t handler);
 void intf_set_abort_resp_handler(intf_t *intf, intf_abort_resp_handler_t handler);
+void intf_set_tpdo_handler(intf_t *intf, intf_tpdo_handler_t handler);
 void intf_set_close_handler(intf_t *intf, intf_close_handler_t handler);
 
 #endif

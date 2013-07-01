@@ -39,10 +39,16 @@ intf_t *intf_create(event_base *ev_base)
   intf->fd = 0;
   
   intf->read_event = NULL;
-  
+
+	intf->payload = NULL;
+
+	// Initialize callback functions
+ 	intf->nmt_state_handler = NULL;
   intf->read_resp_handler = NULL;
   intf->write_resp_handler = NULL;
   intf->abort_resp_handler = NULL;
+	intf->tpdo_handler = NULL;
+	intf->close_handler = NULL;
   
   return intf;
 }
@@ -240,8 +246,14 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 {
   int function = msg.id >> 7;
 
-	// TPDO 2
-	if(function == 0x05) {
+	if(function == 0x01) {
+		// Emergency messages are currently not handled.
+	}
+
+	// TPDOs
+	if(function == 0x03 || function == 0x05 || function == 0x07 || function == 0x09) {
+		if(intf->tpdo_handler)
+			intf->tpdo_handler(intf, intf->payload, (function-1)/2, msg.data);
 	}
  
   // Node guard message
@@ -384,6 +396,12 @@ void intf_set_write_resp_handler(intf_t *intf, intf_write_resp_handler_t handler
 void intf_set_abort_resp_handler(intf_t *intf, intf_abort_resp_handler_t handler)
 {
   intf->abort_resp_handler = handler;
+}
+
+
+void intf_set_tpdo_handler(intf_t *intf, intf_tpdo_handler_t handler)
+{
+	intf->tpdo_handler = handler;
 }
 
 
