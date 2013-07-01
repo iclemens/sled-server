@@ -10,7 +10,7 @@ enum mch_sdo_event_t {
 	EV_SDO_ABORT_RESPONSE
 };
 
-enum mch_intf_state_t {
+enum mch_sdo_state_t {
 	ST_SDO_DISABLED,
 	ST_SDO_ERROR,
 	ST_SDO_WAITING,
@@ -18,6 +18,12 @@ enum mch_intf_state_t {
 };
 
 struct mch_sdo_t;
+
+mch_sdo_t *mch_sdo_create(intf_t *interface);
+void mch_sdo_destroy(mch_sdo_t **machine);
+
+mch_sdo_state_t mch_sdo_active_state(mch_sdo_t *machine);
+void mch_sdo_handle_event(mch_sdo_t *machine, mch_sdo_event_t event);
 
 void mch_sdo_queue_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size);
 void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint8_t size);

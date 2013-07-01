@@ -4,12 +4,15 @@
 #include <interface.h>
 
 #include <machines/mch_intf.h>
+#include <machines/mch_net.h>
+#include <machines/mch_sdo.h>
 
 
 struct machines_t
 {
 	mch_intf_t *mch_intf;
 	mch_net_t *mch_net;
+	mch_sdo_t *mch_sdo;
 };
 
 
@@ -32,9 +35,9 @@ void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 	machines_t *machines = (machines_t *) payload;
 
 	switch(state) {
-		0x04: mch_intf_handle_event(machines->mch_net, EV_NET_STOPPED); break;
-		0x05: mch_intf_handle_event(machines->mch_net, EV_NET_OPERATIONAL); break;
-		0x7F: mch_intf_handle_event(machines->mch_net, EV_NET_PREOPERATIONAL); break;
+		case 0x04: mch_net_handle_event(machines->mch_net, EV_NET_STOPPED); break;
+		case 0x05: mch_net_handle_event(machines->mch_net, EV_NET_OPERATIONAL); break;
+		case 0x7F: mch_net_handle_event(machines->mch_net, EV_NET_PREOPERATIONAL); break;
 	} 
 }
 
@@ -51,14 +54,15 @@ int main(int argc, char *argv[])
   
 	intf_t *intf = intf_create(ev_base);
 	intf_set_close_handler(intf, intf_on_close);
-	intf_set_nmt_state_handler(intf, intf_on_nmt)
+	intf_set_nmt_state_handler(intf, intf_on_nmt);
   
 	machines.mch_intf = mch_intf_create(intf);
 	machines.mch_net = mch_net_create(intf);
+	machines.mch_sdo = mch_sdo_create(intf);
   
 	intf_set_callback_payload(intf, (void *) &machines);
 
-	mch_intf_handle_event(mch_intf, EV_INTF_OPEN);
+	mch_intf_handle_event(machines.mch_intf, EV_INTF_OPEN);
 
 	event_base_loop(ev_base, 0);
   
