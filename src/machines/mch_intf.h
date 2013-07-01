@@ -9,7 +9,6 @@ enum mch_intf_event_t {
   EV_INTF_CLOSED  	// Closed event
 };
 
-
 enum mch_intf_state_t {
   ST_INTF_CLOSED,
   ST_INTF_OPENED,

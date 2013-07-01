@@ -23,6 +23,9 @@ struct mch_sdo_t {
 	intf_t *interface;
 
 	std::queue<sdo_t> sdo_queue;
+
+	void *payload;
+	mch_sdo_queue_empty_handler_t queue_empty_handler;
 };
 
 
@@ -38,6 +41,7 @@ mch_sdo_t *mch_sdo_create(intf_t *interface)
   
 	machine->state = ST_SDO_DISABLED;
 	machine->interface = interface;
+	machine->queue_empty_handler = NULL;
 
 	return machine;
 }
@@ -115,7 +119,8 @@ void mch_sdo_on_enter(mch_sdo_t *machine)
 
 		case ST_SDO_WAITING:
 			if(machine->sdo_queue.empty()) {
-				// queue emtpy callback
+				if(machine->queue_empty_handler)
+					machine->queue_empty_handler(machine, machine->payload);				
 			} else {
 				mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
 			}
@@ -195,4 +200,15 @@ void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex, ui
 	mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
 }
 
+
+void mch_sdo_set_callback_payload(mch_sdo_t *mch_sdo, void *payload)
+{
+	mch_sdo->payload = payload;
+}
+
+
+void mch_sdo_set_queue_empty_handler(mch_sdo_t *mch_sdo, mch_sdo_queue_empty_handler_t handler)
+{
+	mch_sdo->queue_empty_handler = handler;
+}
 
