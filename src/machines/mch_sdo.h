@@ -2,14 +2,14 @@
 #define __MCH_SDO_H__
 
 enum mch_sdo_event_t {
-	EV_INTF_SDO_DISABLED,
-	EV_INTF_SDO_ENABLED,
+	EV_NET_SDO_DISABLED,		// From net machine (mch_net.cc)
+	EV_NET_SDO_ENABLED,			// From net machine (mch_net.cc)
 
-	EV_SDO_ITEM_AVAILABLE,
+	EV_SDO_ITEM_AVAILABLE,		// Internal event
 
-	EV_SDO_READ_RESPONSE,
-	EV_SDO_WRITE_RESPONSE,
-	EV_SDO_ABORT_RESPONSE
+	EV_SDO_READ_RESPONSE,		// From CANOpen (interface.cc)
+	EV_SDO_WRITE_RESPONSE,		// From CANOpen (interface.cc)
+	EV_SDO_ABORT_RESPONSE		// From CANOpen (interface.cc)
 };
 
 enum mch_sdo_state_t {

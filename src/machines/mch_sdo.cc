@@ -72,19 +72,19 @@ mch_sdo_state_t mch_sdo_next_state_given_event(mch_sdo_t *machine, mch_sdo_event
 	switch(machine->state) {
 		case ST_SDO_DISABLED:
 		case ST_SDO_ERROR:
-			if(event == EV_INTF_SDO_ENABLED)
+			if(event == EV_NET_SDO_ENABLED)
 				return ST_SDO_WAITING;
 			break;
 
 		case ST_SDO_WAITING:
-			if(event == EV_INTF_SDO_DISABLED)
+			if(event == EV_NET_SDO_DISABLED)
 				return ST_SDO_DISABLED;
 			if(event == EV_SDO_ITEM_AVAILABLE)
 				return ST_SDO_SENDING;
 			break;
 
 		case ST_SDO_SENDING:
-			if(event == EV_INTF_SDO_DISABLED)
+			if(event == EV_NET_SDO_DISABLED)
 				return ST_SDO_DISABLED;
 			if(event == EV_SDO_READ_RESPONSE)
 				return ST_SDO_WAITING;
