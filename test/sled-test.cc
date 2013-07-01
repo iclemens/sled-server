@@ -64,8 +64,8 @@ int main(int argc, char *argv[])
 	// Construct state machines and interface
 	intf_t *intf = intf_create(ev_base); 
 	machines.mch_intf = mch_intf_create(intf);
-	machines.mch_net = mch_net_create(intf);
 	machines.mch_sdo = mch_sdo_create(intf);
+	machines.mch_net = mch_net_create(intf, machines.mch_sdo);
 
 	// Set machines structure as payload
 	intf_set_callback_payload(intf, (void *) &machines);

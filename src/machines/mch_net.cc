@@ -8,12 +8,14 @@
 
 
 struct mch_net_t {
-	mch_net_state_t state;  
+	mch_net_state_t state;
+
 	intf_t *interface;
+	mch_sdo_t *mch_sdo;
 };
 
 
-mch_net_t *mch_net_create(intf_t *interface)
+mch_net_t *mch_net_create(intf_t *interface, mch_sdo_t *mch_sdo)
 {
 	mch_net_t *machine = (mch_net_t *) malloc(sizeof(mch_net_t));
   
@@ -22,6 +24,7 @@ mch_net_t *mch_net_create(intf_t *interface)
   
 	machine->state = ST_NET_DISABLED;  
 	machine->interface = interface;
+	machine->mch_sdo = mch_sdo;
 
 	return machine;
 }
@@ -158,7 +161,7 @@ void mch_net_on_enter(mch_net_t *machine)
 			break;
 
 		case ST_NET_UPLOADCONFIG:
-			//mch_net_queue_setup(...);
+			mch_net_queue_setup(machine->mch_sdo);
 			break;
 	}
 }
