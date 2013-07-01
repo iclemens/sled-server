@@ -91,7 +91,10 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
     if((status & 0x4F) == 0x0F) mch_ds_handle_event(machines->mch_ds, EV_DS_FAULT_REACTION_ACTIVE);
     if((status & 0x6F) == 0x07) mch_ds_handle_event(machines->mch_ds, EV_DS_QUICK_STOP_ACTIVE);
 
-    if((status & 0x10) == 0x10) mch_ds_handle_event(machines->mch_ds, EV_DS_VOLTAGE_ENABLED);
+    if((status & 0x10) == 0x10) 
+			mch_ds_handle_event(machines->mch_ds, EV_DS_VOLTAGE_ENABLED);
+		else
+			mch_ds_handle_event(machines->mch_ds, EV_DS_VOLTAGE_DISABLED);
 
 		//printf("Status: %04x\tMode: %02x\n", status, mode);
 	}

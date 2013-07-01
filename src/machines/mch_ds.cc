@@ -20,6 +20,7 @@ mch_ds_t *mch_ds_create(intf_t *interface)
 	mch_ds_t *machine = new mch_ds_t();
 
 	machine->interface = interface;
+	machine->state = ST_DS_DISABLED;
 
 	return machine;
 }
@@ -59,7 +60,57 @@ mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t e
 				return ST_DS_READY_TO_SWITCH_ON;
 			break;
 
+		case ST_DS_SWITCH_ON_DISABLED:
+			if(event == EV_DS_VOLTAGE_ENABLED)
+				return ST_DS_PREPARE_SWITCH_ON;
+			break;
+
+		case ST_DS_PREPARE_SWITCH_ON:
+			if(event == EV_DS_READY_TO_SWITCH_ON)
+				return ST_DS_READY_TO_SWITCH_ON;
+			break;
+
+		case ST_DS_READY_TO_SWITCH_ON:
+			if(event == EV_DS_VOLTAGE_ENABLED)
+				return ST_DS_SWITCH_ON;
+			break;
+
+		case ST_DS_SWITCH_ON:
+			if(event == EV_DS_SWITCHED_ON)
+				return ST_DS_SWITCHED_ON;
+			if(event == EV_DS_VOLTAGE_DISABLED)
+				return ST_DS_SHUTDOWN;
+			break;
+
+		case ST_DS_SHUTDOWN:
+			if(event == EV_DS_NOT_READY_TO_SWITCH_ON)
+				return ST_DS_SWITCH_ON_DISABLED;
+			break;
+
+		case ST_DS_SWITCHED_ON:
+			if(event == EV_DS_VOLTAGE_ENABLED)
+				return ST_DS_ENABLE_OPERATION;
+			if(event == EV_DS_VOLTAGE_DISABLED)
+				return ST_DS_SHUTDOWN;
+			break;
+
+		case ST_DS_DISABLE_OPERATION:
+			if(event == EV_DS_SWITCHED_ON)
+				return ST_DS_SWITCHED_ON;
+			break;
+
+		case ST_DS_ENABLE_OPERATION:
+			if(event == EV_DS_OPERATION_ENABLED)
+				return ST_DS_OPERATION_ENABLED;
+			break;
+
+		case ST_DS_OPERATION_ENABLED:
+			if(event == EV_DS_VOLTAGE_DISABLED)
+				return ST_DS_DISABLE_OPERATION;
+			break;
 	}
+
+	return machine->state;
 }
 
 
