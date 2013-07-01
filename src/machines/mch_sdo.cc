@@ -155,8 +155,6 @@ void mch_sdo_handle_event(mch_sdo_t *machine, mch_sdo_event_t event)
 }
 
 
-
-
 /**
  * Enqueue a write request SDO.
  */
@@ -185,6 +183,5 @@ void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex, ui
 	sdo.size = size;
 	machine->sdo_queue.push(sdo);
 }
-
 
 
