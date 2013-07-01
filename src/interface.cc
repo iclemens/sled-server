@@ -3,7 +3,6 @@
 #include "interface_internal.h"
 
 #include <event2/event.h>
-#include <libpcan.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -63,54 +62,58 @@ void intf_destroy(intf_t **intf)
  */
 int intf_open(intf_t *intf)
 {
-  const char *device = "/dev/pcanusb0";
+	#ifdef WIN32
+	return -1;
+	#else
+	const char *device = "/dev/pcanusb0";
 
-  printf("Enabling CAN\n");
+	printf("Enabling CAN\n");
 
-  // Device is already open
-  if(intf->handle) {
-    return 0;
-  }
+	// Device is already open
+	if(intf->handle) {
+		return 0;
+	}
 
-  // Check whether the device exists
-  struct stat buf;
-  if(stat(device, &buf) == -1)
-  {
-    fprintf(stderr, "Error while locating device node (%s)\n", device);
-    return -1;
-  }
+	// Check whether the device exists
+	struct stat buf;
+	if(stat(device, &buf) == -1)
+	{
+		fprintf(stderr, "Error while locating device node (%s)\n", device);
+		return -1;
+	}
 
-  // Device should be a character device
-  if(!S_ISCHR(buf.st_mode))
-  {
-    fprintf(stderr, "Device node is not a character device (%s)\n", device);
-    return -1;
-  }
+	// Device should be a character device
+	if(!S_ISCHR(buf.st_mode))
+	{
+		fprintf(stderr, "Device node is not a character device (%s)\n", device);
+		return -1;
+	}
 
-  // Try to open interface
-  intf->handle = LINUX_CAN_Open(device, 0);
+	// Try to open interface
+	intf->handle = LINUX_CAN_Open(device, 0);
 
-  if(!intf->handle) {
-    fprintf(stderr, "Opening of CAN device failed\n");
-    return -1;
-  }
+	if(!intf->handle) {
+		fprintf(stderr, "Opening of CAN device failed\n");
+		return -1;
+	}
 
-  // Initialize interface
-  DWORD result = CAN_Init(intf->handle, CAN_BAUD_1M, CAN_INIT_TYPE_ST);
+	// Initialize interface
+	DWORD result = CAN_Init(intf->handle, CAN_BAUD_1M, CAN_INIT_TYPE_ST);
 
-  if(result != CAN_ERR_OK && result != CAN_ERR_QRCVEMPTY)
-  {
-    fprintf(stderr, "Initializing of CAN device failed\n");	
-    intf_close(intf);
-    return -1;
-  }
+	if(result != CAN_ERR_OK && result != CAN_ERR_QRCVEMPTY)
+	{
+		fprintf(stderr, "Initializing of CAN device failed\n");	
+		intf_close(intf);
+		return -1;
+	}
    
-  // Register handle with libevent
-  intf->fd = LINUX_CAN_FileHandle(intf->handle);
-  intf->read_event = event_new(intf->ev_base, intf->fd, EV_READ | EV_ET | EV_PERSIST, intf_on_read, (void *) intf);
-  event_add(intf->read_event, NULL);   
+	// Register handle with libevent
+	intf->fd = LINUX_CAN_FileHandle(intf->handle);
+	intf->read_event = event_new(intf->ev_base, intf->fd, EV_READ | EV_ET | EV_PERSIST, intf_on_read, (void *) intf);
+	event_add(intf->read_event, NULL);   
   
-  return 0;
+	return 0;
+#endif
 }
 
 
@@ -128,25 +131,28 @@ int intf_is_open(intf_t *intf)
  */
 int intf_close(intf_t *intf)
 { 
-  // Remove event
-  if(intf->read_event) {
-    event_del(intf->read_event);
-    event_free(intf->read_event);
-    intf->read_event = NULL;
-  }
+	// Remove event
+	if(intf->read_event) {
+		event_del(intf->read_event);
+		event_free(intf->read_event);
+		intf->read_event = NULL;
+	}
   
-  // Close connection
-  if(intf->handle) {
-    DWORD result = CAN_Close(intf->handle);
-    if(result != CAN_ERR_OK) {
-      fprintf(stderr, "Closing of CAN device failed\n");
-      return -1;
-    }  
+	#ifdef WIN32
+	#else
+	// Close connection
+	if(intf->handle) {
+		DWORD result = CAN_Close(intf->handle);
+		if(result != CAN_ERR_OK) {
+			fprintf(stderr, "Closing of CAN device failed\n");
+			return -1;
+		}  
   
-    intf->handle = 0;
-    intf->fd = 0;
-  }
-  
+		intf->handle = 0;
+		intf->fd = 0;
+	}
+	#endif
+
   if(intf->close_handler) {
     intf->close_handler(intf, intf->payload);
   }
@@ -170,7 +176,11 @@ int intf_write(intf_t *intf, can_message_t msg)
 
   printf("Writing %04x %02x %02x (%02x %02x %02x %02x %02x %02x %02x %02x)\n", cmsg.ID, cmsg.MSGTYPE, cmsg.LEN, cmsg.DATA[0], cmsg.DATA[1], cmsg.DATA[2], cmsg.DATA[3], cmsg.DATA[4], cmsg.DATA[5], cmsg.DATA[6], cmsg.DATA[7]);
 
+  #ifdef WIN32
+  DWORD result = -1;
+  #else
   DWORD result = CAN_Write(intf->handle, &cmsg);
+  #endif
 
   if(result == -1) {
     fprintf(stderr, "Error while sending message: %s\n", strerror(errno));
@@ -259,65 +269,68 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
  */
 void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 {
-  intf_t *intf = (intf_t *) intf_v;
+	#ifdef WIN32
+	#else
+	intf_t *intf = (intf_t *) intf_v;
   
-  // We've been closed down, stop.
-  if(!intf || !intf->fd)
-    return;
+	// We've been closed down, stop.
+	if(!intf || !intf->fd)
+		return;
   
-  TPCANRdMsg message;
-  DWORD result;
+	TPCANRdMsg message;
+	DWORD result;
 
-  result = LINUX_CAN_Read(intf->handle, &message);
+	result = LINUX_CAN_Read(intf->handle, &message);
 
-  // Receive queue was empty, no message read
-  if(result == CAN_ERR_QRCVEMPTY) {
-    fprintf(stderr, "CAN Queue was empty, but intf_on_read() was called.\n");
-    return;
-  }
+	// Receive queue was empty, no message read
+	if(result == CAN_ERR_QRCVEMPTY) {
+		fprintf(stderr, "CAN Queue was empty, but intf_on_read() was called.\n");
+		return;
+	}
 
-  // There was an error
-  if(result != CAN_ERR_OK) {
-    fprintf(stderr, "Error while reading from CAN bus, closing down.\n");
-    intf_close(intf);
-    return;
-  }
+	// There was an error
+	if(result != CAN_ERR_OK) {
+		fprintf(stderr, "Error while reading from CAN bus, closing down.\n");
+		intf_close(intf);
+		return;
+	}
 
-  // A status message was received
-  if(message.Msg.MSGTYPE & MSGTYPE_STATUS)
-  {
-    int32_t status = int32_t(CAN_Status(intf->handle));
+	// A status message was received
+	if(message.Msg.MSGTYPE & MSGTYPE_STATUS)
+	{
+		int32_t status = int32_t(CAN_Status(intf->handle));
 
-    if(status < 0) {      
-      fprintf(stderr, "Received invalid status message (%x), closing down.\n", status);
-      intf_close(intf);
-      return;
-    }
+		if(status < 0) {      
+			fprintf(stderr, "Received invalid status message (%x), closing down.\n", status);
+			intf_close(intf);
+			return;
+		}
 
-    if(! (status == 0x20 && status == 0x00)) {
-      printf("Received status %x\n", status);    
-      intf_debug_print_status(status);        
-      // Status received, ignore for now?
-      intf_close(intf);
-    }
+		if(! (status == 0x20 && status == 0x00)) {
+			printf("Received status %x\n", status);    
+			intf_debug_print_status(status);        
+			// Status received, ignore for now?
+			intf_close(intf);
+		}
 
-    return;
-  }
+		return;
+	}
 
-  uint64_t timestamp = message.dwTime * 1000 + message.wUsec;
+	uint64_t timestamp = message.dwTime * 1000 + message.wUsec;
 
-  // Tell the world we've received a message?
-  can_message_t msg;
-  msg.id = message.Msg.ID;
-  msg.type = message.Msg.MSGTYPE;
-  msg.len = message.Msg.LEN;
+	// Tell the world we've received a message?
+	can_message_t msg;
+	msg.id = message.Msg.ID;
+	msg.type = message.Msg.MSGTYPE;
+	msg.len = message.Msg.LEN;
 
-  for(int i = 0; i < 8; i++)
-    msg.data[i] = message.Msg.DATA[i];
+	for(int i = 0; i < 8; i++)
+		msg.data[i] = message.Msg.DATA[i];
   
-  intf_dispatch_msg(intf, msg);
+	intf_dispatch_msg(intf, msg);
 
-  return;
+	return;
+	#endif
 }
 
 
