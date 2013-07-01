@@ -164,7 +164,13 @@ void mch_net_on_enter(mch_net_t *machine)
 {
 	switch(machine->state) {
 		case ST_NET_DISABLED:
+			if(machine->sdos_disabled_handler)
+				machine->sdos_disabled_handler(machine, machine->payload);
 			break;
+
+		case ST_NET_STOPPED:
+			if(machine->sdos_disabled_handler)
+				machine->sdos_disabled_handler(machine, machine->payload);
 
 		case ST_NET_STARTREMOTENODE:
 			intf_send_nmt_command(machine->interface, NMT_STARTREMOTENODE);
@@ -179,8 +185,15 @@ void mch_net_on_enter(mch_net_t *machine)
 			break;
 
 		case ST_NET_OPERATIONAL:
+			if(machine->sdos_enabled_handler)
+				machine->sdos_enabled_handler(machine, machine->payload);
 			if(machine->enter_operational_handler)
 				machine->enter_operational_handler(machine, machine->payload);
+			break;
+
+		case ST_NET_PREOPERATIONAL:
+			if(machine->sdos_enabled_handler)
+				machine->sdos_enabled_handler(machine, machine->payload);
 			break;
 	}
 }
