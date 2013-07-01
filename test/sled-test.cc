@@ -72,10 +72,6 @@ void mch_sdo_on_queue_empty(mch_sdo_t *mch_sdo, void *payload)
 }
 
 
-/*  EV_NET_INTF_OPENED,	// Our parent state machine opened!
-  EV_NET_INTF_CLOSED,	// Our parent state machine closed!*/ 
-
-
 int main(int argc, char *argv[])
 {
 	machines_t machines;
