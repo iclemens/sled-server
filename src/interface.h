@@ -6,6 +6,11 @@
 struct event_base;
 struct intf_t;
 
+
+#define NMT_ENTERPREOPERATIONAL	0x80
+#define NMT_STARTREMOTENODE		0x01
+
+
 // Callbacks
 typedef void(*intf_nmt_state_handler_t)(intf_t *intf, void *payload, uint8_t state);
 typedef void(*intf_read_resp_handler_t)(intf_t *intf, void *payload, uint16_t index, uint8_t subindex, uint32_t value);
