@@ -18,9 +18,6 @@ struct sdo_t {
 };
 
 
-typedef int mch_sdo_state_t;
-
-
 struct mch_sdo_t {
 	mch_sdo_state_t state;
 	intf_t *interface;
@@ -39,7 +36,7 @@ mch_sdo_t *mch_sdo_create(intf_t *interface)
 {
 	mch_sdo_t *machine = new mch_sdo_t();
   
-	machine->state = 0;	// Not started...
+	machine->state = ST_SDO_DISABLED;
 	machine->interface = interface;
 
 	return machine;
@@ -82,7 +79,7 @@ mch_sdo_state_t mch_sdo_next_state_given_event(mch_sdo_t *machine, mch_sdo_event
 		case ST_SDO_WAITING:
 			if(event == EV_INTF_SDO_DISABLED)
 				return ST_SDO_DISABLED;
-			if(!machine->sdo_queue.empty())			// << Fix this!
+			if(event == EV_SDO_ITEM_AVAILABLE)
 				return ST_SDO_SENDING;
 			break;
 
@@ -104,10 +101,24 @@ mch_sdo_state_t mch_sdo_next_state_given_event(mch_sdo_t *machine, mch_sdo_event
 
 void mch_sdo_on_enter(mch_sdo_t *machine)
 {
+	sdo_t sdo;
 
 	switch(machine->state) {
 		case ST_SDO_SENDING:
-			// pop from queue and send
+			sdo = machine->sdo_queue.front();
+			if(sdo.is_write)
+				intf_send_write_req(machine->interface, sdo.index, sdo.subindex, sdo.value, sdo.size);
+			else
+				fprintf(stderr, "Ignoring read request...\n");
+			machine->sdo_queue.pop();
+			break;
+
+		case ST_SDO_WAITING:
+			if(machine->sdo_queue.empty()) {
+				// queue emtpy callback
+			} else {
+				mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
+			}
 			break;
 	}
 }
