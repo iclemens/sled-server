@@ -52,10 +52,40 @@ mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t e
 }
 
 
+void mch_ds_send_control_word(mch_ds_t *machine, uint16_t control_word)
+{
+	intf_send_write_req(machine->interface, 0x6040, 0x00, control_word, 0x02);
+}
+
+
 void mch_ds_on_enter(mch_ds_t *machine)
 {
 	switch(machine->state) {
 		case ST_DS_DISABLED:
+			break;
+
+		case ST_DS_UNKNOWN:
+			mch_ds_send_control_word(machine, 0x06); // Shutdown
+			break;
+
+		case ST_DS_PREPARE_SWITCH_ON:
+			mch_ds_send_control_word(machine, 0x06); // Shutdown
+			break;
+
+		case ST_DS_SWITCH_ON:
+			mch_ds_send_control_word(machine, 0x07); // Switch on
+			break;
+
+		case ST_DS_SHUTDOWN:
+			mch_ds_send_control_word(machine, 0x06); // Shutdown
+			break;
+
+		case ST_DS_ENABLE_OPERATION:
+			mch_ds_send_control_word(machine, 0x0F); // Enable operation
+			break;
+
+		case ST_DS_DISABLE_OPERATION:
+			mch_ds_send_control_word(machine, 0x07); // Disable operation
 			break;
 	}
 }
