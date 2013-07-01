@@ -30,6 +30,12 @@ struct mch_sdo_t;
 struct mch_net_t;
 struct intf_t;
 
+// Callbacks
+typedef void(*mch_net_sdos_enabled_handler_t)(mch_net_t *mch_net, void *payload);
+typedef void(*mch_net_sdos_disabled_handler_t)(mch_net_t *mch_net, void *payload);
+typedef void(*mch_net_enter_operational_handler_t)(mch_net_t *mch_net, void *payload);
+typedef void(*mch_net_leave_operational_handler_t)(mch_net_t *mch_net, void *payload);
+
 mch_net_t *mch_net_create(intf_t *interface, mch_sdo_t *mch_sdo);
 void mch_net_destroy(mch_net_t **machine);
 

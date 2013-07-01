@@ -12,6 +12,14 @@ struct mch_net_t {
 
 	intf_t *interface;
 	mch_sdo_t *mch_sdo;
+
+	// Callbacks
+	void *payload;
+
+	mch_net_sdos_enabled_handler_t sdos_enabled_handler;
+	mch_net_sdos_disabled_handler_t sdos_disabled_handler;
+	mch_net_enter_operational_handler_t enter_operational_handler;
+	mch_net_leave_operational_handler_t leave_operational_handler;
 };
 
 
@@ -25,6 +33,12 @@ mch_net_t *mch_net_create(intf_t *interface, mch_sdo_t *mch_sdo)
 	machine->state = ST_NET_DISABLED;  
 	machine->interface = interface;
 	machine->mch_sdo = mch_sdo;
+
+	machine->payload = NULL;
+	machine->sdos_enabled_handler = NULL;
+	machine->sdos_disabled_handler = NULL;
+	machine->enter_operational_handler = NULL;
+	machine->leave_operational_handler = NULL;
 
 	return machine;
 }
@@ -163,12 +177,23 @@ void mch_net_on_enter(mch_net_t *machine)
 		case ST_NET_UPLOADCONFIG:
 			mch_net_queue_setup(machine->mch_sdo);
 			break;
+
+		case ST_NET_OPERATIONAL:
+			if(machine->enter_operational_handler)
+				machine->enter_operational_handler(machine, machine->payload);
+			break;
 	}
 }
 
 
 void mch_net_on_exit(mch_net_t *machine)
 {
+	switch(machine->state) {
+		case ST_NET_OPERATIONAL:
+			if(machine->leave_operational_handler)
+				machine->leave_operational_handler(machine, machine->payload);
+			break;
+	}
 }
 
 
@@ -200,5 +225,35 @@ void mch_net_handle_event(mch_net_t *machine, mch_net_event_t event)
 		printf("Network machine changed state: %s\n", mch_net_statename(machine->state));
 		mch_net_on_enter(machine);
 	}
+}
+
+
+void mch_net_set_callback_payload(mch_net_t *mch_net, void *payload)
+{
+	mch_net->payload = payload;
+}
+
+
+void mch_net_set_sdos_enabled_handler(mch_net_t *mch_net, mch_net_sdos_enabled_handler_t handler)
+{
+	mch_net->sdos_enabled_handler = handler;
+}
+
+
+void mch_net_set_sdos_disabled_handler(mch_net_t *mch_net, mch_net_sdos_disabled_handler_t handler)
+{
+	mch_net->sdos_disabled_handler = handler;
+}
+
+
+void mch_net_set_enter_operational_handler(mch_net_t *mch_net, mch_net_enter_operational_handler_t handler)
+{
+	mch_net->enter_operational_handler = handler;
+}
+
+
+void mch_net_set_leave_operational_handler(mch_net_t *mch_net, mch_net_leave_operational_handler_t handler)
+{
+	mch_net->leave_operational_handler = handler;
 }
 
