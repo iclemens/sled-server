@@ -149,7 +149,7 @@ void mch_sdo_handle_event(mch_sdo_t *machine, mch_sdo_event_t event)
 /**
  * Enqueue a write request SDO.
  */
-void mch_sdo_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size)
+void mch_sdo_queue_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size)
 {
 	sdo_t sdo;
 	sdo.is_write = true;
@@ -164,7 +164,7 @@ void mch_sdo_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint32_
 /**
  * Enqueue a read request SDO.
  */
-void mch_sdo_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint8_t size)
+void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint8_t size)
 {
 	sdo_t sdo;
 	sdo.is_write = false;

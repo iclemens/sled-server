@@ -1,6 +1,7 @@
 
 #include "../interface.h"
 #include "mch_net.h"
+#include "mch_sdo.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,6 +30,44 @@ void mch_net_destroy(mch_net_t **machine)
 {
 	free(*machine);
 	*machine = NULL;
+}
+
+
+void mch_net_queue_setup(mch_sdo_t *mch_sdo)
+{
+	// Setup TPDO1
+	mch_sdo_queue_write(mch_sdo, 0x1A00, 0x00, 0x00, 0x01);
+	mch_sdo_queue_write(mch_sdo, 0x1A00, 0x01, 0x60410010, 0x04);	// Status word
+	mch_sdo_queue_write(mch_sdo, 0x1A00, 0x02, 0x60610008, 0x04);	// Mode of operation
+	mch_sdo_queue_write(mch_sdo, 0x1A00, 0x00, 0x02, 0x01);
+
+	mch_sdo_queue_write(mch_sdo, 0x1800, 0x01, 0x40000181, 0x04);
+	mch_sdo_queue_write(mch_sdo, 0x1800, 0x02, 0xFF, 0x01);			// Event triggered
+	mch_sdo_queue_write(mch_sdo, 0x1800, 0x03, 0x0A, 0x02);			// Inhibit timer
+	mch_sdo_queue_write(mch_sdo, 0x1800, 0x05, 0x0A, 0x02);			// Event timer
+
+	// Setup TPDO2
+	mch_sdo_queue_write(mch_sdo, 0x1A01, 0x00, 0x00, 0x01);
+	mch_sdo_queue_write(mch_sdo, 0x1A01, 0x01, 0x60640020, 0x04);	// Position
+	mch_sdo_queue_write(mch_sdo, 0x1A01, 0x02, 0x606C0020, 0x04);	// Velocity
+	mch_sdo_queue_write(mch_sdo, 0x1A01, 0x00, 0x02, 0x01);
+
+	mch_sdo_queue_write(mch_sdo, 0x1801, 0x01, 0x40000281, 0x04);
+	mch_sdo_queue_write(mch_sdo, 0x1801, 0x02, 0xFF, 0x01);			// On change (should be sync or timer?)
+
+	// Setup RPDO2 for IP mode
+	mch_sdo_queue_write(mch_sdo, 0x1601, 0x00, 0x00, 0x01);
+	mch_sdo_queue_write(mch_sdo, 0x1601, 0x01, 0x60C10120, 0x04);
+	mch_sdo_queue_write(mch_sdo, 0x1601, 0x00, 0x01, 0x01);
+
+	mch_sdo_queue_write(mch_sdo, 0x1401, 0x02, 0x01, 0x01);			// Every sync
+
+	// Disable TPDO 3 and 4
+	mch_sdo_queue_write(mch_sdo, 0x1A02, 0x00, 0x00, 0x01);
+	mch_sdo_queue_write(mch_sdo, 0x1802, 0x01, 0x40000381, 0x04);
+	
+	mch_sdo_queue_write(mch_sdo, 0x1A03, 0x00, 0x00, 0x01);
+	mch_sdo_queue_write(mch_sdo, 0x1803, 0x01, 0x40000481, 0x04);
 }
 
 
