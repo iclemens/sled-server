@@ -161,7 +161,7 @@ void mch_sdo_handle_event(mch_sdo_t *machine, mch_sdo_event_t event)
 	if(!(machine->state == next_state)) {
 		mch_sdo_on_exit(machine);
 		machine->state = next_state;
-		printf("Network machine changed state: %s\n", mch_sdo_statename(machine->state));
+		printf("SDO machine changed state: %s\n", mch_sdo_statename(machine->state));
 		mch_sdo_on_enter(machine);
 	}
 }
