@@ -126,6 +126,13 @@ void mch_sdo_on_enter(mch_sdo_t *machine)
 
 void mch_sdo_on_exit(mch_sdo_t *machine)
 {
+	switch(machine->state) {
+		case ST_SDO_DISABLED:
+		case ST_SDO_ERROR:
+			while(!machine->sdo_queue.empty())
+				machine->sdo_queue.pop();
+			break;
+	}
 }
 
 
@@ -167,6 +174,8 @@ void mch_sdo_queue_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, u
 	sdo.value = value;
 	sdo.size = size;
 	machine->sdo_queue.push(sdo);
+
+	mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
 }
 
 
@@ -182,6 +191,8 @@ void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex, ui
 	sdo.value = 0;
 	sdo.size = size;
 	machine->sdo_queue.push(sdo);
+
+	mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
 }
 
 
