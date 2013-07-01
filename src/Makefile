@@ -2,7 +2,7 @@
 CPP=g++
 CC=gcc
 
-SRC = sled.cc sled_profile.cc interface.cc machines/mch_intf.cc machines/mch_net.cc machines/mch_sdo.cc
+SRC = sled.cc sled_profile.cc interface.cc machines/mch_intf.cc machines/mch_net.cc machines/mch_sdo.cc machines/mch_ds.cc
 OBJ = $(patsubst %.cc,.obj/%.o,$(SRC))
 
 .obj:

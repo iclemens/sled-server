@@ -12,6 +12,7 @@
 #include <machines/mch_intf.h>
 #include <machines/mch_net.h>
 #include <machines/mch_sdo.h>
+#include <machines/mch_ds.h>
 
 
 struct machines_t
@@ -19,6 +20,7 @@ struct machines_t
 	mch_intf_t *mch_intf;
 	mch_net_t *mch_net;
 	mch_sdo_t *mch_sdo;
+	mch_ds_t *mch_ds;
 };
 
 
@@ -79,7 +81,7 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 		uint16_t status = (data[1] << 8) | data[0];
 		uint8_t mode = data[2];
 
-		printf("Status: %04x\tMode: %02x\n", status, mode);
+		//printf("Status: %04x\tMode: %02x\n", status, mode);
 	}
 
 	if(pdo == 2) {
@@ -132,6 +134,26 @@ void mch_net_on_sdos_disabled(mch_net_t *mch_net, void *payload)
 
 
 /**
+ * Notify DS402 that NMT is operational.
+ */
+void mch_net_on_enter_operational(mch_net_t *mch_net, void *payload)
+{
+	machines_t *machines = (machines_t *) payload;
+	mch_ds_handle_event(machines->mch_ds, EV_DS_NET_OPERATIONAL);
+}
+
+
+/**
+ * Notify DS402 that NMT is inoperational.
+ */
+void mch_net_on_leave_operational(mch_net_t *mch_net, void *payload)
+{
+	machines_t *machines = (machines_t *) payload;
+	mch_ds_handle_event(machines->mch_ds, EV_DS_NET_INOPERATIONAL);
+}
+
+
+/**
  * Inform NMT machine that SDO queue is empty.
  */
 void mch_sdo_on_queue_empty(mch_sdo_t *mch_sdo, void *payload)
@@ -162,12 +184,14 @@ int main(int argc, char *argv[])
 	machines.mch_intf = mch_intf_create(intf);
 	machines.mch_sdo = mch_sdo_create(intf);
 	machines.mch_net = mch_net_create(intf, machines.mch_sdo);
+	machines.mch_ds = mch_ds_create(intf);
 
 	// Set machines structure as payload
 	intf_set_callback_payload(intf, (void *) &machines);
 	mch_intf_set_callback_payload(machines.mch_intf, (void *) &machines);
 	mch_net_set_callback_payload(machines.mch_net, (void *) &machines);
 	mch_sdo_set_callback_payload(machines.mch_sdo, (void *) &machines);
+	//mch_ds_set_callback_payload(machines.mch_ds, (void *) &machines);
 
 	// Set callbacks
 	intf_set_close_handler(intf, intf_on_close);
@@ -180,6 +204,8 @@ int main(int argc, char *argv[])
 	mch_intf_set_closed_handler(machines.mch_intf, mch_intf_on_close);
 	mch_net_set_sdos_enabled_handler(machines.mch_net, mch_net_on_sdos_enabled);
 	mch_net_set_sdos_disabled_handler(machines.mch_net, mch_net_on_sdos_disabled);
+	mch_net_set_enter_operational_handler(machines.mch_net, mch_net_on_enter_operational);
+	mch_net_set_leave_operational_handler(machines.mch_net, mch_net_on_leave_operational);
 	mch_sdo_set_queue_empty_handler(machines.mch_sdo, mch_sdo_on_queue_empty);
 	
 	mch_intf_handle_event(machines.mch_intf, EV_INTF_OPEN);

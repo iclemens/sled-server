@@ -45,6 +45,8 @@ mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t e
 {
 	switch(machine->state) {
 		case ST_DS_DISABLED:
+			if(event == EV_DS_NET_OPERATIONAL)
+				return ST_DS_UNKNOWN;
 			break;
 	}
 }
@@ -68,6 +70,7 @@ const char *mch_ds_statename(mch_ds_state_t state)
 {
 	switch(state) {
 		case ST_DS_DISABLED: return "ST_DS_DISABLED";
+		case ST_DS_UNKNOWN: return "ST_DS_UNKNOWN";
 	}
 
 	return "Invalid state";
