@@ -42,4 +42,11 @@ void mch_net_destroy(mch_net_t **machine);
 mch_net_state_t mch_net_active_state(mch_net_t *machine);
 void mch_net_handle_event(mch_net_t *machine, mch_net_event_t event);
 
+// Callback setters
+void mch_net_set_callback_payload(mch_net_t *mch_net, void *payload);
+void mch_net_set_sdos_enabled_handler(mch_net_t *mch_net, mch_net_sdos_enabled_handler_t handler);
+void mch_net_set_sdos_disabled_handler(mch_net_t *mch_net, mch_net_sdos_disabled_handler_t handler);
+void mch_net_set_enter_operational_handler(mch_net_t *mch_net, mch_net_enter_operational_handler_t handler);
+void mch_net_set_leave_operational_handler(mch_net_t *mch_net, mch_net_leave_operational_handler_t handler);
+
 #endif

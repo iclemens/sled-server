@@ -63,6 +63,26 @@ void mch_intf_on_close(mch_intf_t *mch_intf, void *payload)
 
 
 /**
+ * Inform SDO machine that SDO transmission is possible.
+ */
+void mch_net_on_sdos_enabled(mch_net_t *mch_net, void *payload)
+{
+	machines_t *machines = (machines_t *) payload;
+	mch_sdo_handle_event(machines->mch_sdo, EV_NET_SDO_ENABLED);
+}
+
+
+/**
+ * Inform SDO machine that SDOs have been disabled.
+ */
+void mch_net_on_sdos_disabled(mch_net_t *mch_net, void *payload)
+{
+	machines_t *machines = (machines_t *) payload;
+	mch_sdo_handle_event(machines->mch_sdo, EV_NET_SDO_DISABLED);
+}
+
+
+/**
  * Inform NMT machine that SDO queue is empty.
  */
 void mch_sdo_on_queue_empty(mch_sdo_t *mch_sdo, void *payload)
@@ -86,6 +106,7 @@ int main(int argc, char *argv[])
 	// Set machines structure as payload
 	intf_set_callback_payload(intf, (void *) &machines);
 	mch_intf_set_callback_payload(machines.mch_intf, (void *) &machines);
+	mch_net_set_callback_payload(machines.mch_net, (void *) &machines);
 	mch_sdo_set_callback_payload(machines.mch_sdo, (void *) &machines);
 
 	// Set callbacks
@@ -93,8 +114,9 @@ int main(int argc, char *argv[])
 	intf_set_nmt_state_handler(intf, intf_on_nmt);
 	mch_intf_set_opened_handler(machines.mch_intf, mch_intf_on_open);
 	mch_intf_set_closed_handler(machines.mch_intf, mch_intf_on_close);
+	mch_net_set_sdos_enabled_handler(machines.mch_net, mch_net_on_sdos_enabled);
+	mch_net_set_sdos_disabled_handler(machines.mch_net, mch_net_on_sdos_disabled);
 	mch_sdo_set_queue_empty_handler(machines.mch_sdo, mch_sdo_on_queue_empty);
-
 	
 	mch_intf_handle_event(machines.mch_intf, EV_INTF_OPEN);
 	event_base_loop(ev_base, 0);
