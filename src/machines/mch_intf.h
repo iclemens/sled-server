@@ -19,10 +19,19 @@ enum mch_intf_state_t {
 struct mch_intf_t;
 struct intf_t;
 
+// Callbacks
+typedef void(*mch_intf_opened_handler_t)(mch_intf_t *mch_intf, void *payload);
+typedef void(*mch_intf_closed_handler_t)(mch_intf_t *mch_intf, void *payload);
+
 mch_intf_t *mch_intf_create(intf_t *interface);
 void mch_intf_destroy(mch_intf_t **machine);
 
 mch_intf_state_t mch_intf_active_state(mch_intf_t *machine);
 void mch_intf_handle_event(mch_intf_t *machine, mch_intf_event_t event);
+
+// Callback setters
+void mch_intf_set_callback_payload(mch_intf_t *mch_intf, void *payload);
+void mch_intf_set_opened_handler(mch_intf_t *mch_intf, mch_intf_opened_handler_t handler);
+void mch_intf_set_closed_handler(mch_intf_t *mch_intf, mch_intf_closed_handler_t handler);
 
 #endif

@@ -6,21 +6,28 @@
 #include <stdio.h>
 
 struct mch_intf_t {
-  mch_intf_state_t state;  
-  intf_t *interface;
+	mch_intf_state_t state;  
+	intf_t *interface;
+
+	void *payload;
+	mch_intf_opened_handler_t opened_handler;
+	mch_intf_closed_handler_t closed_handler;
 };
 
 
 mch_intf_t *mch_intf_create(intf_t *interface)
 {
-  mch_intf_t *machine = (mch_intf_t *) malloc(sizeof(mch_intf_t));
+	mch_intf_t *machine = (mch_intf_t *) malloc(sizeof(mch_intf_t));
   
-  if(machine == NULL)
-    return NULL;
+	if(machine == NULL)
+		return NULL;
   
-  machine->state = ST_INTF_CLOSED;
-  
-  machine->interface = interface;
+  	machine->state = ST_INTF_CLOSED; 
+	machine->interface = interface;
+
+	machine->payload = NULL;
+	machine->opened_handler = NULL;
+	machine->closed_handler = NULL;
 }
 
 
@@ -79,6 +86,16 @@ void mch_intf_on_enter(mch_intf_t *machine)
       intf_close(machine->interface);
       mch_intf_handle_event(machine, EV_INTF_CLOSED);
       break;
+
+	case ST_INTF_OPENED:
+		if(machine->opened_handler)
+			machine->opened_handler(machine, machine->payload);
+		break;
+
+	case ST_INTF_CLOSED:
+		if(machine->closed_handler)
+			machine->closed_handler(machine, machine->payload);
+		break;
   }
 }
 
@@ -109,5 +126,23 @@ void mch_intf_handle_event(mch_intf_t *machine, mch_intf_event_t event)
     printf("Interface machine changed state: %s\n", mch_intf_statename(machine->state));
     mch_intf_on_enter(machine);
   }
+}
+
+
+void mch_intf_set_callback_payload(mch_intf_t *mch_intf, void *payload)
+{
+	mch_intf->payload = payload;
+}
+
+
+void mch_intf_set_opened_handler(mch_intf_t *mch_intf, mch_intf_opened_handler_t handler)
+{
+	mch_intf->opened_handler = handler;
+}
+
+
+void mch_intf_set_closed_handler(mch_intf_t *mch_intf, mch_intf_closed_handler_t handler)
+{
+	mch_intf->closed_handler = handler;
 }
 

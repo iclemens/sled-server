@@ -43,6 +43,26 @@ void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 
 
 /**
+ * Inform network interface that the interface has opened.
+ */
+void mch_intf_on_open(mch_intf_t *mch_intf, void *payload)
+{
+	machines_t *machines = (machines_t *) payload;
+	mch_net_handle_event(machines->mch_net, EV_NET_INTF_OPENED);
+}
+
+
+/**
+ * Inform network interface that the interface has closed.
+ */
+void mch_intf_on_close(mch_intf_t *mch_intf, void *payload)
+{
+	machines_t *machines = (machines_t *) payload;
+	mch_net_handle_event(machines->mch_net, EV_NET_INTF_CLOSED);
+}
+
+
+/**
  * Inform NMT machine that SDO queue is empty.
  */
 void mch_sdo_on_queue_empty(mch_sdo_t *mch_sdo, void *payload)
@@ -69,11 +89,14 @@ int main(int argc, char *argv[])
 
 	// Set machines structure as payload
 	intf_set_callback_payload(intf, (void *) &machines);
+	mch_intf_set_callback_payload(machines.mch_intf, (void *) &machines);
 	mch_sdo_set_callback_payload(machines.mch_sdo, (void *) &machines);
 
 	// Set callbacks
 	intf_set_close_handler(intf, intf_on_close);
 	intf_set_nmt_state_handler(intf, intf_on_nmt);
+	mch_intf_set_opened_handler(machines.mch_intf, mch_intf_on_open);
+	mch_intf_set_closed_handler(machines.mch_intf, mch_intf_on_close);
 	mch_sdo_set_queue_empty_handler(machines.mch_sdo, mch_sdo_on_queue_empty);
 
 	
