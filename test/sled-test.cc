@@ -73,6 +73,24 @@ void intf_on_abort_response(intf_t *intf, void *payload, uint16_t index, uint8_t
 }
 
 
+void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
+{
+	if(pdo == 1) {
+		uint16_t status = (data[1] << 8) | data[0];
+		uint8_t mode = data[2];
+
+		printf("Status: %04x\tMode: %02x\n", status, mode);
+	}
+
+	if(pdo == 2) {
+		int32_t position = (data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0];
+		int32_t velocity = (data[7] << 24) | (data[6] << 16) | (data[5] << 8) | data[4];
+
+		//printf("Position: %d\tVelocity: %d\n", position, velocity);
+	}
+}
+
+
 /**
  * Inform network interface that the interface has opened.
  */
@@ -123,6 +141,7 @@ void mch_sdo_on_queue_empty(mch_sdo_t *mch_sdo, void *payload)
 }
 
 
+
 int main(int argc, char *argv[])
 {
 	signal(SIGSEGV, signal_handler);
@@ -155,6 +174,7 @@ int main(int argc, char *argv[])
 	intf_set_nmt_state_handler(intf, intf_on_nmt);
 	intf_set_write_resp_handler(intf, intf_on_write_response);
 	intf_set_abort_resp_handler(intf, intf_on_abort_response);
+	intf_set_tpdo_handler(intf, intf_on_tpdo);
 
 	mch_intf_set_opened_handler(machines.mch_intf, mch_intf_on_open);
 	mch_intf_set_closed_handler(machines.mch_intf, mch_intf_on_close);
