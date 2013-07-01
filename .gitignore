@@ -1,4 +1,7 @@
 msvc
+libsled.so
+sled-test
+build.sh
 
 #################
 ## Eclipse
