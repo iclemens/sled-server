@@ -28,6 +28,8 @@ mch_intf_t *mch_intf_create(intf_t *interface)
 	machine->payload = NULL;
 	machine->opened_handler = NULL;
 	machine->closed_handler = NULL;
+
+	return machine;
 }
 
 
@@ -113,6 +115,8 @@ const char *mch_intf_statename(mch_intf_state_t state)
     case ST_INTF_OPENING: return "ST_INTF_OPENING";
     case ST_INTF_CLOSING: return "ST_INTF_CLOSING";
   }
+
+  return "Invalid state";
 }
 
 
@@ -145,4 +149,3 @@ void mch_intf_set_closed_handler(mch_intf_t *mch_intf, mch_intf_closed_handler_t
 {
 	mch_intf->closed_handler = handler;
 }
-
