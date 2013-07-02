@@ -41,10 +41,19 @@ enum mch_ds_state_t {
 struct mch_ds_t;
 struct intf_t;
 
+// Callbacks
+typedef void(*mch_ds_operation_enabled_handler_t)(mch_ds_t *mch_ds, void *payload);
+typedef void(*mch_ds_operation_disabled_handler_t)(mch_ds_t *mch_ds, void *payload);
+
 mch_ds_t *mch_ds_create(intf_t *interface);
 void mch_ds_destroy(mch_ds_t **machine);
 
 mch_ds_state_t mch_ds_active_state(mch_ds_t *machine);
 void mch_ds_handle_event(mch_ds_t *machine, mch_ds_event_t event);
+
+// Callback setters
+void mch_ds_set_callback_payload(mch_ds_t *mch_ds, void *payload);
+void mch_ds_set_operation_enabled_handler(mch_ds_t *mch_ds, mch_ds_operation_enabled_handler_t handler);
+void mch_ds_set_operation_disabled_handler(mch_ds_t *mch_ds, mch_ds_operation_disabled_handler_t handler);
 
 #endif

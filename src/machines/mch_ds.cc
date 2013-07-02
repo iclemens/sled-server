@@ -12,6 +12,11 @@ struct mch_ds_t {
 	mch_ds_state_t state;
 
 	intf_t *interface;
+
+	// Callbacks
+	void *payload;
+	mch_ds_operation_enabled_handler_t operation_enabled_handler;
+	mch_ds_operation_disabled_handler_t operation_disabled_handler;
 };
 
 
@@ -24,6 +29,11 @@ mch_ds_t *mch_ds_create(intf_t *interface)
 
 	machine->interface = interface;
 	machine->state = ST_DS_DISABLED;
+
+	// Setup callbacks
+	machine->payload = NULL;
+	machine->operation_enabled_handler = NULL;
+	machine->operation_disabled_handler = NULL;
 
 	return machine;
 }
@@ -154,12 +164,23 @@ void mch_ds_on_enter(mch_ds_t *machine)
 		case ST_DS_DISABLE_OPERATION:
 			mch_ds_send_control_word(machine, 0x07); // Disable operation
 			break;
+
+		case ST_DS_OPERATION_ENABLED:
+			if(machine->operation_enabled_handler)
+				machine->operation_enabled_handler(machine, machine->payload);
+			break;
 	}
 }
 
 
 void mch_ds_on_exit(mch_ds_t *machine)
 {
+	switch(machine->state) {
+		case ST_DS_OPERATION_ENABLED:
+			if(machine->operation_disabled_handler)
+				machine->operation_disabled_handler(machine, machine->payload);
+			break;
+	}
 }
 
 
@@ -221,5 +242,23 @@ void mch_ds_handle_event(mch_ds_t *machine, mch_ds_event_t event)
 		printf("DS machine changed state: %s\n", mch_ds_statename(machine->state));
 		mch_ds_on_enter(machine);
 	}
+}
+
+
+void mch_ds_set_callback_payload(mch_ds_t *mch_ds, void *payload)
+{
+	mch_ds->payload = payload;
+}
+
+
+void mch_ds_set_operation_enabled_handler(mch_ds_t *mch_ds, mch_ds_operation_enabled_handler_t handler)
+{
+	mch_ds->operation_enabled_handler = handler;
+}
+
+
+void mch_ds_set_operation_disabled_handler(mch_ds_t *mch_ds, mch_ds_operation_disabled_handler_t handler)
+{
+	mch_ds->operation_disabled_handler = handler;
 }
 
