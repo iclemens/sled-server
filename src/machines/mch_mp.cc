@@ -5,41 +5,8 @@
 #include "../interface.h"
 #include "mch_mp.h"
 
-
-struct mch_mp_t {
-	mch_mp_state_t state;
-	intf_t *interface;
-};
-
-
-/**
- * Creates a state machine that keeps track of profile position mode.
- */
-mch_mp_t *mch_mp_create(intf_t *interface)
-{
-	mch_mp_t *machine = new mch_mp_t();
-
-	machine->interface = interface;
-	machine->state = ST_MP_DISABLED;
-
-	return machine;
-}
-
-
-/**
- * Destroys the PP state machine.
- */
-void mch_mp_destroy(mch_mp_t **machine)
-{
-	free(*machine);
-	*machine = NULL;
-}
-
-
-mch_mp_state_t mch_mp_active_state(mch_mp_t *machine)
-{
-	return machine->state;
-}
+#define MACHINE_FILE() "mch_mp_def.h"
+#include "machine_body.h"
 
 
 mch_mp_state_t mch_mp_next_state_given_event(mch_mp_t *machine, mch_mp_event_t event)
@@ -117,35 +84,5 @@ void mch_mp_on_exit(mch_mp_t *machine)
 		case ST_MP_HH_HOMING:
 			mch_mp_send_control_word(machine, 0x0F);
 			break;
-	}
-}
-
-
-const char *mch_mp_statename(mch_mp_state_t state)
-{
-	switch(state) {
-		case ST_MP_DISABLED: return "ST_MP_DISABLED";
-		case ST_MP_SWITCH_MODE_HOMING: return "ST_MP_SWITCH_MODE_HOMING";
-		case ST_MP_HH_UNKNOWN: return "ST_MP_HH_UNKNOWN";
-		case ST_MP_HH_HOMING: return "ST_MP_HH_HOMING";
-
-		case ST_MP_SWITCH_MODE_PP: return "ST_MP_SWITCH_MODE_PP";
-		case ST_MP_PP_IDLE: return "ST_MP_PP_IDLE";
-		case ST_MP_PP_MOVING: return "ST_MP_PP_MOVING";
-	}
-
-	return "Invalid state";
-}
-
-
-void mch_mp_handle_event(mch_mp_t *machine, mch_mp_event_t event)
-{
-	mch_mp_state_t next_state = mch_mp_next_state_given_event(machine, event);
-
-	if(!(machine->state == next_state)) {
-		mch_mp_on_exit(machine);
-		machine->state = next_state;
-		printf("MP machine changed state: %s\n", mch_mp_statename(machine->state));
-		mch_mp_on_enter(machine);
 	}
 }
