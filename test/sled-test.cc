@@ -98,6 +98,11 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 		else
 			mch_ds_handle_event(machines->mch_ds, EV_DS_VOLTAGE_DISABLED);
 
+		if((status & 0x1000) == 0x1000)
+			mch_mp_handle_event(machines->mch_mp, EV_MP_HOMED);
+		else
+			mch_mp_handle_event(machines->mch_mp, EV_MP_NOTHOMED);
+
 		if(mode == 0x06)
 			mch_mp_handle_event(machines->mch_mp, EV_MP_MODE_HOMING);
 		if(mode == 0x08)

@@ -15,10 +15,10 @@ enum mch_mp_event_t {
 
 enum mch_mp_state_t {
 	ST_MP_DISABLED,
-	ST_MP_UNKNOWN,
 
 	ST_MP_SWITCH_MODE_HOMING,
-	ST_MP_HOMING,
+	ST_MP_HH_UNKNOWN,
+	ST_MP_HH_HOMING,
 
 	ST_MP_SWITCH_MODE_PP,
 	ST_MP_PP_IDLE,
