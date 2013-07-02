@@ -103,6 +103,7 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 	}
 }
 
+
 // Inform network interface that the interface has opened / closed.
 CALLBACK_FUNCTION_EVENT(intf, on_opened, net, EV_NET_INTF_OPENED)
 CALLBACK_FUNCTION_EVENT(intf, on_closed, net, EV_NET_INTF_CLOSED)
@@ -162,9 +163,10 @@ void setup_state_machines(sled_t *sled)
 /**
  * Setup sled structures.
  */
-sled_t *sled_create()
+sled_t *sled_create(event_base *ev_base)
 {
 	sled_t *sled = (sled_t *) malloc(sizeof(sled_t));
+	sled->ev_base = ev_base;
 
 	// Reset sled profiles
 	for(int profile = 0; profile < MAX_PROFILES; profile++)
