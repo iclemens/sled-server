@@ -205,8 +205,10 @@ int sled_rt_new_setpoint(sled_t *handle, double position)
 
 int sled_rt_get_position(sled_t *handle, double &position)
 {
-  // Not implemented
-  return -1;
+	// FIXME: Should check whether sled is operational.
+
+	position = handle->last_position;
+	return 1;
 }
 
 
