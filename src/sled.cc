@@ -188,18 +188,18 @@ sled_t *sled_create(event_base *ev_base)
 
 void sled_destroy(sled_t **handle)
 {
-  sled_t *sled = *handle;
+	sled_t *sled = *handle;
 
-  free(*handle);
-  *handle = NULL;
+	free(*handle);
+	*handle = NULL;
 }
 
 
 // Set-points
 int sled_rt_new_setpoint(sled_t *handle, double position)
 {
-  // No can do
-  return -1;
+	// No can do
+	return -1;
 }
 
 
@@ -215,22 +215,21 @@ int sled_rt_get_position(sled_t *handle, double &position)
 // Sinusoids
 int sled_sinusoid_start(sled_t *handle, double amplitude, double period)
 {
-  printf("sled_sinusoid_start(%f, %f)\n", amplitude, period);
-  return -1;
+	printf("sled_sinusoid_start(%f, %f)\n", amplitude, period);
+	return -1;
 }
 
 
 int sled_sinusoid_stop(sled_t *handle)
 {
-  printf("sled_sinusoid_stop()\n");
-  return -1;
+	printf("sled_sinusoid_stop()\n");
+	return -1;
 }
 
 
 // Light
 int sled_light_set_state(sled_t *handle, bool state)
 {
-  printf("sled_light_set_state(%s)\n", state?"on":"off");
-  return -1;
+	printf("sled_light_set_state(%s)\n", state?"on":"off");
+	return -1;
 }
-
