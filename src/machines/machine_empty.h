@@ -44,6 +44,10 @@
 #define FIELD(type, name)
 #endif
 
+#ifndef FIELD_DECL_ONLY
+#define FIELD_DECL_ONLY(type, name)
+#endif
+
 #ifndef END_FIELDS
 #define END_FIELDS
 #endif

@@ -6,50 +6,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-const char *mch_net_eventname(mch_net_event_t event);
-
-struct mch_net_t {
-	mch_net_state_t state;
-
-	intf_t *interface;
-	mch_sdo_t *mch_sdo;
-
-	// Callbacks
-	void *payload;
-
-	mch_net_sdos_enabled_handler_t sdos_enabled_handler;
-	mch_net_sdos_disabled_handler_t sdos_disabled_handler;
-	mch_net_enter_operational_handler_t enter_operational_handler;
-	mch_net_leave_operational_handler_t leave_operational_handler;
-};
-
-
-mch_net_t *mch_net_create(intf_t *interface, mch_sdo_t *mch_sdo)
-{
-	mch_net_t *machine = (mch_net_t *) malloc(sizeof(mch_net_t));
-  
-	if(machine == NULL)
-		return NULL;
-  
-	machine->state = ST_NET_DISABLED;  
-	machine->interface = interface;
-	machine->mch_sdo = mch_sdo;
-
-	machine->payload = NULL;
-	machine->sdos_enabled_handler = NULL;
-	machine->sdos_disabled_handler = NULL;
-	machine->enter_operational_handler = NULL;
-	machine->leave_operational_handler = NULL;
-
-	return machine;
-}
-
-
-void mch_net_destroy(mch_net_t **machine)
-{
-	free(*machine);
-	*machine = NULL;
-}
+#define MACHINE_FILE() "mch_net_def.h"
+#include "machine_body.h"
 
 
 /**
@@ -94,12 +52,6 @@ void mch_net_queue_setup(mch_sdo_t *mch_sdo)
 	
 	mch_sdo_queue_write(mch_sdo, 0x1A03, 0x00, 0x00, 0x01);
 	mch_sdo_queue_write(mch_sdo, 0x1803, 0x01, 0x40000481, 0x04);
-}
-
-
-mch_net_state_t mch_net_active_state(mch_net_t *machine)
-{
-	return machine->state;
 }
 
 
@@ -227,80 +179,3 @@ void mch_net_on_exit(mch_net_t *machine)
 			break;
 	}
 }
-
-
-const char *mch_net_eventname(mch_net_event_t event)
-{
-	switch(event) {
-		case EV_NET_INTF_OPENED: return "EV_NET_INTF_OPENED";
-		case EV_NET_INTF_CLOSED: return "EV_NET_INTF_CLOSED";
-		case EV_NET_SDO_QUEUE_EMPTY: return "EV_NET_SDO_QUEUE_EMPTY";
-		case EV_NET_STOPPED: return "EV_NET_STOPPED";
-		case EV_NET_OPERATIONAL: return "EV_NET_OPERATIONAL";
-		case EV_NET_PREOPERATIONAL: return "EV_NET_PREOPERATIONAL";
-	}
-
-	return "Unknown event";
-}
-
-
-const char *mch_net_statename(mch_net_state_t state)
-{
-	switch(state) {
-		case ST_NET_DISABLED: return "ST_NET_DISABLED";
-		case ST_NET_UNKNOWN: return "ST_NET_UNKNOWN";
-    
-		case ST_NET_STOPPED: return "ST_NET_STOPPED";
-		case ST_NET_PREOPERATIONAL: return "ST_NET_PREOPERATIONAL";
-		case ST_NET_OPERATIONAL: return "ST_NET_OPERATIONAL";
-    
-		case ST_NET_ENTERPREOPERATIONAL: return "ST_NET_ENTERPREOPERATIONAL";
-		case ST_NET_STARTREMOTENODE: return "ST_NET_STARTREMOTENODE";
-	}
-  
-	return "Invalid state";
-}
-
-
-void mch_net_handle_event(mch_net_t *machine, mch_net_event_t event)
-{
-	mch_net_state_t next_state = mch_net_next_state_given_event(machine, event);
-  
-	if(!(machine->state == next_state)) {
-		mch_net_on_exit(machine);
-		machine->state = next_state;
-		printf("Network machine changed state: %s\n", mch_net_statename(machine->state));
-		mch_net_on_enter(machine);
-	}
-}
-
-
-void mch_net_set_callback_payload(mch_net_t *mch_net, void *payload)
-{
-	mch_net->payload = payload;
-}
-
-
-void mch_net_set_sdos_enabled_handler(mch_net_t *mch_net, mch_net_sdos_enabled_handler_t handler)
-{
-	mch_net->sdos_enabled_handler = handler;
-}
-
-
-void mch_net_set_sdos_disabled_handler(mch_net_t *mch_net, mch_net_sdos_disabled_handler_t handler)
-{
-	mch_net->sdos_disabled_handler = handler;
-}
-
-
-void mch_net_set_enter_operational_handler(mch_net_t *mch_net, mch_net_enter_operational_handler_t handler)
-{
-	mch_net->enter_operational_handler = handler;
-}
-
-
-void mch_net_set_leave_operational_handler(mch_net_t *mch_net, mch_net_leave_operational_handler_t handler)
-{
-	mch_net->leave_operational_handler = handler;
-}
-

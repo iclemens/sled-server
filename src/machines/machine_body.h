@@ -1,6 +1,7 @@
 // First generate structure type
 #include "machine_undef.h"
 #define FIELD(type, name) type name;
+#define FIELD_DECL_ONLY(type, name) type name;
 #define CALLBACK(name) HANDLER_TYPE(name) CONCAT(name, _handler);
 
 struct MACHINE_TYPE {
