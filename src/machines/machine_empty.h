@@ -1,3 +1,5 @@
+#undef INITIAL_STATE
+
 #ifndef BEGIN_STATES
 #define BEGIN_STATES
 #endif

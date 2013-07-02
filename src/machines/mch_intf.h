@@ -1,6 +1,8 @@
 #ifndef __MCH_INTF_H__
 #define __MCH_INTF_H__
 
+#undef PREFIX
+
 // Define machine prefix
 #define PREFIX mch_intf
 
