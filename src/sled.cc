@@ -182,6 +182,14 @@ sled_t *sled_create(event_base *ev_base)
 	intf_set_abort_resp_handler(sled->interface, intf_on_abort_response);
 	intf_set_tpdo_handler(sled->interface, intf_on_tpdo);
 
+	// Register sinusoid profiles
+	sled->sinusoid_there = sled_profile_create(sled);
+	sled->sinusoid_back = sled_profile_create(sled);
+	sled_profile_set_table(sled, sled->sinusoid_there, 0);
+	sled_profile_set_table(sled, sled->sinusoid_back, 0);
+	sled_profile_set_next(sled, sled->sinusoid_there, sled->sinusoid_back, 0.0, bln_none);
+	sled_profile_set_next(sled, sled->sinusoid_back, sled->sinusoid_there, 0.0, bln_none);
+
 	return sled;
 }
 
@@ -215,8 +223,12 @@ int sled_rt_get_position(sled_t *handle, double &position)
 // Sinusoids
 int sled_sinusoid_start(sled_t *handle, double amplitude, double period)
 {
-	printf("sled_sinusoid_start(%f, %f)\n", amplitude, period);
-	return -1;
+	printf("sled_sinusoid_start(%f, %f)\n", amplitude, period);	
+
+	sled_profile_set_target(handle, handle->sinusoid_there, pos_relative_target, amplitude, period / 2.0);
+	sled_profile_set_target(handle, handle->sinusoid_back, pos_relative_target, -amplitude, period / 2.0);
+
+	return sled_profile_execute(handle, handle->sinusoid_there);
 }
 
 

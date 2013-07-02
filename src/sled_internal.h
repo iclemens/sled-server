@@ -63,6 +63,9 @@ struct sled_t {
 
 	// Last position and velocity
 	double last_position, last_velocity;
+
+	// Profiles for sinusoid
+	int sinusoid_there, sinusoid_back;
 };
 
 void sled_profile_clear(sled_t *sled, int profile, bool in_use);
