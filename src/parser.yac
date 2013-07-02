@@ -1,0 +1,200 @@
+%pure-parser
+%defines
+%error-verbose
+%lex-param {void *scanner}
+%parse-param {parser_t *parser}
+
+%{
+#include <stdio.h>
+#include "parser.h"
+#include "parser.yac.hh"
+
+extern int yylex(YYSTYPE *yylval_param, void *yyscanner);
+extern void yyerror(void *yyscanner, const char *s);
+
+#define scanner parser->scanner
+#define command parser->command
+%}
+
+%destructor { free($$); } STRING
+
+%union {
+  int ival;
+  float fval;
+  char *sval;
+  position_type_t pval;
+}
+
+%token COLON
+%token SETBYTEORDER
+%token BIGENDIAN
+%token LITTLEENDIAN
+%token SENDCURRENTFRAME
+%token SENDSTATUS
+%token STREAMFRAMES
+%token FREQUENCYDIVISOR
+%token STOP
+%token PROFILE
+%token SET
+%token EXECUTE
+%token TABLE
+%token NEXT
+%token AFTER
+%token BLEND
+%token BEFORE
+%token SINUSOID
+%token START
+%token LIGHTS
+%token ON
+%token OFF
+%token BYE
+%token HOME
+%token CLEARFAULT
+%token SETINTERNALSTATUS
+%token PREOPERATIONAL
+%token OPERATIONAL
+%token OUTPUTENABLED
+%token SENDINTERNALSTATUS
+
+%token <pval> POSTYPE
+%token <ival> INT
+%token <fval> FLOAT
+%token <sval> STRING
+
+%%
+command:
+  byteorder
+  | sendcurrentframe
+  | sendstatus
+  | streamframes
+  | profile
+  | sinusoid
+  | lights
+  | bye
+  | home
+  | clearfault
+  | setinternalstatus
+  | sendinternalstatus;
+
+/**
+  This part specifies the PROFILE command
+ */
+byteorder:
+  SETBYTEORDER BIGENDIAN { 
+    command->type = cmd_setbyteorder; 
+    command->byte_order = byo_big_endian; 
+    }
+  | SETBYTEORDER LITTLEENDIAN { 
+    command->type = cmd_setbyteorder; 
+    command->byte_order = byo_little_endian; 
+    };
+
+blend_part:
+  BLEND BEFORE { command->blend_type = bln_before; }
+  | BLEND AFTER { command->blend_type = bln_after; };
+
+after_part:
+  AFTER INT { command->next_delay = $2; };
+
+next_part:
+  NEXT INT { command->next_profile = $2; };
+
+profile_part:
+  PROFILE INT { command->profile = $2; };
+
+profile_def_base:
+  SET TABLE INT POSTYPE INT INT {
+    command->type = cmd_profile_set;
+    command->table = $3;
+    command->position_type = $4;
+    command->position = $5;
+    command->time = $6; };
+
+profile:
+  profile_part EXECUTE { command->type = cmd_profile_execute; }
+  | profile_part profile_def_base
+  | profile_part profile_def_base next_part
+  | profile_part profile_def_base next_part after_part
+  | profile_part profile_def_base next_part blend_part
+  | profile_part profile_def_base next_part after_part blend_part;
+
+/**
+ * Simple commands
+ */
+
+sendcurrentframe:
+  SENDCURRENTFRAME { command->type = cmd_sendcurrentframe; };
+
+sendstatus:
+  SENDSTATUS { command->type = cmd_sendstatus; };
+
+streamframes:
+  STREAMFRAMES { 
+    command->type = cmd_streamframes; 
+    command->boolean = true; 
+    }
+  | STREAMFRAMES FREQUENCYDIVISOR COLON INT {
+    command->type = cmd_streamframes;
+    command->boolean = true;
+    }
+  | STREAMFRAMES STOP {
+    command->type = cmd_streamframes; 
+    command->boolean = false;
+    };
+
+sinusoid:
+  START INT INT { 
+    command->type = cmd_sinusoid;
+    command->boolean = true;
+    command->amplitude = $2;
+    command->period = $3;
+    }
+  | STOP { 
+    command->type = cmd_sinusoid; 
+    command->boolean = false; 
+    };
+
+lights:
+  LIGHTS ON { 
+    command->type = cmd_lights;
+    command->boolean = true;
+    }
+  | LIGHTS OFF { 
+    command->type = cmd_lights; 
+    command->boolean = false; 
+    };
+
+bye:
+  BYE { command->type = cmd_bye; };
+
+home:
+  HOME { command->type = cmd_home; };
+
+clearfault:
+  CLEARFAULT { command->type = cmd_clearfault; };
+
+setinternalstatus:
+  SETINTERNALSTATUS OFF {
+    command->type = cmd_setinternalstatus;
+    command->status = sta_off;
+    }
+  | SETINTERNALSTATUS PREOPERATIONAL {
+    command->type = cmd_setinternalstatus;
+    command->status = sta_preoperational;
+    }
+  | SETINTERNALSTATUS OPERATIONAL {
+    command->type = cmd_setinternalstatus;
+    command->status = sta_operational;
+    }
+  | SETINTERNALSTATUS OUTPUTENABLED {
+    command->type = cmd_setinternalstatus;
+    command->status = sta_outputenabled;
+    }
+  | SETINTERNALSTATUS error { yyerror(scanner, "Invalid state argument."); };
+
+sendinternalstatus:
+  SENDINTERNALSTATUS { command->type = cmd_sendinternalstatus; };
+
+%%
+
+
