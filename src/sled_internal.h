@@ -60,6 +60,9 @@ struct sled_t {
 	mch_sdo_t *mch_sdo;
 	mch_ds_t *mch_ds;
 	mch_mp_t *mch_mp;
+
+	// Last position and velocity
+	double last_position, last_velocity;
 };
 
 void sled_profile_clear(sled_t *sled, int profile, bool in_use);

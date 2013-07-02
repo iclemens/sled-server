@@ -91,15 +91,14 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_HOMING);
 		if(mode == 0x08)
 			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_PP);
-
-		//printf("Status: %04x\tMode: %02x\n", status, mode);
 	}
 
 	if(pdo == 2) {
 		int32_t position = (data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0];
 		int32_t velocity = (data[7] << 24) | (data[6] << 16) | (data[5] << 8) | data[4];
 
-		//printf("Position: %d\tVelocity: %d\n", position, velocity);
+		sled->last_position = position / 1000.0 / 1000.0;
+		sled->last_velocity = velocity / 1000.0 / 1000.0;
 	}
 }
 
