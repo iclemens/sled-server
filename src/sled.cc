@@ -123,28 +123,23 @@ CALLBACK_FUNCTION_EVENT(ds, on_operation_enabled, mp, EV_MP_DS_OPERATIONAL);
 CALLBACK_FUNCTION_EVENT(ds, on_operation_disabled, mp, EV_MP_DS_INOPERATIONAL);
 
 
-/** *******************************
- * Implementation of API functions
- ******************************* **/
-
-
 /**
- * Setup sled structures.
+ * Setup state machines
  */
-sled_t *sled_create()
+void setup_state_machines(sled_t *sled)
 {
-  sled_t *sled = (sled_t *) malloc(sizeof(sled_t));
+	// Setup state machines
+	sled->mch_intf = mch_intf_create(sled->interface);
+	sled->mch_sdo = mch_sdo_create(sled->interface);
+	sled->mch_net = mch_net_create(sled->interface, sled->mch_sdo);
+	sled->mch_ds = mch_ds_create(sled->interface);
+	sled->mch_mp = mch_mp_create(sled->interface);
 
-  // Reset sled profiles
-  for(int profile = 0; profile < MAX_PROFILES; profile++)
-    sled_profile_clear(sled, profile, false);
-
-	// Register interface callback functions
-	intf_set_close_handler(sled->interface, intf_on_close);
-	intf_set_nmt_state_handler(sled->interface, intf_on_nmt);
-	intf_set_write_resp_handler(sled->interface, intf_on_write_response);
-	intf_set_abort_resp_handler(sled->interface, intf_on_abort_response);
-	intf_set_tpdo_handler(sled->interface, intf_on_tpdo);
+	// Register callback payload
+	mch_intf_set_callback_payload(sled->mch_intf, (void *) sled);
+	mch_net_set_callback_payload(sled->mch_net, (void *) sled);
+	mch_sdo_set_callback_payload(sled->mch_sdo, (void *) sled);
+	mch_ds_set_callback_payload(sled->mch_ds, (void *) sled);
 
 	// Register callback functions for state machines.
 	REGISTER_CALLBACK(intf, opened);
@@ -156,9 +151,37 @@ sled_t *sled_create()
 	REGISTER_CALLBACK(sdo, queue_empty);
 	REGISTER_CALLBACK(ds, operation_enabled);
 	REGISTER_CALLBACK(ds, operation_disabled);
+}
 
 
-  return sled;
+/** *******************************
+ * Implementation of API functions
+ ******************************* **/
+
+
+/**
+ * Setup sled structures.
+ */
+sled_t *sled_create()
+{
+	sled_t *sled = (sled_t *) malloc(sizeof(sled_t));
+
+	// Reset sled profiles
+	for(int profile = 0; profile < MAX_PROFILES; profile++)
+		sled_profile_clear(sled, profile, false);
+
+	// Create interface
+	sled->interface = intf_create(sled->ev_base);
+	intf_set_callback_payload(sled->interface, (void *) sled);
+
+	// Register interface callback functions
+	intf_set_close_handler(sled->interface, intf_on_close);
+	intf_set_nmt_state_handler(sled->interface, intf_on_nmt);
+	intf_set_write_resp_handler(sled->interface, intf_on_write_response);
+	intf_set_abort_resp_handler(sled->interface, intf_on_abort_response);
+	intf_set_tpdo_handler(sled->interface, intf_on_tpdo);
+
+	return sled;
 }
 
 

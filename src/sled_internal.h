@@ -29,6 +29,8 @@
 #define REGISTER_CALLBACK(SNAME, FNAME) \
 	mch_ ## SNAME ## _set_ ## FNAME ## _handler(sled->mch_ ## SNAME, mch_ ## SNAME ## _on_ ## FNAME);
 
+struct event_base;
+
 struct sled_profile_t {
 	bool in_use;
 	int profile;
@@ -45,6 +47,9 @@ struct sled_profile_t {
 struct sled_t {
 	// Local copy of motion profiles
 	sled_profile_t profiles[MAX_PROFILES];
+
+	// Lib event event base
+	event_base *ev_base;
 
 	// CANOpen interface
 	intf_t *interface;
