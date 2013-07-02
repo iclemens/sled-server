@@ -7,7 +7,6 @@
 
 #include <event2/event.h>
 #include <sled.h>
-#include <interface.h>
 
 
 void signal_handler(int signal)
