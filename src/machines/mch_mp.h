@@ -28,7 +28,7 @@ enum mch_mp_state_t {
 struct mch_mp_t;
 struct intf_t;
 
-mch_mp_t *mch_ds_create(intf_t *interface);
+mch_mp_t *mch_mp_create(intf_t *interface);
 void mch_mp_destroy(mch_mp_t **machine);
 
 mch_mp_state_t mch_mp_active_state(mch_mp_t *machine);

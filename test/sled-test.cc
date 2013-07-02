@@ -13,6 +13,7 @@
 #include <machines/mch_net.h>
 #include <machines/mch_sdo.h>
 #include <machines/mch_ds.h>
+#include <machines/mch_mp.h>
 
 
 struct machines_t
@@ -21,6 +22,7 @@ struct machines_t
 	mch_net_t *mch_net;
 	mch_sdo_t *mch_sdo;
 	mch_ds_t *mch_ds;
+	mch_mp_t *mch_mp;
 };
 
 
@@ -57,7 +59,7 @@ void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 		case 0x04: mch_net_handle_event(machines->mch_net, EV_NET_STOPPED); break;
 		case 0x05: mch_net_handle_event(machines->mch_net, EV_NET_OPERATIONAL); break;
 		case 0x7F: mch_net_handle_event(machines->mch_net, EV_NET_PREOPERATIONAL); break;
-	} 
+	}
 }
 
 
@@ -84,17 +86,22 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 		uint8_t mode = data[2];
 
 		if((status & 0x4F) == 0x40) mch_ds_handle_event(machines->mch_ds, EV_DS_NOT_READY_TO_SWITCH_ON);
-    if((status & 0x6F) == 0x21) mch_ds_handle_event(machines->mch_ds, EV_DS_READY_TO_SWITCH_ON);
-    if((status & 0x6F) == 0x23) mch_ds_handle_event(machines->mch_ds, EV_DS_SWITCHED_ON);
-    if((status & 0x6F) == 0x27) mch_ds_handle_event(machines->mch_ds, EV_DS_OPERATION_ENABLED);
-    if((status & 0x4F) == 0x08) mch_ds_handle_event(machines->mch_ds, EV_DS_FAULT);
-    if((status & 0x4F) == 0x0F) mch_ds_handle_event(machines->mch_ds, EV_DS_FAULT_REACTION_ACTIVE);
-    if((status & 0x6F) == 0x07) mch_ds_handle_event(machines->mch_ds, EV_DS_QUICK_STOP_ACTIVE);
+		if((status & 0x6F) == 0x21) mch_ds_handle_event(machines->mch_ds, EV_DS_READY_TO_SWITCH_ON);
+		if((status & 0x6F) == 0x23) mch_ds_handle_event(machines->mch_ds, EV_DS_SWITCHED_ON);
+		if((status & 0x6F) == 0x27) mch_ds_handle_event(machines->mch_ds, EV_DS_OPERATION_ENABLED);
+		if((status & 0x4F) == 0x08) mch_ds_handle_event(machines->mch_ds, EV_DS_FAULT);
+		if((status & 0x4F) == 0x0F) mch_ds_handle_event(machines->mch_ds, EV_DS_FAULT_REACTION_ACTIVE);
+		if((status & 0x6F) == 0x07) mch_ds_handle_event(machines->mch_ds, EV_DS_QUICK_STOP_ACTIVE);
 
-    if((status & 0x10) == 0x10) 
+		if((status & 0x10) == 0x10)
 			mch_ds_handle_event(machines->mch_ds, EV_DS_VOLTAGE_ENABLED);
 		else
 			mch_ds_handle_event(machines->mch_ds, EV_DS_VOLTAGE_DISABLED);
+
+		if(mode == 0x06)
+			mch_mp_handle_event(machines->mch_mp, EV_MP_MODE_HOMING);
+		if(mode == 0x08)
+			mch_mp_handle_event(machines->mch_mp, EV_MP_MODE_PP);
 
 		//printf("Status: %04x\tMode: %02x\n", status, mode);
 	}
@@ -178,6 +185,25 @@ void mch_sdo_on_queue_empty(mch_sdo_t *mch_sdo, void *payload)
 }
 
 
+/**
+ * Inform MP machine that DS is operational.
+ */
+void mch_ds_on_operation_enabled(mch_ds_t *mch_ds, void *payload)
+{
+	machines_t *machines = (machines_t *) payload;
+	mch_mp_handle_event(machines->mch_mp, EV_MP_DS_OPERATIONAL);
+}
+
+
+/**
+ * Inform MP machine that DS is not operational.
+ */
+void mch_ds_on_operation_disabled(mch_ds_t *mch_ds, void *payload)
+{
+	machines_t *machines = (machines_t *) payload;
+	mch_mp_handle_event(machines->mch_mp, EV_MP_DS_INOPERATIONAL);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -195,18 +221,19 @@ int main(int argc, char *argv[])
 	}
 
 	// Construct state machines and interface
-	intf_t *intf = intf_create(ev_base); 
+	intf_t *intf = intf_create(ev_base);
 	machines.mch_intf = mch_intf_create(intf);
 	machines.mch_sdo = mch_sdo_create(intf);
 	machines.mch_net = mch_net_create(intf, machines.mch_sdo);
 	machines.mch_ds = mch_ds_create(intf);
+	machines.mch_mp = mch_mp_create(intf);
 
 	// Set machines structure as payload
 	intf_set_callback_payload(intf, (void *) &machines);
 	mch_intf_set_callback_payload(machines.mch_intf, (void *) &machines);
 	mch_net_set_callback_payload(machines.mch_net, (void *) &machines);
 	mch_sdo_set_callback_payload(machines.mch_sdo, (void *) &machines);
-	//mch_ds_set_callback_payload(machines.mch_ds, (void *) &machines);
+	mch_ds_set_callback_payload(machines.mch_ds, (void *) &machines);
 
 	// Set callbacks
 	intf_set_close_handler(intf, intf_on_close);
@@ -222,10 +249,12 @@ int main(int argc, char *argv[])
 	mch_net_set_enter_operational_handler(machines.mch_net, mch_net_on_enter_operational);
 	mch_net_set_leave_operational_handler(machines.mch_net, mch_net_on_leave_operational);
 	mch_sdo_set_queue_empty_handler(machines.mch_sdo, mch_sdo_on_queue_empty);
-	
+	mch_ds_set_operation_enabled_handler(machines.mch_ds, mch_ds_on_operation_enabled);
+	mch_ds_set_operation_disabled_handler(machines.mch_ds, mch_ds_on_operation_disabled);
+
 	mch_intf_handle_event(machines.mch_intf, EV_INTF_OPEN);
 	event_base_loop(ev_base, 0);
-  
+
 	//sled_t *sled = sled_create();
 	//sled_destroy(&sled);
 
