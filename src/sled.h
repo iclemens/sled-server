@@ -3,10 +3,11 @@
 
 extern "C" {
 
+struct event_base;
 struct sled_t;
 
 // Opening and closing of connection to sled
-sled_t *sled_create();
+sled_t *sled_create(event_base *ev_base);
 void sled_destroy(sled_t **sled);
 
 // Set-points

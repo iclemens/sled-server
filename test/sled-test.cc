@@ -25,8 +25,6 @@ int main(int argc, char *argv[])
 {
 	signal(SIGSEGV, signal_handler);
 
-	machines_t machines;
-
 	event_config *cfg = event_config_new();
 	event_config_require_features(cfg, EV_FEATURE_FDS);
 	event_base *ev_base = event_base_new_with_config(cfg);
