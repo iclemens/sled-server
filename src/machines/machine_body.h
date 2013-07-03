@@ -1,3 +1,5 @@
+#include <assert.h>
+
 // First generate structure type
 #include "machine_undef.h"
 #define FIELD(type, name) type name;
@@ -41,6 +43,7 @@ struct MACHINE_TYPE {
 #define GENERATE_DEFAULT_FUNCTIONS \
 	void CONCAT(PREFIX, _handle_event)(MACHINE_TYPE *machine, EVENT_TYPE event) \
 	{ \
+		assert(machine); \
 		STATE_TYPE next_state = CONCAT(PREFIX, _next_state_given_event)(machine, event); \
 		if(!(machine->state == next_state)) { \
 		    CONCAT(PREFIX, _on_exit)(machine); \
@@ -56,6 +59,7 @@ struct MACHINE_TYPE {
 	} \
 	STATE_TYPE CONCAT(PREFIX, _active_state)(MACHINE_TYPE *machine) \
 	{ \
+		assert(machine); \
 		return machine->state; \
 	}
 
