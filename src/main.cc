@@ -14,6 +14,7 @@
 
 #include <event2/event.h>
 #include <sys/epoll.h>
+#include <time.h>
 
 #define MAX_EVENTS 10
 
@@ -31,6 +32,17 @@ void signal_handler(int sig)
     backtrace_symbols_fd(array, size, 2);
     exit(1);
   }
+}
+
+
+/**
+ * Returns current time in seconds.
+ */
+double get_time()
+{
+	timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return double(ts.tv_sec) + double(ts.tv_nsec) / 1000.0 / 1000.0 / 1000.0;
 }
 
 
@@ -235,6 +247,40 @@ void teardown_sled_server_context(sled_server_ctx_t **ctx)
 }
 
 
+void on_timeout(evutil_socket_t sock, short events, void *arg)
+{
+	sled_server_ctx_t *ctx = (sled_server_ctx_t *) arg;
+
+	if(events & EV_TIMEOUT == 0)
+		return;
+
+	double tcurrent = get_time();
+
+	// Verify that timer is accurate enough
+	static double tlast = 0;
+	double delta = (tcurrent - tlast) * 1000;
+	tlast = tcurrent;
+
+	if(delta > 11) {
+		printf("Periodic timer miss: %.2f\t%.2f ms\n", delta - 10, delta);
+	}
+
+	// Get position
+	double position;
+	sled_rt_get_position(ctx->sled, position);
+
+	// Send position to all clients
+	static int frame = 0;
+
+	for(std::list<rtc3d_connection_t *>::iterator it = (ctx->stream_clients).begin();
+		it != (ctx->stream_clients).end(); it++) {
+		rtc3d_send_data(*it, frame, tcurrent, position);
+	}
+
+	frame++;
+}
+
+
 int main()
 {
 	signal(SIGSEGV, signal_handler);
@@ -266,6 +312,16 @@ int main()
 	/* Install handlers */
 	rtc3d_set_disconnect_handler(server, rtc3d_disconnect_handler);
 	rtc3d_set_command_handler(server, rtc3d_command_handler);
+
+	// Start periodic event
+	timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 10 * 1000;
+
+	event *periodic = event_new(ev_base, fileno(stdout), EV_READ | EV_PERSIST, on_timeout, (void *) context);
+	event_add(periodic, &timeout);
+
+	printf("Starting event loop.\n");
 
 	// Event loop
 	event_base_loop(ev_base, 0);
