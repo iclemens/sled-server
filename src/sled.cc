@@ -175,6 +175,9 @@ sled_t *sled_create(event_base *ev_base)
 	sled->interface = intf_create(sled->ev_base);
 	intf_set_callback_payload(sled->interface, (void *) sled);
 
+	// Setup state machines
+	setup_state_machines(sled);
+
 	// Register interface callback functions
 	intf_set_close_handler(sled->interface, intf_on_close);
 	intf_set_nmt_state_handler(sled->interface, intf_on_nmt);
@@ -189,6 +192,9 @@ sled_t *sled_create(event_base *ev_base)
 	sled_profile_set_table(sled, sled->sinusoid_back, 0);
 	sled_profile_set_next(sled, sled->sinusoid_there, sled->sinusoid_back, 0.0, bln_none);
 	sled_profile_set_next(sled, sled->sinusoid_back, sled->sinusoid_there, 0.0, bln_none);
+
+	// Open interface
+	mch_intf_handle_event(sled->mch_intf, EV_INTF_OPEN);
 
 	return sled;
 }
