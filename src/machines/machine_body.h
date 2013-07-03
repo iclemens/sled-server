@@ -83,10 +83,11 @@ MACHINE_TYPE *CONCAT(PREFIX, _create)(
 	#undef FIELD
 	#undef CALLBACK
 
-	#define FIELD(type, name) //machine->name = name;
+	#define FIELD(type, name) machine->name = name;
 	#define CALLBACK(name) machine->CONCAT(name, _handler) = NULL;
 	#include MACHINE_FILE()
 	
 	assert(machine);
 	return machine;
 }
+

@@ -35,7 +35,7 @@ intf_t *intf_create(event_base *ev_base)
 {
 	assert(ev_base);
 
-  intf_t *intf = (intf_t *) malloc(sizeof(intf_t));
+  intf_t *intf = new intf_t();
   
   intf->ev_base = ev_base;
   intf->handle = 0;
