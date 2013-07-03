@@ -198,7 +198,7 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 
 
 /**
- * Create server context (to be passed to NDI server).
+ * Create server context (to be passed to RTC3D server).
  */
 sled_server_ctx_t *setup_sled_server_context(event_base *ev_base)
 {
@@ -223,7 +223,7 @@ sled_server_ctx_t *setup_sled_server_context(event_base *ev_base)
 
 
 /**
- * Destroy context passed to NDI server.
+ * Destroy context passed to RTC3D server.
  */
 void teardown_sled_server_context(sled_server_ctx_t **ctx)
 {
@@ -267,7 +267,8 @@ int main()
   rtc3d_set_disconnect_handler(server, rtc3d_disconnect_handler);
   rtc3d_set_command_handler(server, rtc3d_command_handler);
 
-  // EVENT LOOP
+  // Event loop
+	event_base_loop(ev_base, 0);
 
   /* Shutdown server */
   rtc3d_teardown_server(&server);
