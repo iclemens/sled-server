@@ -11,13 +11,13 @@
 
 void mch_mp_send_mode_switch(mch_mp_t *machine, uint8_t mode)
 {
-	void mch_sdo_queue_write(machine->mch_sdo, 0x6060, 0x00, mode, 0x01);
+	mch_sdo_queue_write(machine->mch_sdo, 0x6060, 0x00, mode, 0x01);
 }
 
 
 void mch_mp_send_control_word(mch_mp_t *machine, uint16_t control_word)
 {
-	void mch_sdo_queue_write(machine->mch_sdo, 0x6040, 0x00, control_word, 0x02);
+	mch_sdo_queue_write(machine->mch_sdo, 0x6040, 0x00, control_word, 0x02);
 }
 
 
