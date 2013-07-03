@@ -29,7 +29,7 @@
 #define STATE(name) name,
 #define EVENT(name) name,
 #define CALLBACK(name, ...) \
-	typedef void(*HANDLER_TYPE(name))(MACHINE_TYPE *machine, void *payload, __VA_ARGS__); \
+	typedef void(*HANDLER_TYPE(name))(MACHINE_TYPE *machine, void *payload, ## __VA_ARGS__); \
 	void HANDLER_SETTER_NAME(name)(MACHINE_TYPE *machine, HANDLER_TYPE(name) handler);
 
 // Forward declaration
