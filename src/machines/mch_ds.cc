@@ -9,6 +9,12 @@
 #include "machine_body.h"
 
 
+void mch_mp_send_control_word(mch_mp_t *machine, uint16_t control_word)
+{
+	void mch_sdo_queue_write(machine->mch_sdo, 0x6040, 0x00, control_word, 0x02);
+}
+
+
 mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t event)
 {
 	if(!machine->state == ST_DS_DISABLED && event == EV_DS_NET_INOPERATIONAL)
@@ -80,12 +86,6 @@ mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t e
 	}
 
 	return machine->state;
-}
-
-
-void mch_ds_send_control_word(mch_ds_t *machine, uint16_t control_word)
-{
-	intf_send_write_req(machine->interface, 0x6040, 0x00, control_word, 0x02);
 }
 
 
