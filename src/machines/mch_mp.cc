@@ -9,6 +9,18 @@
 #include "machine_body.h"
 
 
+void mch_mp_send_mode_switch(mch_mp_t *machine, uint8_t mode)
+{
+	intf_send_write_req(machine->interface, 0x6060, 0x00, mode, 0x01);
+}
+
+
+void mch_mp_send_control_word(mch_mp_t *machine, uint16_t control_word)
+{
+	intf_send_write_req(machine->interface, 0x6040, 0x00, control_word, 0x02);
+}
+
+
 mch_mp_state_t mch_mp_next_state_given_event(mch_mp_t *machine, mch_mp_event_t event)
 {
 	if(!machine->state == ST_MP_DISABLED && event == EV_MP_DS_INOPERATIONAL)
@@ -44,18 +56,6 @@ mch_mp_state_t mch_mp_next_state_given_event(mch_mp_t *machine, mch_mp_event_t e
 	}
 
 	return machine->state;
-}
-
-
-void mch_mp_send_mode_switch(mch_mp_t *machine, uint8_t mode)
-{
-	intf_send_write_req(machine->interface, 0x6060, 0x00, mode, 0x01);
-}
-
-
-void mch_mp_send_control_word(mch_mp_t *machine, uint16_t control_word)
-{
-	intf_send_write_req(machine->interface, 0x6040, 0x00, control_word, 0x02);
 }
 
 

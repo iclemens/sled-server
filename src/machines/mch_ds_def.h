@@ -38,6 +38,7 @@ END_STATES
 
 BEGIN_FIELDS
 	FIELD(intf_t *, interface)
+	FIELD(mch_sdo_t *, mch_sdo)
 END_FIELDS
 
 BEGIN_CALLBACKS

@@ -132,8 +132,8 @@ void setup_state_machines(sled_t *sled)
 	sled->mch_intf = mch_intf_create(sled->interface);
 	sled->mch_sdo = mch_sdo_create(sled->interface);
 	sled->mch_net = mch_net_create(sled->interface, sled->mch_sdo);
-	sled->mch_ds = mch_ds_create(sled->interface);
-	sled->mch_mp = mch_mp_create(sled->interface);
+	sled->mch_ds = mch_ds_create(sled->interface, sled->mch_sdo);
+	sled->mch_mp = mch_mp_create(sled->interface, sled->mch_sdo);
 
 	// Register callback payload
 	mch_intf_set_callback_payload(sled->mch_intf, (void *) sled);
@@ -223,7 +223,7 @@ int sled_rt_get_position(sled_t *handle, double &position)
 // Sinusoids
 int sled_sinusoid_start(sled_t *handle, double amplitude, double period)
 {
-	printf("sled_sinusoid_start(%f, %f)\n", amplitude, period);	
+	printf("sled_sinusoid_start(%f, %f)\n", amplitude, period);
 
 	sled_profile_set_target(handle, handle->sinusoid_there, pos_relative_target, amplitude, period / 2.0);
 	sled_profile_set_target(handle, handle->sinusoid_back, pos_relative_target, -amplitude, period / 2.0);
