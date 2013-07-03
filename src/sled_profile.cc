@@ -16,6 +16,68 @@
 
 
 /**
+ * Compute control word for a profile.
+ */
+int control_from_profile(sled_profile_t profile)
+{
+	int control = 0;
+
+	// Set bits 15, 2, 1 and 0 depending on position type
+	switch(profile.position_type) {
+		case pos_absolute: break;
+		case pos_relative_actual: control |= 0x01 | 0x04; break;
+		case pos_relative_target: control |= 0x01 | 0x02; break;
+	}
+
+	// Set bit 3 to indicate next motion task
+	if(profile.next_profile >= 0)
+		control |= 0x08;
+
+	// Set bit 8, 7, 6, 5, 4 depending on blending
+	switch(profile.blend_type) {
+		case bln_none: break;
+		case bln_before: control |= 0x100 | 0x10; break;
+		case bln_after: control |= 0x10; break;
+	}
+
+	// Table vs trajectory generator (table)
+	control |= 0x200;
+
+	// Use SI units
+	control |= 0x2000;
+
+	return control;
+}
+
+
+/**
+ * Prepare motion profile for execution.
+ */
+void send_profile_to_device(sled_t *sled, sled_profile_t profile)
+{
+	int position = 1000.0 * 1000.0 * profile.position;		// In micrometers
+	int time = 1000.0 * profile.time;						// In milliseconds
+	int control = control_from_profile(profile);
+
+	// Send command to sled
+	mch_sdo_queue_write(sled->mch_sdo, OB_O_P, 0x01, position, 0x04);
+	mch_sdo_queue_write(sled->mch_sdo, OB_O_V, 0x01, 0x00, 0x04);
+	mch_sdo_queue_write(sled->mch_sdo, OB_O_C, 0x01, control, 0x04);
+	mch_sdo_queue_write(sled->mch_sdo, OB_O_ACC, 0x01, time / 2, 0x04);
+	mch_sdo_queue_write(sled->mch_sdo, OB_O_DEC, 0x01, time / 2, 0x04);
+	mch_sdo_queue_write(sled->mch_sdo, OB_O_TAB, 0x01, profile.table, 0x04);
+
+	// Only send next profile if it is set
+	if(profile.next_profile >= 0) {
+		mch_sdo_queue_write(sled->mch_sdo, OB_O_FN, 0x01, profile.next_profile, 0x04);
+		mch_sdo_queue_write(sled->mch_sdo, OB_O_FT, 0x01, profile.delay, 0x04);
+	}
+
+	mch_sdo_queue_write(sled->mch_sdo, OB_CopyMotionTasks, 0x0, (profile.profile && 0xFFFF) << 16 , 0x04);
+}
+
+
+/**
  * Reset profile structure.
  */
 void sled_profile_clear(sled_t *sled, int profile, bool in_use)
@@ -178,49 +240,7 @@ int sled_profile_execute(sled_t *sled, int profile)
 		return -1;
 	}
 
-	int position = 1000.0 * 1000.0 * sled->profiles[profile].position;	// In micrometers
-	int time = 1000.0 * sled->profiles[profile].time;						// In milliseconds
-	int control = 0;
-
-	// Set bits 15, 2, 1 and 0 depending on position type
-	switch(sled->profiles[profile].position_type) {
-		case pos_absolute: break;
-		case pos_relative_actual: control |= 0x01 | 0x04; break;
-		case pos_relative_target: control |= 0x01 | 0x02; break;
-	}
-
-	// Set bit 3 to indicate next motion task
-	if(sled->profiles[profile].next_profile >= 0)
-		control |= 0x08;
-
-	// Set bit 8, 7, 6, 5, 4 depending on blending
-	switch(sled->profiles[profile].blend_type) {
-		case bln_none: break;
-		case bln_before: control |= 0x100 | 0x10; break;
-		case bln_after: control |= 0x10; break;
-	}
-
-	// Table vs trajectory generator (table)
-	control |= 0x200;
-
-	// Use SI units
-	control |= 0x2000;
-
-	// Send command to sled
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_P, 0x01, position, 0x04);
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_V, 0x01, 0x00, 0x04);
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_C, 0x01, control, 0x04);
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_ACC, 0x01, time / 2, 0x04);
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_DEC, 0x01, time / 2, 0x04);
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_TAB, 0x01, sled->profiles[profile].table, 0x04);
-
-	// Only send next profile if it is set
-	if(sled->profiles[profile].next_profile >= 0) {
-		mch_sdo_queue_write(sled->mch_sdo, OB_O_FN, 0x01, sled->profiles[profile].next_profile, 0x04);
-		mch_sdo_queue_write(sled->mch_sdo, OB_O_FT, 0x01, sled->profiles[profile].delay, 0x04);
-	}
-
-	mch_sdo_queue_write(sled->mch_sdo, OB_CopyMotionTasks, 0x0, (sled->profiles[profile].profile && 0xFFFF) << 16 , 0x04);
+	send_profile_to_device(sled, sled->profiles[profile]);
 	mch_sdo_queue_write(sled->mch_sdo, OB_Move, 0x01, sled->profiles[profile].profile , 0x04);
 
 	return -1;
