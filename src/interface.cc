@@ -2,6 +2,7 @@
 #include "interface.h"
 #include "interface_internal.h"
 
+#include <assert.h>
 #include <event2/event.h>
 
 #include <stdlib.h>
@@ -32,6 +33,8 @@ void intf_debug_print_status(int status)
  */
 intf_t *intf_create(event_base *ev_base)
 {
+	assert(ev_base);
+
   intf_t *intf = (intf_t *) malloc(sizeof(intf_t));
   
   intf->ev_base = ev_base;
@@ -70,6 +73,8 @@ void intf_destroy(intf_t **intf)
  */
 int intf_open(intf_t *intf)
 {
+	assert(intf);
+
 	#ifdef WIN32
 	return -1;
 	#else
@@ -125,6 +130,8 @@ int intf_open(intf_t *intf)
 
 int intf_is_open(intf_t *intf)
 {
+	assert(intf);
+
   if(intf->handle)
     return 1;
   else
@@ -172,6 +179,8 @@ int intf_close(intf_t *intf)
  */
 int intf_write(intf_t *intf, can_message_t msg)
 {
+	assert(intf);
+
   TPCANMsg cmsg;
   cmsg.ID = msg.id;
   cmsg.MSGTYPE = msg.type;
@@ -202,6 +211,8 @@ int intf_write(intf_t *intf, can_message_t msg)
  */
 int intf_send_nmt_command(intf_t *intf, uint8_t command)
 {
+	assert(intf);
+
   can_message_t msg;
   msg.id = 0;
   msg.type = mt_standard;
@@ -221,6 +232,8 @@ int intf_send_nmt_command(intf_t *intf, uint8_t command)
  */
 int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size)
 {
+	assert(intf);
+
   can_message_t msg;
   msg.id = (0x0C << 7) + 1;
   msg.type = mt_standard;
@@ -244,6 +257,7 @@ int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t
  */
 void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 {
+	assert(intf);
   int function = msg.id >> 7;
 
 	if(function == 0x01) {
