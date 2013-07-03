@@ -249,31 +249,31 @@ int main()
 		return 1;
 	}
 
-  /* Setup context */
-  sled_server_ctx_t *context = setup_sled_server_context(ev_base);
-  if(context == NULL)
-    return 1;
+	/* Setup context */
+	sled_server_ctx_t *context = setup_sled_server_context(ev_base);
+	if(context == NULL)
+		return 1;
 
-  /* Start server */
-  rtc3d_server_t *server = rtc3d_setup_server(ev_base, (void *)context, 3375);
+	/* Start server */
+	rtc3d_server_t *server = rtc3d_setup_server(ev_base, (void *)context, 3375);
 
-  if(!server) {
-    fprintf(stderr, "rtc3d_setup_server() failed\n");
-    teardown_sled_server_context(&context);
-    return 1;
-  }
+	if(!server) {
+		fprintf(stderr, "rtc3d_setup_server() failed\n");
+		teardown_sled_server_context(&context);
+		return 1;
+	}
 
-  /* Install handlers */
-  rtc3d_set_disconnect_handler(server, rtc3d_disconnect_handler);
-  rtc3d_set_command_handler(server, rtc3d_command_handler);
+	/* Install handlers */
+	rtc3d_set_disconnect_handler(server, rtc3d_disconnect_handler);
+	rtc3d_set_command_handler(server, rtc3d_command_handler);
 
-  // Event loop
+	// Event loop
 	event_base_loop(ev_base, 0);
 
-  /* Shutdown server */
-  rtc3d_teardown_server(&server);
-  teardown_sled_server_context(&context);
+	/* Shutdown server */
+	rtc3d_teardown_server(&server);
+	teardown_sled_server_context(&context);
 
-  return 0;
+	return 0;
 }
 
