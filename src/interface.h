@@ -10,6 +10,22 @@ struct intf_t;
 #define NMT_ENTERPREOPERATIONAL	0x80
 #define NMT_STARTREMOTENODE		0x01
 
+/**
+ * Data dictionary objects.
+ */
+#define OB_O_P    0x35BE	// Position
+#define OB_O_V    0x35BF	// Velocity
+#define OB_O_C    0x35B9	// Settings
+#define OB_O_ACC  0x35B7	// Acceleration
+#define OB_O_DEC  0x35BA  // Deceleration
+#define OB_O_TAB  0x35B8  // Profile table
+#define OB_O_FN   0x35BC  // Next profile
+#define OB_O_FT   0x35BD  // Delay before next
+#define OB_O_MOVE 0x3642  // Execute motion task
+
+#define OB_COPY_MOTION_TASK	 0x2082	 // Copy motion task
+#define OB_CONTROL_WORD 		 0x6040	 // Control word
+
 
 // Callbacks
 typedef void(*intf_nmt_state_handler_t)(intf_t *intf, void *payload, uint8_t state);

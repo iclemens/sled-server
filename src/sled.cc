@@ -89,7 +89,7 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 
 		if(mode == 0x06)
 			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_HOMING);
-		if(mode == 0x08)
+		if(mode == 0x01)
 			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_PP);
 	}
 

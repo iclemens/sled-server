@@ -17,7 +17,7 @@ void mch_mp_send_mode_switch(mch_mp_t *machine, uint8_t mode)
 
 void mch_mp_send_control_word(mch_mp_t *machine, uint16_t control_word)
 {
-	mch_sdo_queue_write(machine->mch_sdo, 0x6040, 0x00, control_word, 0x02);
+	mch_sdo_queue_write(machine->mch_sdo, OB_CONTROL_WORD, 0x00, control_word, 0x02);
 }
 
 
@@ -67,7 +67,7 @@ void mch_mp_on_enter(mch_mp_t *machine)
 			break;
 
 		case ST_MP_SWITCH_MODE_PP:
-			mch_mp_send_mode_switch(machine, 0x08);
+			mch_mp_send_mode_switch(machine, 0x01);
 			break;
 
 		case ST_MP_HH_HOMING:

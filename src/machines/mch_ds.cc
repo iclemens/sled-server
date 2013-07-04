@@ -11,7 +11,7 @@
 
 void mch_ds_send_control_word(mch_ds_t *machine, uint16_t control_word)
 {
-	mch_sdo_queue_write(machine->mch_sdo, 0x6040, 0x00, control_word, 0x02);
+	mch_sdo_queue_write(machine->mch_sdo, OB_CONTROL_WORD, 0x00, control_word, 0x02);
 }
 
 
