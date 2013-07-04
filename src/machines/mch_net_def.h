@@ -6,7 +6,8 @@ BEGIN_EVENTS
 	EVENT(EV_NET_INTF_OPENED)		// From interface machine (mch_intf.cc)
 	EVENT(EV_NET_INTF_CLOSED)		// From interface machine (mch_intf.cc)
 
-	EVENT(EV_NET_SDO_QUEUE_EMPTY)	// From SDO machine (mch_sdo.cc)
+	EVENT(EV_NET_UPLOAD_COMPLETE)	// Internal
+	EVENT(EV_NET_UPLOAD_FAILED)		// Internal
 
 	EVENT(EV_NET_STOPPED)			// From CANOpen (interface.cc)
 	EVENT(EV_NET_OPERATIONAL)		// From CANOpen (interface.cc)

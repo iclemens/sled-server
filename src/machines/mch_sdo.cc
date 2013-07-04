@@ -194,9 +194,6 @@ void mch_sdo_on_exit(mch_sdo_t *machine)
 			break;
 
 		case ST_SDO_SENDING:
-			if(machine->sdo_queue.empty())
-				if(machine->queue_empty_handler)
-					machine->queue_empty_handler(machine, machine->payload);
 			break;
 	}
 }

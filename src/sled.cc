@@ -95,9 +95,6 @@ CALLBACK_FUNCTION_EVENT(net, on_sdos_disabled, sdo, EV_NET_SDO_DISABLED)
 CALLBACK_FUNCTION_EVENT(net, on_enter_operational, ds, EV_DS_NET_OPERATIONAL);
 CALLBACK_FUNCTION_EVENT(net, on_leave_operational, ds, EV_DS_NET_INOPERATIONAL);
 
-// Inform NMT machine that SDO queue is empty.
-CALLBACK_FUNCTION_EVENT(sdo, on_queue_empty, net, EV_NET_SDO_QUEUE_EMPTY);
-
 // Inform MP machine that DS is (in)operational.
 CALLBACK_FUNCTION_EVENT(ds, on_operation_enabled, mp, EV_MP_DS_OPERATIONAL);
 CALLBACK_FUNCTION_EVENT(ds, on_operation_disabled, mp, EV_MP_DS_INOPERATIONAL);
@@ -128,7 +125,6 @@ void setup_state_machines(sled_t *sled)
 	REGISTER_CALLBACK(net, sdos_disabled);
 	REGISTER_CALLBACK(net, enter_operational);
 	REGISTER_CALLBACK(net, leave_operational);
-	REGISTER_CALLBACK(sdo, queue_empty);
 	REGISTER_CALLBACK(ds, operation_enabled);
 	REGISTER_CALLBACK(ds, operation_disabled);
 }

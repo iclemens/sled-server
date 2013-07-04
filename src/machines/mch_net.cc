@@ -10,48 +10,67 @@
 #include "machine_body.h"
 
 
+void mch_net_sdo_abort_callback(void *data, uint16_t index, uint8_t subindex, uint32_t abort)
+{
+	fprintf(stderr, "Error while uploading configuration (SDO index %04x:%02x abort code %04x).\n", index, subindex, abort);
+	exit(1);
+}
+
+
+void mch_net_sdo_write_callback(void *data, uint16_t index, uint8_t subindex)
+{
+	mch_net_t *machine = (mch_net_t *) data;
+	mch_net_handle_event(machine, EV_NET_UPLOAD_COMPLETE);
+}
+
+
+#define ENQUEUE(final, index, subindex, value, size) \
+	mch_sdo_queue_write_with_cb( \
+		mch_sdo, index, subindex, value, size, \
+		final?mch_net_sdo_write_callback:NULL, mch_net_sdo_abort_callback, (void *) mch_net);
+
 /**
  * Enqueue controller configuration for transmission.
  *
  * @param mch_sdo  SDO state machine that owns the queue.
  */
-void mch_net_queue_setup(mch_sdo_t *mch_sdo)
+void mch_net_queue_setup(mch_net_t *mch_net, mch_sdo_t *mch_sdo)
 {
 	// Setup TPDO1
-	mch_sdo_queue_write(mch_sdo, 0x1A00, 0x00, 0x00, 0x01);
-	mch_sdo_queue_write(mch_sdo, 0x1A00, 0x01, 0x60410010, 0x04);	// Status word
-	mch_sdo_queue_write(mch_sdo, 0x1A00, 0x02, 0x60610008, 0x04);	// Mode of operation
-	mch_sdo_queue_write(mch_sdo, 0x1A00, 0x00, 0x02, 0x01);
+	ENQUEUE(0, 0x1A00, 0x00, 0x00, 0x01);
+	ENQUEUE(0, 0x1A00, 0x01, 0x60410010, 0x04);	// Status word
+	ENQUEUE(0, 0x1A00, 0x02, 0x60610008, 0x04);	// Mode of operation
+	ENQUEUE(0, 0x1A00, 0x00, 0x02, 0x01);
 
-	mch_sdo_queue_write(mch_sdo, 0x1800, 0x01, 0x40000181, 0x04);
-	mch_sdo_queue_write(mch_sdo, 0x1800, 0x02, 0xFF, 0x01);			// Event triggered
-	mch_sdo_queue_write(mch_sdo, 0x1800, 0x03, 0x0A, 0x02);			// Inhibit timer
-	mch_sdo_queue_write(mch_sdo, 0x1800, 0x05, 0x0A, 0x02);			// Event timer
+	ENQUEUE(0, 0x1800, 0x01, 0x40000181, 0x04);
+	ENQUEUE(0, 0x1800, 0x02, 0xFF, 0x01);			// Event triggered
+	ENQUEUE(0, 0x1800, 0x03, 0x0A, 0x02);			// Inhibit timer
+	ENQUEUE(0, 0x1800, 0x05, 0x0A, 0x02);			// Event timer
 
 	// Setup TPDO2
-	mch_sdo_queue_write(mch_sdo, 0x1A01, 0x00, 0x00, 0x01);
-	mch_sdo_queue_write(mch_sdo, 0x1A01, 0x01, 0x60640020, 0x04);	// Position
-	mch_sdo_queue_write(mch_sdo, 0x1A01, 0x02, 0x606C0020, 0x04);	// Velocity
-	mch_sdo_queue_write(mch_sdo, 0x1A01, 0x00, 0x02, 0x01);
+	ENQUEUE(0, 0x1A01, 0x00, 0x00, 0x01);
+	ENQUEUE(0, 0x1A01, 0x01, 0x60640020, 0x04);	// Position
+	ENQUEUE(0, 0x1A01, 0x02, 0x606C0020, 0x04);	// Velocity
+	ENQUEUE(0, 0x1A01, 0x00, 0x02, 0x01);
 
-	mch_sdo_queue_write(mch_sdo, 0x1801, 0x01, 0x40000281, 0x04);
-	mch_sdo_queue_write(mch_sdo, 0x1801, 0x02, 0xFF, 0x01);			// On change (should be sync or timer?)
-	mch_sdo_queue_write(mch_sdo, 0x1801, 0x03, 0x0A, 0x02);
-	mch_sdo_queue_write(mch_sdo, 0x1801, 0x05, 0x0A, 0x02);
+	ENQUEUE(0, 0x1801, 0x01, 0x40000281, 0x04);
+	ENQUEUE(0, 0x1801, 0x02, 0xFF, 0x01);			// On change (should be sync or timer?)
+	ENQUEUE(0, 0x1801, 0x03, 0x0A, 0x02);
+	ENQUEUE(0, 0x1801, 0x05, 0x0A, 0x02);
 
 	// Setup RPDO2 for IP mode
-	mch_sdo_queue_write(mch_sdo, 0x1601, 0x00, 0x00, 0x01);
-	mch_sdo_queue_write(mch_sdo, 0x1601, 0x01, 0x60C10120, 0x04);
-	mch_sdo_queue_write(mch_sdo, 0x1601, 0x00, 0x01, 0x01);
+	ENQUEUE(0, 0x1601, 0x00, 0x00, 0x01);
+	ENQUEUE(0, 0x1601, 0x01, 0x60C10120, 0x04);
+	ENQUEUE(0, 0x1601, 0x00, 0x01, 0x01);
 
-	mch_sdo_queue_write(mch_sdo, 0x1401, 0x02, 0x01, 0x01);			// Every sync
+	ENQUEUE(0, 0x1401, 0x02, 0x01, 0x01);			// Every sync
 
 	// Disable TPDO 3 and 4
-	mch_sdo_queue_write(mch_sdo, 0x1A02, 0x00, 0x00, 0x01);
-	mch_sdo_queue_write(mch_sdo, 0x1802, 0x01, 0x40000381, 0x04);
+	ENQUEUE(0, 0x1A02, 0x00, 0x00, 0x01);
+	ENQUEUE(0, 0x1802, 0x01, 0x40000381, 0x04);
 	
-	mch_sdo_queue_write(mch_sdo, 0x1A03, 0x00, 0x00, 0x01);
-	mch_sdo_queue_write(mch_sdo, 0x1803, 0x01, 0x40000481, 0x04);
+	ENQUEUE(0, 0x1A03, 0x00, 0x00, 0x01);
+	ENQUEUE(1, 0x1803, 0x01, 0x40000481, 0x04);
 }
 
 
@@ -89,7 +108,7 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
 		case ST_NET_PREOPERATIONAL:
 			if(event == EV_NET_INTF_CLOSED)
 				return ST_NET_DISABLED;
-			if(event == EV_NET_SDO_QUEUE_EMPTY)
+			if(event == EV_NET_UPLOAD_COMPLETE)
 				return ST_NET_STARTREMOTENODE;
 			break;
 
@@ -101,7 +120,7 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
 		case ST_NET_UPLOADCONFIG:
 			if(event == EV_NET_INTF_CLOSED)
 				return ST_NET_DISABLED;
-			if(event == EV_NET_SDO_QUEUE_EMPTY)
+			if(event == EV_NET_UPLOAD_COMPLETE)
 				return ST_NET_STARTREMOTENODE;
 			break;
 
@@ -149,7 +168,7 @@ void mch_net_on_enter(mch_net_t *machine)
 			break;
 
 		case ST_NET_UPLOADCONFIG:
-			mch_net_queue_setup(machine->mch_sdo);
+			mch_net_queue_setup(machine, machine->mch_sdo);
 			break;
 
 		case ST_NET_OPERATIONAL:
@@ -163,7 +182,7 @@ void mch_net_on_enter(mch_net_t *machine)
 			if(machine->sdos_enabled_handler)
 				machine->sdos_enabled_handler(machine, machine->payload);
 
-			mch_net_queue_setup(machine->mch_sdo);
+			mch_net_queue_setup(machine, machine->mch_sdo);
 
 			break;
 	}
