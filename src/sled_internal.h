@@ -31,6 +31,18 @@
 
 struct event_base;
 
+
+enum field_state_t {
+	FIELD_CHANGED,		// Contents have changed, not yet sent
+	FIELD_WRITING,		// Awaiting confirmation on write
+	FIELD_INVALID,		// Last attempt to write failed
+	FIELD_WRITTEN		// Written
+};
+
+
+/**
+ * Motion profile.
+ */
 struct sled_profile_t {
 	bool in_use;
 	int profile;
@@ -42,11 +54,30 @@ struct sled_profile_t {
 	int next_profile;
 	double delay;
 	blend_type_t blend_type;
+
+	// The following fields are not part of the profile itself,
+	//  but keep track of whether the fields have been written to
+	//  the device.
+	field_state_t _ob_o_p;
+	field_state_t _ob_o_v;
+	field_state_t _ob_o_c;
+	field_state_t _ob_o_acc;
+	field_state_t _ob_o_dec;
+	field_state_t _ob_o_tab;
+	field_state_t _ob_o_fn;
+	field_state_t _ob_o_ft;
 };
 
+
+/**
+ * Sled instance variables.
+ */
 struct sled_t {
-	// Local copy of motion profiles
+	// Local copy of motion profiles.
 	sled_profile_t profiles[MAX_PROFILES];
+
+	// Profile loaded in register 0.
+	int current_profile;
 
 	// Lib event event base
 	event_base *ev_base;
@@ -68,7 +99,8 @@ struct sled_t {
 	int sinusoid_there, sinusoid_back;
 };
 
+
 void sled_profile_clear(sled_t *sled, int profile, bool in_use);
 
-#endif
 
+#endif

@@ -1,28 +1,37 @@
 #include "sled_internal.h"
 
+#include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+
+
+/**
+ * Allow some kind of callback mechanism...
+ * We only want to execute once changes have been
+ * verified...
+ */
 
 
 /**
  * Compute control word for a profile.
  */
-int control_from_profile(sled_profile_t profile)
+int sled_profile_get_controlword(sled_profile_t *profile)
 {
 	int control = 0;
 
 	// Set bits 15, 2, 1 and 0 depending on position type
-	switch(profile.position_type) {
+	switch(profile->position_type) {
 		case pos_absolute: break;
 		case pos_relative_actual: control |= 0x01 | 0x04; break;
 		case pos_relative_target: control |= 0x01 | 0x02; break;
 	}
 
 	// Set bit 3 to indicate next motion task
-	if(profile.next_profile >= 0)
+	if(profile->next_profile >= 0)
 		control |= 0x08;
 
 	// Set bit 8, 7, 6, 5, 4 depending on blending
-	switch(profile.blend_type) {
+	switch(profile->blend_type) {
 		case bln_none: break;
 		case bln_before: control |= 0x100 | 0x10; break;
 		case bln_after: control |= 0x10; break;
@@ -39,31 +48,122 @@ int control_from_profile(sled_profile_t profile)
 
 
 /**
- * Prepare motion profile for execution.
+ * Marks a profile as unsaved. Changes will be written
+ * the the device as soon as possible.
  */
-void send_profile_to_device(sled_t *sled, sled_profile_t profile)
+void sled_profile_mark_as_unsaved(sled_profile_t *profile)
 {
-	int position = 1000.0 * 1000.0 * profile.position;		// In micrometers
-	int time = 1000.0 * profile.time;						// In milliseconds
-	int control = control_from_profile(profile);
+	assert(profile);
 
-	printf("Moving to %f (%d)\n", profile.position, position);
+	profile->_ob_o_p   = FIELD_CHANGED;
+	profile->_ob_o_v   = FIELD_CHANGED;
+	profile->_ob_o_c   = FIELD_CHANGED;
+	profile->_ob_o_acc = FIELD_CHANGED;
+	profile->_ob_o_dec = FIELD_CHANGED;
+	profile->_ob_o_tab = FIELD_CHANGED;
+	profile->_ob_o_fn  = FIELD_CHANGED;
+	profile->_ob_o_ft  = FIELD_CHANGED;
+}
 
-	// Send command to sled
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_P, 0x01, position, 0x04);
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_V, 0x01, 0x00, 0x04);
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_C, 0x01, control, 0x04);
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_ACC, 0x01, time / 2, 0x04);
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_DEC, 0x01, time / 2, 0x04);
-	mch_sdo_queue_write(sled->mch_sdo, OB_O_TAB, 0x01, profile.table, 0x04);
 
-	// Only send next profile if it is set
-	if(profile.next_profile >= 0) {
-		mch_sdo_queue_write(sled->mch_sdo, OB_O_FN, 0x01, profile.next_profile, 0x04);
-		mch_sdo_queue_write(sled->mch_sdo, OB_O_FT, 0x01, profile.delay, 0x04);
+bool sled_profile_has_changes_pending(sled_profile_t *profile)
+{
+	assert(profile);
+
+	if(profile->_ob_o_p   == FIELD_CHANGED) return true;
+	if(profile->_ob_o_v   == FIELD_CHANGED) return true;
+	if(profile->_ob_o_c   == FIELD_CHANGED) return true;
+	if(profile->_ob_o_acc == FIELD_CHANGED) return true;
+	if(profile->_ob_o_dec == FIELD_CHANGED) return true;
+	if(profile->_ob_o_tab == FIELD_CHANGED) return true;
+	if(profile->_ob_o_fn  == FIELD_CHANGED) return true;
+	if(profile->_ob_o_ft  == FIELD_CHANGED) return true;
+
+	return false;
+}
+
+
+/**
+ * Set state of field identified by dictionary index.
+ */
+void sled_profile_set_field_state(sled_profile_t *profile, uint16_t index, field_state_t state)
+{
+	assert(profile);
+
+	switch(index) {
+		case OB_O_P:   profile->_ob_o_p   = state; break;
+		case OB_O_V:   profile->_ob_o_v   = state; break;
+		case OB_O_C:   profile->_ob_o_c   = state; break;
+		case OB_O_ACC: profile->_ob_o_acc = state; break;
+		case OB_O_DEC: profile->_ob_o_dec = state; break;
+		case OB_O_TAB: profile->_ob_o_tab = state; break;
+		case OB_O_FN:  profile->_ob_o_fn  = state; break;
+		case OB_O_FT:  profile->_ob_o_ft  = state; break;
+	}
+}
+
+
+/**
+ * Mark field as written.
+ */
+void on_success_callback(void *data, uint16_t index, uint8_t subindex)
+{
+	sled_profile_t *profile = (sled_profile_t *) data;
+	sled_profile_set_field_state(profile, index, FIELD_WRITTEN);
+}
+
+
+/**
+ * Mark field as invalid (write failed).
+ */
+void on_failure_callback(void *data, uint16_t index, uint8_t subindex, uint32_t abort)
+{
+	sled_profile_t *profile = (sled_profile_t *) data;
+	sled_profile_set_field_state(profile, index, FIELD_INVALID);
+
+	fprintf(stderr, "Uploading of profile failed (index %04x abort code %04x)\n", index, abort);
+	exit(1);
+}
+
+
+#define WRITE_FIELD_IF_CHANGED(name, index, value) \
+	if(profile->_ ## name == FIELD_CHANGED) { \
+		profile->_ ## name = FIELD_WRITING; \
+		mch_sdo_queue_write_with_cb( \
+			sled->mch_sdo, index, 0x01, value, 0x04, \
+			on_success_callback, on_failure_callback, (void *) profile \
+		); \
 	}
 
-	mch_sdo_queue_write(sled->mch_sdo, OB_COPY_MOTION_TASK, 0x0, (profile.profile & 0xFFFF) << 16 , 0x04);
+
+/**
+ * Writes all pending changes to the device.
+ */
+void sled_profile_write_pending_changes(sled_t *sled, sled_profile_t *profile)
+{
+	assert(sled && profile);
+
+	// No changes pending, bail out
+	if(!sled_profile_has_changes_pending(profile))
+		return;
+
+	// Load correct profile in slot 0
+	if(sled->current_profile != profile->profile) {
+		mch_sdo_queue_write(sled->mch_sdo, OB_COPY_MOTION_TASK, 0x0, profile->profile & 0xFFFF , 0x04);
+		sled->current_profile = profile->profile;
+	}
+
+	WRITE_FIELD_IF_CHANGED(ob_o_p,   OB_O_P,   int32_t(profile->position * 1000.0 * 1000.0))
+	WRITE_FIELD_IF_CHANGED(ob_o_v,   OB_O_V,   0x00)
+	WRITE_FIELD_IF_CHANGED(ob_o_c,   OB_O_C,   sled_profile_get_controlword(profile))
+	WRITE_FIELD_IF_CHANGED(ob_o_acc, OB_O_ACC, int32_t(profile->time * 1000.0 / 2.0))
+	WRITE_FIELD_IF_CHANGED(ob_o_dec, OB_O_DEC, int32_t(profile->time * 1000.0 / 2.0))
+	WRITE_FIELD_IF_CHANGED(ob_o_tab, OB_O_TAB, profile->table)
+	WRITE_FIELD_IF_CHANGED(ob_o_fn,  OB_O_FN,  profile->next_profile)
+	WRITE_FIELD_IF_CHANGED(ob_o_ft,  OB_O_FT,  profile->delay)
+
+	// Copy back to profile 0 (this could be defered to a later time)
+	mch_sdo_queue_write(sled->mch_sdo, OB_COPY_MOTION_TASK, 0x0, (profile->profile & 0xFFFF) << 16, 0x04);
 }
 
 
@@ -88,6 +188,8 @@ void sled_profile_clear(sled_t *sled, int profile, bool in_use)
   p->next_profile = -1;
   p->delay = 0.0;
   p->blend_type = bln_none;
+
+  sled_profile_mark_as_unsaved(p);
 }
 
 
@@ -162,6 +264,8 @@ int sled_profile_set_table(sled_t *sled, int profile, int table)
     return -1;
 
   sled->profiles[profile].table = table;
+  sled->profiles[profile]._ob_o_tab = FIELD_CHANGED;
+
   return 0;
 }
 
@@ -186,6 +290,12 @@ int sled_profile_set_target(sled_t *sled, int profile, position_type_t type, dou
   sled->profiles[profile].position_type = type;
   sled->profiles[profile].position = position;
   sled->profiles[profile].time = time;
+
+  sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
+  sled->profiles[profile]._ob_o_p = FIELD_CHANGED;
+  sled->profiles[profile]._ob_o_acc = FIELD_CHANGED;
+  sled->profiles[profile]._ob_o_dec = FIELD_CHANGED;
+
   return 0;
 }
 
@@ -206,6 +316,11 @@ int sled_profile_set_next(sled_t *sled, int profile, int next_profile, double de
   sled->profiles[profile].next_profile = next_profile;
   sled->profiles[profile].delay = delay;
   sled->profiles[profile].blend_type = blend_type;
+
+  sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
+  sled->profiles[profile]._ob_o_fn = FIELD_CHANGED;
+  sled->profiles[profile]._ob_o_ft = FIELD_CHANGED;
+
   return 0;
 }
 
@@ -234,15 +349,11 @@ int sled_profile_execute(sled_t *sled, int profile)
 		return -1;
 	}
 
-	send_profile_to_device(sled, sled->profiles[profile]);
-	//mch_sdo_queue_write(sled->mch_sdo, OB_Move, 0x01, sled->profiles[profile].profile , 0x04);
+	sled_profile_write_pending_changes(sled, &(sled->profiles[profile]));
+
 	mch_sdo_queue_write(sled->mch_sdo, 0x2080, 0x00, sled->profiles[profile].profile, 0x02);
-
-	// Toggle bits 4 and 5 of control word
-
-	// Change setpoint
 	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x1F, 0x02);
+	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x0F, 0x02);
 
-	return -1;
+	return 0;
 }
-
