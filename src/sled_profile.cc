@@ -6,13 +6,6 @@
 
 
 /**
- * Allow some kind of callback mechanism...
- * We only want to execute once changes have been
- * verified...
- */
-
-
-/**
  * Compute control word for a profile.
  */
 int sled_profile_get_controlword(sled_profile_t *profile)
@@ -357,6 +350,9 @@ int sled_profile_execute(sled_t *sled, int profile)
 
 	sled_profile_write_pending_changes(sled, profile);
 
+	/**
+	 * FIXME: We only want to execute once changes have been verified...
+	 */
 	mch_sdo_queue_write(sled->mch_sdo, 0x2080, 0x00, sled->profiles[profile].profile, 0x02);
 	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x1F, 0x02);
 	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x0F, 0x02);
