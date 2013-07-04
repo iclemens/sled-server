@@ -6,8 +6,6 @@
 // Define machine prefix
 #define PREFIX mch_sdo
 
-struct mch_sdo_t;
-
 typedef void(*sdo_abort_callback_t)(void *data, uint16_t index, uint8_t subindex, uint32_t code);
 typedef void(*sdo_write_callback_t)(void *data, uint16_t index, uint8_t subindex);
 typedef void(*sdo_read_callback_t)(void *data, uint16_t index, uint8_t subindex, uint32_t value);
