@@ -39,26 +39,6 @@ void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 
 
 /**
- * Handle write (SDO) response.
- */
-void intf_on_write_response(intf_t *intf, void *payload, uint16_t index, uint8_t subindex)
-{
-	sled_t *sled = (sled_t *) payload;
-	mch_sdo_handle_event(sled->mch_sdo, EV_SDO_READ_RESPONSE);
-}
-
-
-/**
- * Handle read (SDO) response.
- */
-void intf_on_abort_response(intf_t *intf, void *payload, uint16_t index, uint8_t subindex, uint32_t abort)
-{
-	sled_t *sled = (sled_t *) payload;
-	mch_sdo_handle_event(sled->mch_sdo, EV_SDO_ABORT_RESPONSE);
-}
-
-
-/**
  * Handle TPDO.
  */
 void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
@@ -181,8 +161,6 @@ sled_t *sled_create(event_base *ev_base)
 	// Register interface callback functions
 	intf_set_close_handler(sled->interface, intf_on_close);
 	intf_set_nmt_state_handler(sled->interface, intf_on_nmt);
-	intf_set_write_resp_handler(sled->interface, intf_on_write_response);
-	intf_set_abort_resp_handler(sled->interface, intf_on_abort_response);
 	intf_set_tpdo_handler(sled->interface, intf_on_tpdo);
 
 	// Register sinusoid profiles

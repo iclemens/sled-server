@@ -27,6 +27,27 @@ struct sdo_t {
 #include "machine_body.h"
 
 
+void mch_sdo_read_callback(void *data, uint16_t index, uint8_t subindex, uint32_t value)
+{
+	mch_sdo_t *machine = (mch_sdo_t *) data;
+	mch_sdo_handle_event(machine, EV_SDO_READ_RESPONSE);
+}
+
+
+void mch_sdo_write_callback(void *data, uint16_t index, uint8_t subindex)
+{
+	mch_sdo_t *machine = (mch_sdo_t *) data;
+	mch_sdo_handle_event(machine, EV_SDO_WRITE_RESPONSE);
+}
+
+
+void mch_sdo_abort_callback(void *data, uint16_t index, uint8_t subindex, uint32_t code)
+{
+	mch_sdo_t *machine = (mch_sdo_t *) data;
+	mch_sdo_handle_event(machine, EV_SDO_ABORT_RESPONSE);
+}
+
+
 mch_sdo_state_t mch_sdo_next_state_given_event(mch_sdo_t *machine, mch_sdo_event_t event)
 {
 	switch(machine->state) {
@@ -67,7 +88,9 @@ void mch_sdo_on_enter(mch_sdo_t *machine)
 		case ST_SDO_SENDING:
 			sdo = machine->sdo_queue.front();
 			if(sdo->is_write)
-				intf_send_write_req(machine->interface, sdo->index, sdo->subindex, sdo->value, sdo->size);
+				intf_send_write_req(machine->interface, 
+					sdo->index, sdo->subindex, sdo->value, sdo->size, 
+					mch_sdo_write_callback, mch_sdo_abort_callback, (void *) machine);
 			else
 				fprintf(stderr, "Ignoring read request...\n");
 			machine->sdo_queue.pop();

@@ -40,11 +40,20 @@ struct intf_t
   void *payload;
   
   intf_nmt_state_handler_t nmt_state_handler;  
-  intf_read_resp_handler_t read_resp_handler;
-  intf_write_resp_handler_t write_resp_handler;
-  intf_abort_resp_handler_t abort_resp_handler;
 	intf_tpdo_handler_t tpdo_handler;
   intf_close_handler_t close_handler;
+
+	// Data passed to read/write/abort callbacks
+	void *sdo_callback_data;
+
+	// Write SDO callback
+	intf_write_callback_t write_callback;
+
+	// Read SDO callback
+	intf_read_callback_t read_callback;
+
+	// Abort SDO callback
+	intf_abort_callback_t abort_callback;
 };
 
 void intf_on_read(evutil_socket_t fd, short events, void *intf_v);

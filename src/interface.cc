@@ -28,6 +28,15 @@ void intf_debug_print_status(int status)
 }
 
 
+void intf_clear_sdo_callbacks(intf_t *intf)
+{
+	intf->sdo_callback_data = NULL;
+	intf->read_callback = NULL;
+	intf->write_callback = NULL;
+	intf->abort_callback = NULL;
+}
+
+
 /**
  * Setup CAN Interface
  */
@@ -47,12 +56,11 @@ intf_t *intf_create(event_base *ev_base)
 
 	// Initialize callback functions
  	intf->nmt_state_handler = NULL;
-  intf->read_resp_handler = NULL;
-  intf->write_resp_handler = NULL;
-  intf->abort_resp_handler = NULL;
 	intf->tpdo_handler = NULL;
 	intf->close_handler = NULL;
   
+	intf_clear_sdo_callbacks(intf);
+
   return intf;
 }
 
@@ -230,7 +238,8 @@ int intf_send_nmt_command(intf_t *intf, uint8_t command)
 /**
  * Send write request.
  */
-int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size)
+int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size,
+	intf_write_callback_t write_callback, intf_abort_callback_t abort_callback, void *data)
 {
 	assert(intf);
 
@@ -247,6 +256,11 @@ int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t
   msg.data[5] = (value & 0x0000FF00) >> 8;
   msg.data[6] = (value & 0x00FF0000) >> 16;
   msg.data[7] = (value & 0xFF000000) >> 24;
+
+	intf->read_callback = NULL;
+	intf->write_callback = write_callback;
+	intf->abort_callback = abort_callback;
+	intf->sdo_callback_data = data;
 
   return intf_write(intf, msg); 
 }
@@ -284,19 +298,19 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
    
     // Write response
     if(msg.data[0] == 0x60) {
-			if(intf->write_resp_handler) {
-	      intf->write_resp_handler(intf, intf->payload, index, subindex);
+			if(intf->write_callback) {
+				intf->write_callback(intf->sdo_callback_data, index, subindex);
 			} else {
 				fprintf(stderr, "Received write response, but no callback function has been set.\n");
 			}
     }
     
-    // Read response
-    
+    // Read response		    
+
     // Abort response
     if(msg.data[0] == 0x80) {
-			if(intf->abort_resp_handler) {
-	      intf->abort_resp_handler(intf, intf->payload, index, subindex, value);
+			if(intf->abort_callback) {
+				intf->abort_callback(intf->sdo_callback_data, index, subindex, value);
 			} else {
 				fprintf(stderr, "Received abort response, but no callback function has been set.\n");
 			}
@@ -392,24 +406,6 @@ void intf_set_callback_payload(intf_t *intf, void *payload)
 void intf_set_nmt_state_handler(intf_t *intf, intf_nmt_state_handler_t handler)
 {
   intf->nmt_state_handler = handler;
-}
-
-
-void intf_set_read_resp_handler(intf_t *intf, intf_read_resp_handler_t handler)
-{
-  intf->read_resp_handler = handler;
-}
-
-
-void intf_set_write_resp_handler(intf_t *intf, intf_write_resp_handler_t handler)
-{
-  intf->write_resp_handler = handler;
-}
-
-
-void intf_set_abort_resp_handler(intf_t *intf, intf_abort_resp_handler_t handler)
-{
-  intf->abort_resp_handler = handler;
 }
 
 

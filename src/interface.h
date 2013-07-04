@@ -32,11 +32,15 @@ struct intf_t;
 
 // Callbacks
 typedef void(*intf_nmt_state_handler_t)(intf_t *intf, void *payload, uint8_t state);
-typedef void(*intf_read_resp_handler_t)(intf_t *intf, void *payload, uint16_t index, uint8_t subindex, uint32_t value);
-typedef void(*intf_write_resp_handler_t)(intf_t *intf, void *payload, uint16_t index, uint8_t subindex);
-typedef void(*intf_abort_resp_handler_t)(intf_t *intf, void *payload, uint16_t index, uint8_t subindex, uint32_t abort);
 typedef void(*intf_tpdo_handler_t)(intf_t *intf, void *payload, int pdo, uint8_t *data);
 typedef void(*intf_close_handler_t)(intf_t *intf, void *payload);
+
+/**
+ * Callbacks for send_write_req and send_read_req.
+ */
+typedef void(*intf_abort_callback_t)(void *data, uint16_t index, uint8_t subindex, uint32_t code);
+typedef void(*intf_write_callback_t)(void *data, uint16_t index, uint8_t subindex);
+typedef void(*intf_read_callback_t)(void *data, uint16_t index, uint8_t subindex, uint32_t value);
 
 // Functions
 intf_t *intf_create(event_base *ev_base);
@@ -47,15 +51,12 @@ int intf_close(intf_t *intf);
 int intf_is_open(intf_t *intf);
 
 int intf_send_nmt_command(intf_t *intf, uint8_t command);
-int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size);
+int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size, intf_write_callback_t write_callback, intf_abort_callback_t abort_callback, void *data);
 
 // Callback setters
 void intf_set_callback_payload(intf_t *intf, void *payload);
 
 void intf_set_nmt_state_handler(intf_t *intf, intf_nmt_state_handler_t handler);
-void intf_set_read_resp_handler(intf_t *intf, intf_read_resp_handler_t handler);
-void intf_set_write_resp_handler(intf_t *intf, intf_write_resp_handler_t handler);
-void intf_set_abort_resp_handler(intf_t *intf, intf_abort_resp_handler_t handler);
 void intf_set_tpdo_handler(intf_t *intf, intf_tpdo_handler_t handler);
 void intf_set_close_handler(intf_t *intf, intf_close_handler_t handler);
 
