@@ -139,8 +139,10 @@ void on_failure_callback(void *data, uint16_t index, uint8_t subindex, uint32_t 
 /**
  * Writes all pending changes to the device.
  */
-void sled_profile_write_pending_changes(sled_t *sled, sled_profile_t *profile)
+void sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 {
+	sled_profile_t *profile = &(sled->profiles[profile_id]);
+
 	assert(sled && profile);
 
 	// No changes pending, bail out
@@ -164,6 +166,10 @@ void sled_profile_write_pending_changes(sled_t *sled, sled_profile_t *profile)
 
 	// Copy back to profile 0 (this could be defered to a later time)
 	mch_sdo_queue_write(sled->mch_sdo, OB_COPY_MOTION_TASK, 0x0, (profile->profile & 0xFFFF) << 16, 0x04);
+
+	// Write profiles that the current profile depends on...
+	if(profile->next_profile >= 0)
+		sled_profile_write_pending_changes(sled, profile->next_profile);
 }
 
 
@@ -349,7 +355,7 @@ int sled_profile_execute(sled_t *sled, int profile)
 		return -1;
 	}
 
-	sled_profile_write_pending_changes(sled, &(sled->profiles[profile]));
+	sled_profile_write_pending_changes(sled, profile);
 
 	mch_sdo_queue_write(sled->mch_sdo, 0x2080, 0x00, sled->profiles[profile].profile, 0x02);
 	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x1F, 0x02);
