@@ -51,11 +51,15 @@ double get_time()
  */
 int tlate_profile_id(sled_server_ctx_t* ctx, int profile)
 {
-  if(ctx->profile_tlate.count(profile) == 1)
+  if(ctx->profile_tlate.count(profile) == 1) {
+		printf(" Maps to: %d\n", ctx->profile_tlate[profile]);
     return ctx->profile_tlate[profile];
+	}
 
   int profile_id = sled_profile_create(ctx->sled);
   ctx->profile_tlate.insert( std::pair<int, int>(profile, profile_id) );
+
+	return profile_id;
 }
 
 
@@ -134,16 +138,32 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 
     case cmd_profile_set: {
       int profile_id = tlate_profile_id(ctx, command.profile);
-      int next_profile_id = tlate_profile_id(ctx, command.next_profile);
 
-      if((profile_id < -1) || (next_profile_id < -1)) {
-        rtc3d_send_error(rtc3d_conn, (char *) "err-profile-set");
-        break;
-      }
+			if(profile_id < 0) {
+				fprintf(stderr, "Invalid profile id: %d\n", profile_id);
+				rtc3d_send_error(rtc3d_conn, (char *) "err-profile-set");
+				break;
+			}
 
-      //sled_profile_clear(ctx->sled, profile_id, true);
-      sled_profile_set_target(ctx->sled, profile_id, command.position_type, command.position / 1000.0, command.time / 1000.0);
-      sled_profile_set_next(ctx->sled, profile_id, next_profile_id, command.next_delay / 1000.0, command.blend_type);
+			if(sled_profile_set_target(ctx->sled, profile_id, 
+					command.position_type, 
+					command.position / 1000.0, 
+					command.time / 1000.0) == -1) {
+				fprintf(stderr, "Setting of position failed, target was: %f m in %f s\n", command.position, command.time);
+				rtc3d_send_error(rtc3d_conn, (char *) "err-profile-set");
+				break;
+			}
+
+			/*if(command.next_profile >= 0) {
+	      int next_profile_id = tlate_profile_id(ctx, command.next_profile);
+
+				if(next_profile_id < 0) {
+					rtc3d_send_error(rtc3d_conn, (char *) "err-profile-set");
+					break;
+				}
+
+				sled_profile_set_next(ctx->sled, profile_id, next_profile_id, command.next_delay / 1000.0, command.blend_type);
+			}*/
 
       rtc3d_send_command(rtc3d_conn, (char *) "ok-profile-set");
 
@@ -262,7 +282,7 @@ void on_timeout(evutil_socket_t sock, short events, void *arg)
 	tlast = tcurrent;
 
 	if(delta > 11) {
-		printf("Periodic timer miss: %.2f\t%.2f ms\n", delta - 10, delta);
+		//printf("Periodic timer miss: %.2f\t%.2f ms\n", delta - 10, delta);
 	}
 
 	// Get position
