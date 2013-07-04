@@ -26,7 +26,11 @@ END_CALLBACKS
 
 BEGIN_FIELDS
 	FIELD(intf_t *, interface)
-	FIELD_DECL_ONLY(std::queue<sdo_t *>, sdo_queue)
+
+	FIELD_DECL(std::queue<sdo_t *>, sdo_queue)
+	FIELD_DECL(sdo_t *, sdo_active)
+
+	FIELD_INIT(sdo_active, NULL)
 END_FIELDS
 
 GENERATE_DEFAULT_FUNCTIONS

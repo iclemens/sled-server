@@ -12,7 +12,8 @@
 
 #undef BEGIN_FIELDS
 #undef FIELD
-#undef FIELD_DECL_ONLY
+#undef FIELD_DECL
+#undef FIELD_INIT
 #undef END_FIELDS
 
 #undef GENERATE_DEFAULT_FUNCTIONS

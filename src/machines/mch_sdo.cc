@@ -29,21 +29,77 @@ struct sdo_t {
 
 void mch_sdo_read_callback(void *data, uint16_t index, uint8_t subindex, uint32_t value)
 {
+	assert(data);
+
+	// Unpack SDO
 	mch_sdo_t *machine = (mch_sdo_t *) data;
+	sdo_t *sdo = machine->sdo_active;
+
+	assert(sdo);
+	assert(!sdo->is_write);
+	assert(machine->sdo_active->index == index);
+	assert(machine->sdo_active->subindex == subindex);
+
+	// Invoke callback
+	if(sdo->read_callback)
+		sdo->read_callback(sdo->data, index, subindex, value);
+
+	// Free memory
+	delete sdo;
+	machine->sdo_active = NULL;
+
+	// Notify state machine
 	mch_sdo_handle_event(machine, EV_SDO_READ_RESPONSE);
 }
 
 
 void mch_sdo_write_callback(void *data, uint16_t index, uint8_t subindex)
 {
-	mch_sdo_t *machine = (mch_sdo_t *) data;
+  assert(data);
+
+  // Unpack SDO
+  mch_sdo_t *machine = (mch_sdo_t *) data;
+  sdo_t *sdo = machine->sdo_active;
+
+  assert(sdo);
+	assert(sdo->is_write);
+  assert(machine->sdo_active->index == index);
+  assert(machine->sdo_active->subindex == subindex);
+
+  // Invoke callback
+  if(sdo->write_callback)
+    sdo->write_callback(sdo->data, index, subindex);
+
+  // Free memory
+  delete sdo;
+  machine->sdo_active = NULL;
+
+  // Notify state machine
 	mch_sdo_handle_event(machine, EV_SDO_WRITE_RESPONSE);
 }
 
 
 void mch_sdo_abort_callback(void *data, uint16_t index, uint8_t subindex, uint32_t code)
 {
-	mch_sdo_t *machine = (mch_sdo_t *) data;
+  assert(data);
+
+  // Unpack SDO
+  mch_sdo_t *machine = (mch_sdo_t *) data;
+  sdo_t *sdo = machine->sdo_active;
+
+  assert(sdo);
+  assert(machine->sdo_active->index == index);
+  assert(machine->sdo_active->subindex == subindex);
+
+  // Invoke callback
+  if(sdo->abort_callback)
+    sdo->abort_callback(sdo->data, index, subindex, code);
+
+  // Free memory
+  delete sdo;
+  machine->sdo_active = NULL;
+
+  // Notify state machine
 	mch_sdo_handle_event(machine, EV_SDO_ABORT_RESPONSE);
 }
 
@@ -80,22 +136,27 @@ mch_sdo_state_t mch_sdo_next_state_given_event(mch_sdo_t *machine, mch_sdo_event
 }
 
 
+void mch_sdo_send(mch_sdo_t *machine, sdo_t *sdo)
+{
+	if(sdo->is_write) {
+		intf_send_write_req(machine->interface,
+			sdo->index, sdo->subindex, sdo->value, sdo->size,
+			mch_sdo_write_callback, mch_sdo_abort_callback, (void *) machine);
+	} else {
+		fprintf(stderr, "ERROR: Read requests are not implemented\n");
+		exit(1);
+	}
+}
+
+
 void mch_sdo_on_enter(mch_sdo_t *machine)
 {
-	sdo_t *sdo;
-
 	switch(machine->state) {
 		case ST_SDO_SENDING:
-			sdo = machine->sdo_queue.front();
-			if(sdo->is_write)
-				intf_send_write_req(machine->interface, 
-					sdo->index, sdo->subindex, sdo->value, sdo->size, 
-					mch_sdo_write_callback, mch_sdo_abort_callback, (void *) machine);
-			else
-				fprintf(stderr, "Ignoring read request...\n");
+			machine->sdo_active = machine->sdo_queue.front();
 			machine->sdo_queue.pop();
-			delete sdo;
 
+			mch_sdo_send(machine, machine->sdo_active);
 			break;
 
 		case ST_SDO_WAITING:
@@ -107,20 +168,29 @@ void mch_sdo_on_enter(mch_sdo_t *machine)
 }
 
 
+/**
+ * Drop all SDOs in the queue.
+ */
+void mch_sdo_clear_queue(mch_sdo_t *machine)
+{
+	while(!machine->sdo_queue.empty()) {
+		sdo_t *sdo = machine->sdo_queue.front();
+		machine->sdo_queue.pop();
+
+		if(sdo->abort_callback)
+			sdo->abort_callback(sdo->data, sdo->index, sdo->subindex, 0);
+
+		delete sdo;
+	}
+}
+
+
 void mch_sdo_on_exit(mch_sdo_t *machine)
 {
 	switch(machine->state) {
 		case ST_SDO_DISABLED:
 		case ST_SDO_ERROR:
-			// Drop queue and invoke abort callbacks
-			while(!machine->sdo_queue.empty()) {
-				sdo_t *sdo = machine->sdo_queue.front();
-				if(sdo->abort_callback) {
-					sdo->abort_callback(sdo->data, sdo->index, sdo->subindex, 0);
-				}
-				machine->sdo_queue.pop();
-				delete sdo;
-			}
+			mch_sdo_clear_queue(machine);
 			break;
 
 		case ST_SDO_SENDING:

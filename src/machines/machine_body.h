@@ -3,7 +3,8 @@
 // First generate structure type
 #include "machine_undef.h"
 #define FIELD(type, name) type name;
-#define FIELD_DECL_ONLY(type, name) type name;
+#define FIELD_DECL(type, name) type name;
+#define FIELD_INIT(name, value)
 #define CALLBACK(name) HANDLER_TYPE(name) CONCAT(name, _handler);
 
 struct MACHINE_TYPE {
@@ -81,9 +82,11 @@ MACHINE_TYPE *CONCAT(PREFIX, _create)(
 	machine->payload = NULL;
 
 	#undef FIELD
+	#undef FIELD_INIT
 	#undef CALLBACK
 
 	#define FIELD(type, name) machine->name = name;
+	#define FIELD_INIT(name, value) machine->name = value;
 	#define CALLBACK(name) machine->CONCAT(name, _handler) = NULL;
 	#include MACHINE_FILE()
 	
