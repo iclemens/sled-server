@@ -6,9 +6,12 @@
 struct event_base;
 struct intf_t;
 
-
+/**
+ * Network management commands.
+ */
 #define NMT_ENTERPREOPERATIONAL	0x80
 #define NMT_STARTREMOTENODE		0x01
+
 
 /**
  * Data dictionary objects.
