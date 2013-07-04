@@ -3,18 +3,6 @@
 #include <stdio.h>
 
 
-#define OB_O_P		0x35BE
-#define OB_O_V		0x35BF
-#define OB_O_C		0x35B9
-#define OB_O_ACC	0x35B7
-#define OB_O_DEC	0x35BA
-#define OB_O_TAB	0x35B8
-#define OB_O_FN		0x35BC
-#define OB_O_FT		0x35BD
-#define OB_CopyMotionTasks 	0x2082
-#define OB_Move		0x3642
-
-
 /**
  * Compute control word for a profile.
  */
@@ -59,6 +47,8 @@ void send_profile_to_device(sled_t *sled, sled_profile_t profile)
 	int time = 1000.0 * profile.time;						// In milliseconds
 	int control = control_from_profile(profile);
 
+	printf("Moving to %f (%d)\n", profile.position, position);
+
 	// Send command to sled
 	mch_sdo_queue_write(sled->mch_sdo, OB_O_P, 0x01, position, 0x04);
 	mch_sdo_queue_write(sled->mch_sdo, OB_O_V, 0x01, 0x00, 0x04);
@@ -73,7 +63,7 @@ void send_profile_to_device(sled_t *sled, sled_profile_t profile)
 		mch_sdo_queue_write(sled->mch_sdo, OB_O_FT, 0x01, profile.delay, 0x04);
 	}
 
-	mch_sdo_queue_write(sled->mch_sdo, OB_CopyMotionTasks, 0x0, (profile.profile && 0xFFFF) << 16 , 0x04);
+	mch_sdo_queue_write(sled->mch_sdo, OB_COPY_MOTION_TASK, 0x0, (profile.profile & 0xFFFF) << 16 , 0x04);
 }
 
 
@@ -183,11 +173,15 @@ int sled_profile_set_table(sled_t *sled, int profile, int table)
  */
 int sled_profile_set_target(sled_t *sled, int profile, position_type_t type, double position, double time)
 {
-  if(profile < 0 || profile >= MAX_PROFILES)
+  if(profile < 0 || profile >= MAX_PROFILES) {
+		fprintf(stderr, "Invalid profile: %d\n", profile);
     return -1;
+	}
 
-  if(!sled->profiles[profile].in_use)
+  if(!sled->profiles[profile].in_use) {
+		fprintf(stderr, "Invalid profile: %d (not in use)\n", profile);
     return -1;
+	}
 
   sled->profiles[profile].position_type = type;
   sled->profiles[profile].position = position;
@@ -241,7 +235,13 @@ int sled_profile_execute(sled_t *sled, int profile)
 	}
 
 	send_profile_to_device(sled, sled->profiles[profile]);
-	mch_sdo_queue_write(sled->mch_sdo, OB_Move, 0x01, sled->profiles[profile].profile , 0x04);
+	//mch_sdo_queue_write(sled->mch_sdo, OB_Move, 0x01, sled->profiles[profile].profile , 0x04);
+	mch_sdo_queue_write(sled->mch_sdo, 0x2080, 0x00, sled->profiles[profile].profile, 0x02);
+
+	// Toggle bits 4 and 5 of control word
+
+	// Change setpoint
+	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x1F, 0x02);
 
 	return -1;
 }
