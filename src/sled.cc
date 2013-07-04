@@ -229,3 +229,4 @@ int sled_light_set_state(sled_t *handle, bool state)
 	printf("sled_light_set_state(%s)\n", state?"on":"off");
 	return -1;
 }
+
