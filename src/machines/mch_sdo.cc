@@ -15,6 +15,11 @@ struct sdo_t {
 	uint8_t subindex;
 	uint32_t value;
 	uint8_t size;
+
+	void *data;
+	sdo_abort_callback_t abort_callback;
+	sdo_write_callback_t write_callback;
+	sdo_read_callback_t read_callback;
 };
 
 
@@ -97,9 +102,13 @@ void mch_sdo_on_exit(mch_sdo_t *machine)
 
 
 /**
- * Enqueue a write request SDO.
+ * Enqueue a write request SDO and register callback.
+ *
+ * If the SDO is dropped or aborted, the abort_callback is invoked.
+ * In case the write succeeds the write_callback is invoked.
  */
-void mch_sdo_queue_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size)
+void mch_sdo_queue_write_with_cb(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size,
+  sdo_write_callback_t write_callback, sdo_abort_callback_t abort_callback, void *data)
 {
 	sdo_t sdo;
 	sdo.is_write = true;
@@ -107,6 +116,12 @@ void mch_sdo_queue_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, u
 	sdo.subindex = subindex;
 	sdo.value = value;
 	sdo.size = size;
+
+	sdo.write_callback = write_callback;
+	sdo.read_callback = NULL;
+	sdo.abort_callback = abort_callback;
+	sdo.data = data;
+
 	machine->sdo_queue.push(sdo);
 
 	mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
@@ -114,9 +129,22 @@ void mch_sdo_queue_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, u
 
 
 /**
- * Enqueue a read request SDO.
+ * Enqueue a write request SDO.
  */
-void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint8_t size)
+void mch_sdo_queue_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size)
+{
+	mch_sdo_queue_write_with_cb(machine, index, subindex, value, size, NULL, NULL, NULL);
+}
+
+
+/**
+ * Enqueue a read request SDO and register callback.
+ *
+ * If the SDO is dropped or aborted, the abort_callback is invoked.
+ * In case the read succeeds the read_callback is invoked.
+ */
+void mch_sdo_queue_read_with_cb(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint8_t size,
+	sdo_read_callback_t read_callback, sdo_abort_callback_t abort_callback, void *data)
 {
 	sdo_t sdo;
 	sdo.is_write = false;
@@ -124,9 +152,23 @@ void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex, ui
 	sdo.subindex = subindex;
 	sdo.value = 0;
 	sdo.size = size;
+
+	sdo.write_callback = NULL;
+	sdo.read_callback = read_callback;
+	sdo.abort_callback = abort_callback;
+	sdo.data = NULL;
+
 	machine->sdo_queue.push(sdo);
 
 	mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
 }
 
+
+/**
+ * Enqueue read request SDO.
+ */
+void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint8_t size)
+{
+	mch_sdo_queue_read_with_cb(machine, index, subindex, size, NULL, NULL, NULL);
+}
 
