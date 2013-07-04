@@ -61,16 +61,17 @@ mch_sdo_state_t mch_sdo_next_state_given_event(mch_sdo_t *machine, mch_sdo_event
 
 void mch_sdo_on_enter(mch_sdo_t *machine)
 {
-	sdo_t sdo;
+	sdo_t *sdo;
 
 	switch(machine->state) {
 		case ST_SDO_SENDING:
 			sdo = machine->sdo_queue.front();
-			if(sdo.is_write)
-				intf_send_write_req(machine->interface, sdo.index, sdo.subindex, sdo.value, sdo.size);
+			if(sdo->is_write)
+				intf_send_write_req(machine->interface, sdo->index, sdo->subindex, sdo->value, sdo->size);
 			else
 				fprintf(stderr, "Ignoring read request...\n");
 			machine->sdo_queue.pop();
+			delete sdo;
 
 			break;
 
@@ -88,8 +89,15 @@ void mch_sdo_on_exit(mch_sdo_t *machine)
 	switch(machine->state) {
 		case ST_SDO_DISABLED:
 		case ST_SDO_ERROR:
-			while(!machine->sdo_queue.empty())
+			// Drop queue and invoke abort callbacks
+			while(!machine->sdo_queue.empty()) {
+				sdo_t *sdo = machine->sdo_queue.front();
+				if(sdo->abort_callback) {
+					sdo->abort_callback(sdo->data, sdo->index, sdo->subindex, 0);
+				}
 				machine->sdo_queue.pop();
+				delete sdo;
+			}
 			break;
 
 		case ST_SDO_SENDING:
@@ -110,20 +118,19 @@ void mch_sdo_on_exit(mch_sdo_t *machine)
 void mch_sdo_queue_write_with_cb(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size,
   sdo_write_callback_t write_callback, sdo_abort_callback_t abort_callback, void *data)
 {
-	sdo_t sdo;
-	sdo.is_write = true;
-	sdo.index = index;
-	sdo.subindex = subindex;
-	sdo.value = value;
-	sdo.size = size;
+	sdo_t *sdo = new sdo_t();
+	sdo->is_write = true;
+	sdo->index = index;
+	sdo->subindex = subindex;
+	sdo->value = value;
+	sdo->size = size;
 
-	sdo.write_callback = write_callback;
-	sdo.read_callback = NULL;
-	sdo.abort_callback = abort_callback;
-	sdo.data = data;
+	sdo->write_callback = write_callback;
+	sdo->read_callback = NULL;
+	sdo->abort_callback = abort_callback;
+	sdo->data = data;
 
 	machine->sdo_queue.push(sdo);
-
 	mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
 }
 
@@ -146,20 +153,19 @@ void mch_sdo_queue_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, u
 void mch_sdo_queue_read_with_cb(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint8_t size,
 	sdo_read_callback_t read_callback, sdo_abort_callback_t abort_callback, void *data)
 {
-	sdo_t sdo;
-	sdo.is_write = false;
-	sdo.index = index;
-	sdo.subindex = subindex;
-	sdo.value = 0;
-	sdo.size = size;
+	sdo_t *sdo = new sdo_t();
+	sdo->is_write = false;
+	sdo->index = index;
+	sdo->subindex = subindex;
+	sdo->value = 0;
+	sdo->size = size;
 
-	sdo.write_callback = NULL;
-	sdo.read_callback = read_callback;
-	sdo.abort_callback = abort_callback;
-	sdo.data = NULL;
+	sdo->write_callback = NULL;
+	sdo->read_callback = read_callback;
+	sdo->abort_callback = abort_callback;
+	sdo->data = NULL;
 
 	machine->sdo_queue.push(sdo);
-
 	mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
 }
 
