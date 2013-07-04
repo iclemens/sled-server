@@ -20,10 +20,31 @@ mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t e
 	if(!machine->state == ST_DS_DISABLED && event == EV_DS_NET_INOPERATIONAL)
 		return ST_DS_DISABLED;
 
+	if(!machine->state == ST_DS_DISABLED) {
+		if(event == EV_DS_FAULT)
+			return ST_DS_CLEARING_FAULT;
+		if(event == EV_DS_FAULT_REACTION_ACTIVE)
+			return ST_DS_FAULT;
+	}
+
 	switch(machine->state) {
 		case ST_DS_DISABLED:
 			if(event == EV_DS_NET_OPERATIONAL)
 				return ST_DS_UNKNOWN;
+			break;
+
+		case ST_DS_FAULT:
+			if(event == EV_DS_FAULT)
+				return ST_DS_CLEARING_FAULT;
+			break;
+
+		case ST_DS_CLEARING_FAULT:
+      if(event == EV_DS_NOT_READY_TO_SWITCH_ON)
+        return ST_DS_SWITCH_ON_DISABLED;
+      if(event == EV_DS_READY_TO_SWITCH_ON)
+        return ST_DS_READY_TO_SWITCH_ON;
+      if(event == EV_DS_SWITCHED_ON)
+        return ST_DS_SWITCHED_ON;
 			break;
 
 		case ST_DS_UNKNOWN:
@@ -122,6 +143,10 @@ void mch_ds_on_enter(mch_ds_t *machine)
 		case ST_DS_OPERATION_ENABLED:
 			if(machine->operation_enabled_handler)
 				machine->operation_enabled_handler(machine, machine->payload);
+			break;
+
+		case ST_DS_CLEARING_FAULT:
+			mch_sdo_queue_read(machine->mch_sdo, 0x3518, 0x01);
 			break;
 	}
 }

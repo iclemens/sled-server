@@ -143,8 +143,9 @@ void mch_sdo_send(mch_sdo_t *machine, sdo_t *sdo)
 			sdo->index, sdo->subindex, sdo->value, sdo->size,
 			mch_sdo_write_callback, mch_sdo_abort_callback, (void *) machine);
 	} else {
-		fprintf(stderr, "ERROR: Read requests are not implemented\n");
-		exit(1);
+		intf_send_read_req(machine->interface,
+			sdo->index, sdo->subindex,
+			mch_sdo_read_callback, mch_sdo_abort_callback, (void *) machine);
 	}
 }
 
@@ -240,7 +241,7 @@ void mch_sdo_queue_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, u
  * If the SDO is dropped or aborted, the abort_callback is invoked.
  * In case the read succeeds the read_callback is invoked.
  */
-void mch_sdo_queue_read_with_cb(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint8_t size,
+void mch_sdo_queue_read_with_cb(mch_sdo_t *machine, uint16_t index, uint8_t subindex,
 	sdo_read_callback_t read_callback, sdo_abort_callback_t abort_callback, void *data)
 {
 	sdo_t *sdo = new sdo_t();
@@ -248,7 +249,7 @@ void mch_sdo_queue_read_with_cb(mch_sdo_t *machine, uint16_t index, uint8_t subi
 	sdo->index = index;
 	sdo->subindex = subindex;
 	sdo->value = 0;
-	sdo->size = size;
+	sdo->size = 0;
 
 	sdo->write_callback = NULL;
 	sdo->read_callback = read_callback;
@@ -263,8 +264,8 @@ void mch_sdo_queue_read_with_cb(mch_sdo_t *machine, uint16_t index, uint8_t subi
 /**
  * Enqueue read request SDO.
  */
-void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint8_t size)
+void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex)
 {
-	mch_sdo_queue_read_with_cb(machine, index, subindex, size, NULL, NULL, NULL);
+	mch_sdo_queue_read_with_cb(machine, index, subindex, NULL, NULL, NULL);
 }
 

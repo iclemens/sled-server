@@ -236,6 +236,36 @@ int intf_send_nmt_command(intf_t *intf, uint8_t command)
 
 
 /**
+ * Send read request.
+ */
+int intf_send_read_req(intf_t *intf, uint16_t index, uint8_t subindex,
+	intf_read_callback_t read_callback, intf_abort_callback_t abort_callback, void *data)
+{
+	assert(intf);
+
+	can_message_t msg;
+	msg.id = (0x0C << 7) + 1;
+	msg.type = mt_standard;
+
+	msg.len = 8;
+	msg.data[0] = 0x40;
+	msg.data[1] = (index & 0x00FF);
+	msg.data[2] = (index & 0xFF00) >> 8;
+	msg.data[3] = subindex;
+	msg.data[4] = 0;
+	msg.data[5] = 0;
+	msg.data[6] = 0;
+	msg.data[7] = 0;
+
+	intf->read_callback = read_callback;
+	intf->write_callback = NULL;
+	intf->abort_callback = abort_callback;
+	intf->sdo_callback_data = data;
+
+	return intf_write(intf, msg);
+}
+
+/**
  * Send write request.
  */
 int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size,
@@ -294,7 +324,17 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
   if(function == 0x0B) {
     uint16_t index = msg.data[1] + (msg.data[2] << 8);
     uint8_t subindex = msg.data[3];
-    uint32_t value = msg.data[4] + (msg.data[5] << 8) + (msg.data[6] << 16) + (msg.data[7] << 24);
+    uint32_t value;
+
+		switch(msg.data[0]) {
+			case 0x80:
+			case 0x43:
+				value = msg.data[4] + (msg.data[5] << 8) + (msg.data[6] << 16) + (msg.data[7] << 24);
+				break;
+			case 0x47: value = msg.data[4] + (msg.data[5] << 8) + (msg.data[6] << 16); break;
+			case 0x4B: value = msg.data[4] + (msg.data[5] << 8); break;
+			case 0x4F: value = msg.data[4]; break;
+		}
    
     // Write response
     if(msg.data[0] == 0x60) {
@@ -305,7 +345,14 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 			}
     }
     
-    // Read response		    
+    // Read response
+		if(msg.data[0] == 0x43 || msg.data[0] == 0x47 || msg.data[0] == 0x4B || msg.data[0] == 0x4F) {
+			if(intf->read_callback) {
+				intf->read_callback(intf->sdo_callback_data, index, subindex, value);
+			} else {
+				fprintf(stderr, "Received read response, but no callback function has been set.\n");
+			}
+		}		
 
     // Abort response
     if(msg.data[0] == 0x80) {
