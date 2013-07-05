@@ -12,7 +12,7 @@
 #include "machines/mch_ds.h"
 #include "machines/mch_mp.h"
 
-#define MAX_PROFILES 100
+#define MAX_PROFILES 99
 
 /**
  * Generates callback function for callback FNAME of the SNAME machine.

@@ -163,10 +163,11 @@ sled_t *sled_create(event_base *ev_base)
 	// Register sinusoid profiles
 	sled->sinusoid_there = sled_profile_create(sled);
 	sled->sinusoid_back = sled_profile_create(sled);
-	sled_profile_set_table(sled, sled->sinusoid_there, 0);
-	sled_profile_set_table(sled, sled->sinusoid_back, 0);
-	sled_profile_set_next(sled, sled->sinusoid_there, sled->sinusoid_back, 0.0, bln_none);
-	sled_profile_set_next(sled, sled->sinusoid_back, sled->sinusoid_there, 0.0, bln_none);
+
+	sled_profile_set_table(sled, sled->sinusoid_there, 2);	// Should be 0, but no acceleration has been set...
+	sled_profile_set_table(sled, sled->sinusoid_back, 2);
+	sled_profile_set_next(sled, sled->sinusoid_there, sled->sinusoid_back, 0.0, bln_after);
+	sled_profile_set_next(sled, sled->sinusoid_back, sled->sinusoid_there, 0.0, bln_after);
 
 	// Open interface
 	mch_intf_handle_event(sled->mch_intf, EV_INTF_OPEN);
@@ -212,8 +213,8 @@ int sled_sinusoid_start(sled_t *handle, double amplitude, double period)
 {
 	assert(handle);
 
-	sled_profile_set_target(handle, handle->sinusoid_there, pos_relative_target, amplitude, period / 2.0);
-	sled_profile_set_target(handle, handle->sinusoid_back, pos_relative_target, -amplitude, period / 2.0);
+	sled_profile_set_target(handle, handle->sinusoid_there, pos_absolute, handle->last_position + amplitude, period / 2.0);
+	sled_profile_set_target(handle, handle->sinusoid_back, pos_absolute, handle->last_position, period / 2.0);
 
 	return sled_profile_execute(handle, handle->sinusoid_there);
 }

@@ -181,7 +181,7 @@ void sled_profile_clear(sled_t *sled, int profile, bool in_use)
 
   sled_profile_t *p = &(sled->profiles[profile]);
 
-  p->profile = 200 + profile;
+  p->profile = 201 + profile;
   p->in_use = in_use;
 
   p->table = 2;
@@ -376,11 +376,12 @@ int sled_profile_execute(sled_t *sled, int profile)
 	/**
 	 * FIXME: We only want to execute once changes have been verified...
 	 */
-	//mch_sdo_queue_write(sled->mch_sdo, 0x2080, 0x00, sled->profiles[profile].profile, 0x02);
 	if(sled->current_profile != profile) {
-		mch_sdo_queue_write(sled->mch_sdo, 0x2082, 0x00, sled->profiles[profile].profile & 0xFFFF, 0x04);
+		mch_sdo_queue_write(sled->mch_sdo, OB_COPY_MOTION_TASK, 0x0, sled->profiles[profile].profile & 0xFFFF , 0x04);
 		sled->current_profile = profile;
 	}
+
+	mch_sdo_queue_write(sled->mch_sdo, 0x2080, 0x00, sled->profiles[profile].profile, 0x02);
 
 	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x1F, 0x02);
 	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x0F, 0x02);
