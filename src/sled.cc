@@ -1,5 +1,6 @@
 #include "sled_internal.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -193,17 +194,23 @@ int sled_rt_new_setpoint(sled_t *handle, double position)
 
 int sled_rt_get_position(sled_t *handle, double &position)
 {
-	// FIXME: Should check whether sled is operational.
+	assert(handle);
+
+	// Position is only valid if sled is operational
+	if(mch_net_active_state(handle->mch_net) != ST_NET_OPERATIONAL)
+		return -1;
 
 	position = handle->last_position;
-	return 1;
+	return 0;
 }
 
 
-// Sinusoids
+/**
+ * Start sinusoidal motion.
+ */
 int sled_sinusoid_start(sled_t *handle, double amplitude, double period)
 {
-	printf("sled_sinusoid_start(%f, %f)\n", amplitude, period);
+	assert(handle);
 
 	sled_profile_set_target(handle, handle->sinusoid_there, pos_relative_target, amplitude, period / 2.0);
 	sled_profile_set_target(handle, handle->sinusoid_back, pos_relative_target, -amplitude, period / 2.0);
@@ -219,10 +226,24 @@ int sled_sinusoid_stop(sled_t *handle)
 }
 
 
-// Light
+/**
+ * Switch (emergency) lights on or off.
+ *
+ * @param handle  libsled handle.
+ * @param state  True for on, False for off.
+ *
+ * @return 0 on success, -1 on failure.
+ */
 int sled_light_set_state(sled_t *handle, bool state)
 {
-	printf("sled_light_set_state(%s)\n", state?"on":"off");
-	return -1;
+	assert(handle);
+
+	// SDOs must be enabled for the light-switch to work.
+	if(mch_sdo_active_state(handle->mch_sdo) == ST_SDO_DISABLED)
+		return -1;
+
+	mch_sdo_queue_write(handle->mch_sdo, OB_O_O1, 0x01, state?0x01:0x00, 0x04);
+
+	return 0;
 }
 
