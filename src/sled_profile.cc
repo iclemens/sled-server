@@ -154,7 +154,7 @@ void sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 	WRITE_FIELD_IF_CHANGED(ob_o_acc, OB_O_ACC, int32_t(profile->time * 1000.0 / 2.0))
 	WRITE_FIELD_IF_CHANGED(ob_o_dec, OB_O_DEC, int32_t(profile->time * 1000.0 / 2.0))
 	WRITE_FIELD_IF_CHANGED(ob_o_tab, OB_O_TAB, profile->table)
-	WRITE_FIELD_IF_CHANGED(ob_o_fn,  OB_O_FN,  profile->next_profile)
+	WRITE_FIELD_IF_CHANGED(ob_o_fn,  OB_O_FN,  (profile->next_profile >= 0)?profile->next_profile:0)
 	WRITE_FIELD_IF_CHANGED(ob_o_ft,  OB_O_FT,  profile->delay)
 
 	// Copy back to profile 0 (this could be defered to a later time)
@@ -262,8 +262,10 @@ int sled_profile_set_table(sled_t *sled, int profile, int table)
   if(!sled->profiles[profile].in_use)
     return -1;
 
-  sled->profiles[profile].table = table;
-  sled->profiles[profile]._ob_o_tab = FIELD_CHANGED;
+	if(sled->profiles[profile].table != table) {
+	  sled->profiles[profile].table = table;
+  	sled->profiles[profile]._ob_o_tab = FIELD_CHANGED;
+	}
 
   return 0;
 }
@@ -286,14 +288,21 @@ int sled_profile_set_target(sled_t *sled, int profile, position_type_t type, dou
     return -1;
 	}
 
-  sled->profiles[profile].position_type = type;
-  sled->profiles[profile].position = position;
-  sled->profiles[profile].time = time;
+	if(sled->profiles[profile].position_type != type) {
+		sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
+		sled->profiles[profile].position_type = type;
+	}
 
-  sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
-  sled->profiles[profile]._ob_o_p = FIELD_CHANGED;
-  sled->profiles[profile]._ob_o_acc = FIELD_CHANGED;
-  sled->profiles[profile]._ob_o_dec = FIELD_CHANGED;
+	if(sled->profiles[profile].position != position) {
+		sled->profiles[profile]._ob_o_p = FIELD_CHANGED;
+	  sled->profiles[profile].position = position;
+	}
+
+	if(sled->profiles[profile].time != time) {
+		sled->profiles[profile]._ob_o_acc = FIELD_CHANGED;
+		sled->profiles[profile]._ob_o_dec = FIELD_CHANGED;
+	  sled->profiles[profile].time = time;
+	}
 
   return 0;
 }
@@ -312,13 +321,22 @@ int sled_profile_set_next(sled_t *sled, int profile, int next_profile, double de
   if(!sled->profiles[profile].in_use)
     return -1;
 
-  sled->profiles[profile].next_profile = next_profile;
-  sled->profiles[profile].delay = delay;
-  sled->profiles[profile].blend_type = blend_type;
+	if(sled->profiles[profile].next_profile != next_profile) {
+		sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
+		sled->profiles[profile]._ob_o_fn = FIELD_CHANGED;
+	  sled->profiles[profile].next_profile = next_profile;
+	}
 
-  sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
-  sled->profiles[profile]._ob_o_fn = FIELD_CHANGED;
-  sled->profiles[profile]._ob_o_ft = FIELD_CHANGED;
+	if(sled->profiles[profile].delay != delay) {
+		sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
+		sled->profiles[profile]._ob_o_ft = FIELD_CHANGED;
+	  sled->profiles[profile].delay = delay;
+	}
+
+	if(sled->profiles[profile].blend_type != blend_type) {
+		sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
+	  sled->profiles[profile].blend_type = blend_type;
+	}
 
   return 0;
 }
