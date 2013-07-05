@@ -27,6 +27,29 @@ struct sdo_t {
 #include "machine_body.h"
 
 
+const char *mch_sdo_abort_to_message(uint32_t code)
+{
+	switch(code) {
+		case 0x06010000: return "Unsupported access to this object.";
+		case 0x06010001: return "Attempted read access to a write-only object.";
+		case 0x06010002: return "Attempted write access to a read-only object.";
+		case 0x06020000: return "Object does not exist in Object Dictionary.";
+		case 0x06040041: return "Object cannot be mapped to a PDO.";
+		case 0x06040042: return "Size and number of mapped objects exceed permissible PDO length.";
+		case 0x06040043: return "General parameter incompatibility.";
+		case 0x06070010: return "Data type incompatible, length of service parameter is incompatible.";
+		case 0x06090011: return "Subindex does not exist.";
+		case 0x06090030: return "Outside value range for the parameter (only for write access).";
+		case 0x06090031: return "Parameter value too high.";
+		case 0x06090032: return "Parameter value too low.";
+		case 0x08000020: return "Data cannot be transmitted or saved.";
+		case 0x08000022: return "Data cannot be transmitted or saved because of device status.";
+	}
+
+	return "Unknown abort code.";
+}
+
+
 void mch_sdo_read_callback(void *data, uint16_t index, uint8_t subindex, uint32_t value)
 {
 	assert(data);
@@ -90,6 +113,10 @@ void mch_sdo_abort_callback(void *data, uint16_t index, uint8_t subindex, uint32
   assert(sdo);
   assert(machine->sdo_active->index == index);
   assert(machine->sdo_active->subindex == subindex);
+
+	fprintf(stderr, "%s SDO to %04x:%02x was aborted because: %s\n",
+		machine->sdo_active->is_write?"Write":"Read", index, subindex,
+		mch_sdo_abort_to_message(code));
 
   // Invoke callback
   if(sdo->abort_callback)
