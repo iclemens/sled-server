@@ -154,7 +154,12 @@ void sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 	WRITE_FIELD_IF_CHANGED(ob_o_acc, OB_O_ACC, int32_t(profile->time * 1000.0 / 2.0))
 	WRITE_FIELD_IF_CHANGED(ob_o_dec, OB_O_DEC, int32_t(profile->time * 1000.0 / 2.0))
 	WRITE_FIELD_IF_CHANGED(ob_o_tab, OB_O_TAB, profile->table)
-	WRITE_FIELD_IF_CHANGED(ob_o_fn,  OB_O_FN,  (profile->next_profile >= 0)?profile->next_profile:0)
+
+	int next_profile = 0;
+	if(profile->next_profile >= 0) 
+		next_profile = sled->profiles[profile->next_profile].profile;
+
+	WRITE_FIELD_IF_CHANGED(ob_o_fn,  OB_O_FN,  next_profile)
 	WRITE_FIELD_IF_CHANGED(ob_o_ft,  OB_O_FT,  profile->delay)
 
 	// Copy back to profile (this could be defered to a later time)
