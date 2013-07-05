@@ -117,7 +117,7 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
       if(sled_rt_get_position(ctx->sled, position) == -1)
         rtc3d_send_error(rtc3d_conn, (char *) "err-sendcurrentframe");
       else
-        rtc3d_send_data(rtc3d_conn, -1, -1, position);
+        rtc3d_send_data(rtc3d_conn, -1, -1, position * 1000.0);
       break;
     }
 
@@ -145,16 +145,22 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 				break;
 			}
 
+			// Check position...
+			if(abs(command.position) > 0.5) {
+				fprintf(stderr, "Invalid profile, position out of bounds.\n");
+				rtc3d_send_error(rtc3d_conn, (char *) "err-profile-set");
+			}
+
 			if(sled_profile_set_target(ctx->sled, profile_id, 
 					command.position_type, 
-					command.position / 1000.0, 
-					command.time / 1000.0) == -1) {
+					command.position, 
+					command.time) == -1) {
 				fprintf(stderr, "Setting of position failed, target was: %f m in %f s\n", command.position, command.time);
 				rtc3d_send_error(rtc3d_conn, (char *) "err-profile-set");
 				break;
 			}
 
-			/*if(command.next_profile >= 0) {
+			if(command.next_profile >= 0) {
 	      int next_profile_id = tlate_profile_id(ctx, command.next_profile);
 
 				if(next_profile_id < 0) {
@@ -163,7 +169,7 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 				}
 
 				sled_profile_set_next(ctx->sled, profile_id, next_profile_id, command.next_delay / 1000.0, command.blend_type);
-			}*/
+			}
 
       rtc3d_send_command(rtc3d_conn, (char *) "ok-profile-set");
 
@@ -172,16 +178,22 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 
 
     case cmd_sinusoid: {
+			fprintf(stderr, "Sinusoid %f %f\n", command.amplitude, command.period);
+			break;
       if(command.boolean) {
-        if(sled_sinusoid_start(ctx->sled, command.amplitude, command.period) == -1)
+        if(sled_sinusoid_start(ctx->sled, command.amplitude, command.period) == -1) {
+					fprintf(stderr, "sled_sinusoid_start(...) failed.\n");
           rtc3d_send_error(rtc3d_conn, (char *) "err-sinusoid-start");
-        else
+        } else {
           rtc3d_send_command(rtc3d_conn, (char *) "ok-sinusoid-start");
+				}
       } else {
-        if(sled_sinusoid_stop(ctx->sled) == -1)
+        if(sled_sinusoid_stop(ctx->sled) == -1) {
+					fprintf(stderr, "sled_sinusoid_stop(...) failed.\n");
           rtc3d_send_error(rtc3d_conn, (char *) "err-sinusoid-stop");
-        else
+        } else {
           rtc3d_send_command(rtc3d_conn, (char *) "ok-sinusoid-stop");
+				}
       }
 
       break;
@@ -287,14 +299,15 @@ void on_timeout(evutil_socket_t sock, short events, void *arg)
 
 	// Get position
 	double position;
-	sled_rt_get_position(ctx->sled, position);
+	if(sled_rt_get_position(ctx->sled, position) == -1)
+		return;
 
 	// Send position to all clients
 	static int frame = 0;
 
 	for(std::list<rtc3d_connection_t *>::iterator it = (ctx->stream_clients).begin();
 		it != (ctx->stream_clients).end(); it++) {
-		rtc3d_send_data(*it, frame, tcurrent, position);
+		rtc3d_send_data(*it, frame, tcurrent, position * 1000.0);
 	}
 
 	frame++;

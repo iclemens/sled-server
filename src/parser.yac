@@ -76,6 +76,12 @@ command:
   | setinternalstatus
   | sendinternalstatus;
 
+number:
+	INT { $<fval>$ = float($1); } 
+	| FLOAT { $<fval>$ = $1; };
+
+%type <fval> number;
+
 /**
   This part specifies the PROFILE command
  */
@@ -94,7 +100,7 @@ blend_part:
   | BLEND AFTER { command->blend_type = bln_after; };
 
 after_part:
-  AFTER INT { command->next_delay = $2; };
+  AFTER number { command->next_delay = $2; };
 
 next_part:
   NEXT INT { command->next_profile = $2; };
@@ -103,7 +109,7 @@ profile_part:
   PROFILE INT { command->profile = $2; };
 
 profile_def_base:
-  SET TABLE INT POSTYPE INT INT {
+  SET TABLE INT POSTYPE number number {
     command->type = cmd_profile_set;
     command->table = $3;
     command->position_type = $4;
@@ -143,10 +149,10 @@ streamframes:
     };
 
 sinusoid:
-  SINUSOID START INT INT { 
+  SINUSOID START number number { 
     command->type = cmd_sinusoid;
     command->boolean = true;
-    command->amplitude = $3;
+    command->amplitude = $<fval>3;
     command->period = $4;
     }
   | SINUSOID STOP { 
