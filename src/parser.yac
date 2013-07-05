@@ -112,10 +112,10 @@ profile_def_base:
 
 profile:
   profile_part EXECUTE { command->type = cmd_profile_execute; }
-  | profile_part profile_def_base
-  | profile_part profile_def_base next_part
-  | profile_part profile_def_base next_part after_part
-  | profile_part profile_def_base next_part blend_part
+  | profile_part profile_def_base { command->next_profile = -1; }
+  | profile_part profile_def_base next_part { command->blend_type = bln_none; }
+  | profile_part profile_def_base next_part after_part { command->blend_type = bln_none; }
+  | profile_part profile_def_base next_part blend_part { command->next_delay = 0; }
   | profile_part profile_def_base next_part after_part blend_part;
 
 /**
@@ -143,13 +143,13 @@ streamframes:
     };
 
 sinusoid:
-  START INT INT { 
+  SINUSOID START INT INT { 
     command->type = cmd_sinusoid;
     command->boolean = true;
-    command->amplitude = $2;
-    command->period = $3;
+    command->amplitude = $3;
+    command->period = $4;
     }
-  | STOP { 
+  | SINUSOID STOP { 
     command->type = cmd_sinusoid; 
     command->boolean = false; 
     };
