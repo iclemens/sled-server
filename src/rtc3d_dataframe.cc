@@ -213,7 +213,7 @@ void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t ti
   uint64_t *ctime = (uint64_t *) &(buffer[24]);
 
   uint32_t *mcount = (uint32_t *) &(buffer[32]);
-	uint32_t *xi = (uint32_t *) &(buffer[32]);
+	uint32_t *xi = (uint32_t *) &(buffer[36]);
 	float *x = (float *) &(buffer[36]);
   float *y = (float *) &(buffer[40]);
   float *z = (float *) &(buffer[44]);
