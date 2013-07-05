@@ -404,7 +404,7 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 	}
 
 	// A status message was received
-	if(message.Msg.MSGTYPE & MSGTYPE_STATUS)
+	if(message.Msg.MSGTYPE & MSGTYPE_STATUS == MSGTYPE_STATUS)
 	{
 		int32_t status = int32_t(CAN_Status(intf->handle));
 
@@ -415,10 +415,8 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 		}
 
 		if(! (status == 0x20 && status == 0x00)) {
-			printf("Received status %x\n", status);    
 			intf_debug_print_status(status);        
-			// Status received, ignore for now?
-			intf_close(intf);
+			//intf_close(intf);
 		} else {
 			printf("Status: %x\n", status);
 		}

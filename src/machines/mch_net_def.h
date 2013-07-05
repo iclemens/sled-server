@@ -12,6 +12,8 @@ BEGIN_EVENTS
 	EVENT(EV_NET_STOPPED)			// From CANOpen (interface.cc)
 	EVENT(EV_NET_OPERATIONAL)		// From CANOpen (interface.cc)
 	EVENT(EV_NET_PREOPERATIONAL)	// From CANOpen (interface.cc)
+
+	EVENT(EV_NET_WATCHDOG_FAILED)	// From sled.cc
 END_EVENTS
 
 BEGIN_STATES

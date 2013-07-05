@@ -1,8 +1,18 @@
 #include "sled_internal.h"
 
+#include <event2/event.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
+
+
+double get_time()
+{
+	timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return double(ts.tv_sec) + double(ts.tv_nsec) / 1000.0 / 1000.0 / 1000.0;
+}
 
 
 /** ******************
@@ -36,6 +46,8 @@ void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 		case 0x05: mch_net_handle_event(sled->mch_net, EV_NET_OPERATIONAL); break;
 		case 0x7F: mch_net_handle_event(sled->mch_net, EV_NET_PREOPERATIONAL); break;
 	}
+
+	sled->time_last_nmt_msg = get_time();
 }
 
 
@@ -81,6 +93,17 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 		sled->last_position = position / 1000.0 / 1000.0;
 		sled->last_velocity = velocity / 1000.0 / 1000.0;
 	}
+}
+
+
+void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
+{
+	sled_t *sled = (sled_t *) param;
+	double delta = get_time() - sled->time_last_nmt_msg;
+
+	// More than two seconds ago...
+	if(delta > 2.0)
+		mch_net_handle_event(sled->mch_net, EV_NET_WATCHDOG_FAILED);
 }
 
 
@@ -168,6 +191,14 @@ sled_t *sled_create(event_base *ev_base)
 	sled_profile_set_table(sled, sled->sinusoid_back, 2);
 	sled_profile_set_next(sled, sled->sinusoid_there, sled->sinusoid_back, 0.0, bln_after);
 	sled_profile_set_next(sled, sled->sinusoid_back, sled->sinusoid_there, 0.0, bln_after);
+
+	// Create watch-dog timer
+	timeval watchdog_timeout;
+	watchdog_timeout.tv_sec = 3;
+	watchdog_timeout.tv_usec = 0;
+
+	sled->watchdog = event_new(ev_base, -1, EV_PERSIST, nmt_watchdog, (void *) sled);
+	event_add(sled->watchdog, &watchdog_timeout);	
 
 	// Open interface
 	mch_intf_handle_event(sled->mch_intf, EV_INTF_OPEN);

@@ -110,11 +110,21 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
 				return ST_NET_DISABLED;
 			if(event == EV_NET_UPLOAD_COMPLETE)
 				return ST_NET_STARTREMOTENODE;
+			if(event == EV_NET_STOPPED)
+				return ST_NET_UNKNOWN;
+			if(event == EV_NET_WATCHDOG_FAILED)
+				return ST_NET_UNKNOWN;
 			break;
 
 		case ST_NET_OPERATIONAL:
 			if(event == EV_NET_INTF_CLOSED)
 				return ST_NET_DISABLED;
+			if(event == EV_NET_STOPPED)
+				return ST_NET_UNKNOWN;
+			if(event == EV_NET_PREOPERATIONAL)
+				return ST_NET_UNKNOWN;
+			if(event == EV_NET_WATCHDOG_FAILED)
+				return ST_NET_UNKNOWN;
 			break;
 
 		case ST_NET_UPLOADCONFIG:
@@ -152,6 +162,8 @@ void mch_net_on_enter(mch_net_t *machine)
 			break;
 
 		case ST_NET_UNKNOWN:
+			if(machine->sdos_disabled_handler)
+				machine->sdos_disabled_handler(machine, machine->payload);
 			intf_send_nmt_command(machine->interface, NMT_ENTERPREOPERATIONAL);
 			break;
 

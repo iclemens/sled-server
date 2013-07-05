@@ -1,6 +1,8 @@
 #ifndef __SLED_INTERNAL_H__
 #define __SLED_INTERNAL_H__
 
+#include <event2/event.h>
+
 #include "sled.h"
 #include "sled_profile.h"
 
@@ -97,6 +99,12 @@ struct sled_t {
 
 	// Profiles for sinusoid
 	int sinusoid_there, sinusoid_back;
+
+	// Time of last NMT message (for watchdog).
+	double time_last_nmt_msg;
+
+	// Watchdog event
+	event *watchdog;
 };
 
 
