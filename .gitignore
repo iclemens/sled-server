@@ -1,3 +1,6 @@
+src/.gen
+sled_server
+
 # Compiled Object files
 *.slo
 *.lo
