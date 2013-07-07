@@ -198,7 +198,7 @@ sled_t *sled_create(event_base *ev_base)
 	watchdog_timeout.tv_usec = 0;
 
 	sled->watchdog = event_new(ev_base, -1, EV_PERSIST, nmt_watchdog, (void *) sled);
-	event_add(sled->watchdog, &watchdog_timeout);	
+	event_add(sled->watchdog, &watchdog_timeout);
 
 	// Open interface
 	mch_intf_handle_event(sled->mch_intf, EV_INTF_OPEN);
@@ -207,6 +207,11 @@ sled_t *sled_create(event_base *ev_base)
 }
 
 
+/**
+ * Free sled structures.
+ *
+ * @param handle  Sled handle.
+ */
 void sled_destroy(sled_t **handle)
 {
 	sled_t *sled = *handle;
@@ -216,7 +221,12 @@ void sled_destroy(sled_t **handle)
 }
 
 
-// Set-points
+/**
+ * Set new setpoint.
+ *
+ * @param handle  Sled handle.
+ * @param position  Position set-point in meters.
+ */
 int sled_rt_new_setpoint(sled_t *handle, double position)
 {
 	// No can do
@@ -224,6 +234,12 @@ int sled_rt_new_setpoint(sled_t *handle, double position)
 }
 
 
+/**
+ * Returns current sled position.
+ *
+ * @param handle  Sled handle.
+ * @param position  Position (by-reference) in meters.
+ */
 int sled_rt_get_position(sled_t *handle, double &position)
 {
 	assert(handle);
@@ -239,18 +255,25 @@ int sled_rt_get_position(sled_t *handle, double &position)
 
 /**
  * Start sinusoidal motion.
+ *
+ * @param handle  Sled handle.
+ * @param amplitude  Amplitude of sinusoid in meters
+ * @param period  Period of sinusoidal motion in seconds.
  */
 int sled_sinusoid_start(sled_t *handle, double amplitude, double period)
 {
 	assert(handle);
 
-	sled_profile_set_target(handle, handle->sinusoid_there, pos_absolute, handle->last_position + amplitude, period / 2.0);
+	sled_profile_set_target(handle, handle->sinusoid_there, pos_absolute, handle->last_position + amplitude * 2.0, period / 2.0);
 	sled_profile_set_target(handle, handle->sinusoid_back, pos_absolute, handle->last_position, period / 2.0);
 
 	return sled_profile_execute(handle, handle->sinusoid_there);
 }
 
 
+/**
+ * Stop sinusoidal motion.
+ */
 int sled_sinusoid_stop(sled_t *handle)
 {
 	printf("sled_sinusoid_stop()\n");
@@ -278,4 +301,3 @@ int sled_light_set_state(sled_t *handle, bool state)
 
 	return 0;
 }
-
