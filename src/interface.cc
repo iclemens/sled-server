@@ -2,6 +2,7 @@
 #include "interface.h"
 #include "interface_internal.h"
 
+#include <syslog.h>
 #include <assert.h>
 #include <event2/event.h>
 
@@ -15,16 +16,31 @@
 #include <sys/stat.h>
 
 
-void intf_debug_print_status(int status)
+void intf_log_status(const char *function, int status)
 {
-  if(status & 0x01) fprintf(stderr, "Chip-send-buffer full.\n");
-  if(status & 0x02) fprintf(stderr, "Chip-receive buffer overrun.\n");
-  if(status & 0x04) fprintf(stderr, "Bus warning.\n");
-  if(status & 0x08) fprintf(stderr, "Bus passive.\n");
-  if(status & 0x10) fprintf(stderr, "Bus off.\n");
-  if(status & 0x20) fprintf(stderr, "Receive buffer is empty.\n");
-  if(status & 0x40) fprintf(stderr, "Receive buffer overrun.\n");
-  if(status & 0x80) fprintf(stderr, "Send-buffer is full.\n");
+	if(status & 0x01)
+		syslog(LOG_ALERT, "%s() chip-send-buffer full.", function);
+
+	if(status & 0x02)
+		syslog(LOG_ALERT, "%s() chip-receive-buffer overrun.", function);
+
+	if(status & 0x04)
+		syslog(LOG_WARNING, "%s() bus warning.", function);
+
+	if(status & 0x08)
+		syslog(LOG_WARNING, "%s() bus passive.", function);
+
+	if(status & 0x10)
+		syslog(LOG_ERR, "%s() bus off.", function);
+
+	if(status & 0x20)
+		syslog(LOG_INFO, "%s() receive buffer is empty.", function);
+
+	if(status & 0x40)
+		syslog(LOG_ALERT, "%s() receive buffer overrun.", function);
+
+	if(status & 0x80)
+		syslog(LOG_ALERT, "%s() send-buffer is full.", function);
 }
 
 
@@ -197,7 +213,11 @@ int intf_write(intf_t *intf, can_message_t msg)
 	for(int i = 0; i < 8; i++)
 		cmsg.DATA[i] = msg.data[i];
 
-	printf("Writing %04x %02x %02x (%02x %02x %02x %02x %02x %02x %02x %02x)\n", cmsg.ID, cmsg.MSGTYPE, cmsg.LEN, cmsg.DATA[0], cmsg.DATA[1], cmsg.DATA[2], cmsg.DATA[3], cmsg.DATA[4], cmsg.DATA[5], cmsg.DATA[6], cmsg.DATA[7]);
+	syslog(LOG_DEBUG, "%s() %04x %02x %02x \
+		(%02x %02x %02x %02x %02x %02x %02x %02x)\n",
+		__FUNCTION__, cmsg.ID, cmsg.MSGTYPE, cmsg.LEN,
+		cmsg.DATA[0], cmsg.DATA[1], cmsg.DATA[2], cmsg.DATA[3],
+		cmsg.DATA[4], cmsg.DATA[5], cmsg.DATA[6], cmsg.DATA[7]);
 
 	#ifdef WIN32
 	DWORD result = -1;
@@ -206,7 +226,7 @@ int intf_write(intf_t *intf, can_message_t msg)
 	#endif
 
 	if(result == -1) {
-		fprintf(stderr, "Error while sending message: %s\n", strerror(errno));
+		syslog(LOG_ALERT, "%s() could not send message: %s", __FUNCTION__, strerror(errno));
 		return -1;
 	}
 
@@ -305,7 +325,8 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 	int function = msg.id >> 7;
 
 	if(function == 0x01) {
-		// Emergency messages are currently not handled.
+		// Emergency messages are only logged (not handled)
+		syslog(LOG_ALERT, "%s() received an emergency message.", __FUNCTION__);
 	}
 
 	// TPDOs
@@ -341,7 +362,8 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 			if(intf->write_callback) {
 				intf->write_callback(intf->sdo_callback_data, index, subindex);
 			} else {
-				fprintf(stderr, "Received write response, but no callback function has been set.\n");
+				syslog(LOG_NOTICE, "%s() received a write response, but \
+					no callback function has been set.", __FUNCTION__);
 			}
 		}
 
@@ -350,7 +372,8 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 			if(intf->read_callback) {
 				intf->read_callback(intf->sdo_callback_data, index, subindex, value);
 			} else {
-				fprintf(stderr, "Received read response, but no callback function has been set.\n");
+				syslog(LOG_NOTICE, "%s() received a read response, but \
+					no callback function has been set.", __FUNCTION__);
 			}
 		}
 
@@ -359,7 +382,8 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 			if(intf->abort_callback) {
 				intf->abort_callback(intf->sdo_callback_data, index, subindex, value);
 			} else {
-				fprintf(stderr, "Received abort response, but no callback function has been set.\n");
+				syslog(LOG_NOTICE, "%s() received an abort response, but \
+					no callback function has been set.", __FUNCTION__);
 			}
 		}
 	}
@@ -392,13 +416,15 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 
 	// Receive queue was empty, no message read
 	if(result == CAN_ERR_QRCVEMPTY) {
-		fprintf(stderr, "CAN Queue was empty, but intf_on_read() was called.\n");
+		syslog(LOG_NOTICE, "%s() expected message in queue, \
+			but found none.", __FUNCTION__);
 		return;
 	}
 
 	// There was an error
 	if(result != CAN_ERR_OK) {
-		fprintf(stderr, "Error while reading from CAN bus, closing down.\n");
+		syslog(LOG_ALERT, "%s() reading from the CAN bus failed \
+			interface will be closed.", __FUNCTION__);
 		intf_close(intf);
 		return;
 	}
@@ -409,24 +435,21 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 		int32_t status = int32_t(CAN_Status(intf->handle));
 
 		if(status < 0) {
-			fprintf(stderr, "Received invalid status message (%x), closing down.\n", status);
+			syslog(LOG_ALERT, "%s() received invalid status (%x) \
+				interface will be closed.", __FUNCTION__, status);
 			intf_close(intf);
 			return;
 		}
 
-		if(! (status == 0x20 && status == 0x00)) {
-			intf_debug_print_status(status);
-			//intf_close(intf);
-		} else {
-			printf("Status: %x\n", status);
-		}
+		if(status != 0x20 && status != 0x00)
+			intf_log_status(__FUNCTION__, status);
 
 		return;
 	}
 
 	uint64_t timestamp = message.dwTime * 1000 + message.wUsec;
 
-	// Tell the world we've received a message?
+	// Tell the world we've received a message
 	can_message_t msg;
 	msg.id = message.Msg.ID;
 	msg.type = message.Msg.MSGTYPE;
