@@ -1,6 +1,7 @@
 
 #include <syslog.h>
 
+#include <getopt.h>
 #include <stdexcept>
 #include <utility>
 
@@ -34,7 +35,7 @@ void signal_handler(int sig)
 		size_t size;
 
 		size = backtrace(array, 10);
-		backtrace_symbols_fd(array, size, 2);
+		backtrace_symbols_fd(array, size, fileno(stdout));
 		exit(EXIT_FAILURE);
 	}
 }
@@ -125,13 +126,56 @@ void daemonize()
 }
 
 
-int main()
+void print_help()
 {
+	printf("Sled control server\n");
+	printf("\n");
+	printf("Compiled on %s %s\n", __DATE__, __TIME__);
+	printf("\n");
+	printf("  --no-daemon   Do not daemonize.\n");
+	printf("  --help        Print help text.\n");
+	printf("\n");
+}
+
+
+int main(int argc, char **argv)
+{
+	int daemonize_flag = 1;	
+
+	/* Parse command line arguments */
+	static struct option long_options[] =
+		{
+			{"no-daemon",	no_argument, &daemonize_flag, 0},
+			{"help",		no_argument, 0, 'h'},
+			{"\0", 0, 0, 0}
+		};
+
+	int option_index = 0;
+	int c = 0;
+
+	while((c = getopt_long(argc, argv, "h", long_options, &option_index)) != -1) {
+		switch(c) {
+			case 0:
+				if(option_index == 1) {
+					print_help();
+					exit(EXIT_SUCCESS);
+				}
+				break;
+
+			case 'h':
+				print_help();
+				exit(EXIT_SUCCESS);
+				break;
+		}
+	}
+
 	/* Open system log. */
 	openlog("sled", LOG_NDELAY | LOG_NOWAIT, LOG_LOCAL3);
+	syslog(LOG_DEBUG, "%s() compiled %s %s", __FUNCTION__, __DATE__, __TIME__);
 
 	/* Daemonize process. */
-	daemonize();
+	if(daemonize_flag)
+		daemonize();
 
 	/* Print stack-trace on segmentation fault. */
 	signal(SIGSEGV, signal_handler);
