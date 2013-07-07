@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <utility>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <sched.h>
 #include <sys/mman.h>
 #include <execinfo.h>
@@ -12,6 +15,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <event2/event.h>
 #include "server.h"
@@ -31,7 +35,7 @@ void signal_handler(int sig)
 
 		size = backtrace(array, 10);
 		backtrace_symbols_fd(array, size, 2);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -61,13 +65,76 @@ int setup_realtime()
 }
 
 
+static long int writer(void *cookie, const char *data, size_t len)
+{
+	syslog(LOG_DEBUG, "%.*s", (int) len, data);
+}
+
+
+static cookie_io_functions_t log_functions = {
+	(cookie_read_function_t *) NULL,
+	writer,
+	(cookie_seek_function_t *) NULL,
+	(cookie_close_function_t *) NULL
+};
+
+
+void to_syslog(FILE **file)
+{
+	*file = fopencookie(NULL, "w", log_functions);
+	setvbuf(*file, NULL, _IOLBF, 0);
+}
+
+
+/**
+ * Fork-off current process and initialize the new fork.
+ */
+void daemonize()
+{
+	/* Create fork */
+	pid_t pid = fork();
+	if(pid < 0)
+		exit(EXIT_FAILURE);
+	if(pid > 0)
+		exit(EXIT_SUCCESS);
+
+	/* Change file-mode mask */
+	umask(0);
+
+	/* Create new session */
+	pid_t sid = setsid();
+	if(sid < 0) {
+		syslog(LOG_ALERT, "%s() failed to create session", __FUNCTION__);
+		exit(EXIT_FAILURE);
+	}
+
+	/* Change working directory */
+	if((chdir("/")) < 0) {
+		syslog(LOG_ALERT, "%s() could not change working directory", __FUNCTION__);
+		exit(EXIT_FAILURE);
+	}
+
+	/* Close file handles */
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+
+	/* Redirect stderr and stdout to syslog */
+	to_syslog(&stdout);
+	to_syslog(&stderr);
+}
+
+
 int main()
 {
+	/* Open system log. */
+	openlog("sled", LOG_NDELAY | LOG_NOWAIT, LOG_LOCAL3);
+
+	/* Daemonize process. */
+	daemonize();
+
 	/* Print stack-trace on segmentation fault. */
 	signal(SIGSEGV, signal_handler);
-
-	/* Open system log. */
-	openlog("sled", LOG_NDELAY | LOG_NOWAIT, LOG_LOCAL3);	
 
 	if(setup_realtime() == -1) {
 		fprintf(stderr, "Could not setup realtime environment.\n");
