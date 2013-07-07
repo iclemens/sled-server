@@ -116,7 +116,7 @@ void on_failure_callback(void *data, uint16_t index, uint8_t subindex, uint32_t 
 	sled_profile_set_field_state(profile, index, FIELD_INVALID);
 
 	syslog(LOG_ERR, "%s() uplaoding of profile failed \
-		abort code %04x on index %04x:%02",
+		abort code %04x on index %04x:%02x",
 		__FUNCTION__, abort, index, subindex);
 
 	exit(1);

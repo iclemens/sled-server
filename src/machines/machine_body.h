@@ -1,3 +1,4 @@
+#include <syslog.h>
 #include <assert.h>
 
 // First generate structure type
@@ -49,7 +50,7 @@ struct MACHINE_TYPE {
 		if(!(machine->state == next_state)) { \
 		    CONCAT(PREFIX, _on_exit)(machine); \
 			machine->state = next_state; \
-			printf("Machine changed state: %s\n", CONCAT(PREFIX, _statename)(machine->state)); \
+			syslog(LOG_DEBUG, "%s() state changed to %s",  __FUNCTION__, CONCAT(PREFIX, _statename)(machine->state)); \
 			CONCAT(PREFIX, _on_enter)(machine); \
 		} \
 	} \
@@ -69,7 +70,7 @@ struct MACHINE_TYPE {
 // Finally generate constructor
 #include "machine_undef.h"
 
-#define FIELD(type, name) type name, 
+#define FIELD(type, name) type name,
 
 MACHINE_TYPE *CONCAT(PREFIX, _create)(
 #include MACHINE_FILE()
@@ -89,7 +90,7 @@ MACHINE_TYPE *CONCAT(PREFIX, _create)(
 	#define FIELD_INIT(name, value) machine->name = value;
 	#define CALLBACK(name) machine->CONCAT(name, _handler) = NULL;
 	#include MACHINE_FILE()
-	
+
 	assert(machine);
 	return machine;
 }
