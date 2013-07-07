@@ -5,6 +5,7 @@
 #include <arpa/inet.h>
 #endif
 
+#include <stdio.h>
 #include <string.h>
 #include "rtc3d_internal.h"
 #include "rtc3d_dataframe.h"
@@ -212,8 +213,8 @@ void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t ti
   uint64_t *ctime = (uint64_t *) &(buffer[24]);
 
   uint32_t *mcount = (uint32_t *) &(buffer[32]);
-  float *x = (float *) &(buffer[36]);
-  uint32_t *xi = (uint32_t *) &(buffer[36]);
+	uint32_t *xi = (uint32_t *) &(buffer[36]);
+	float *x = (float *) &(buffer[36]);
   float *y = (float *) &(buffer[40]);
   float *z = (float *) &(buffer[44]);
   float *delta = (float *) &(buffer[48]);
@@ -229,6 +230,10 @@ void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t ti
   *ctime = htonll(time);
 
   *mcount = htonl(1);
-  *x = point;
-  *xi = htonl(*xi);
+
+	*x = point;
+	*xi = htonl(*xi);
+	
+  net_send(rtc3d_conn->net_conn, buffer, 8 + 4 + 20 + 4 + 16, F_ADOPT_BUFFER);
 }
+
