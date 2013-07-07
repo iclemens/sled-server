@@ -1,5 +1,6 @@
 #include "sled_internal.h"
 
+#include <syslog.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -114,7 +115,10 @@ void on_failure_callback(void *data, uint16_t index, uint8_t subindex, uint32_t 
 	sled_profile_t *profile = (sled_profile_t *) data;
 	sled_profile_set_field_state(profile, index, FIELD_INVALID);
 
-	fprintf(stderr, "Uploading of profile failed (index %04x abort code %04x)\n", index, abort);
+	syslog(LOG_ERR, "%s() uplaoding of profile failed \
+		abort code %04x on index %04x:%02",
+		__FUNCTION__, abort, index, subindex);
+
 	exit(1);
 }
 
@@ -156,7 +160,7 @@ void sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 	WRITE_FIELD_IF_CHANGED(ob_o_tab, OB_O_TAB, profile->table)
 
 	int next_profile = 0;
-	if(profile->next_profile >= 0) 
+	if(profile->next_profile >= 0)
 		next_profile = sled->profiles[profile->next_profile].profile;
 
 	WRITE_FIELD_IF_CHANGED(ob_o_fn,  OB_O_FN,  next_profile)
@@ -283,14 +287,16 @@ int sled_profile_set_table(sled_t *sled, int profile, int table)
  */
 int sled_profile_set_target(sled_t *sled, int profile, position_type_t type, double position, double time)
 {
-  if(profile < 0 || profile >= MAX_PROFILES) {
-		fprintf(stderr, "Invalid profile: %d\n", profile);
-    return -1;
+	if(profile < 0 || profile >= MAX_PROFILES) {
+		syslog(LOG_ERR, "%s(%d, ...) invalid profile",
+			   __FUNCTION__, profile);
+		return -1;
 	}
 
-  if(!sled->profiles[profile].in_use) {
-		fprintf(stderr, "Invalid profile: %d (not in use)\n", profile);
-    return -1;
+	if(!sled->profiles[profile].in_use) {
+		syslog(LOG_ERR, "%s(%d, ...) profile not in use",
+			   __FUNCTION__, profile);
+		return -1;
 	}
 
 	if(sled->profiles[profile].position_type != type) {
@@ -364,10 +370,12 @@ int sled_profile_execute(sled_t *sled, int profile)
 	if(!sled->profiles[profile].in_use)
 		return -1;
 
-	printf("sled_profile_execute(%d -> %d)\n", profile, sled->profiles[profile].profile);
+	syslog(LOG_DEBUG, "%s(%d) internal number: %d", __FUNCTION__,
+		profile, sled->profiles[profile].profile);
 
 	if(mch_mp_active_state(sled->mch_mp) != ST_MP_PP_IDLE) {
-		fprintf(stderr, "Unable to execute motion task, motor not idle.\n");
+		syslog(LOG_ERR, "%s(%d) unable to execute, motor not idle",
+			__FUNCTION__, profile);
 		return -1;
 	}
 

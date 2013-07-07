@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <syslog.h>
 #include <time.h>
 
 
@@ -263,6 +264,7 @@ int sled_rt_get_position(sled_t *handle, double &position)
 int sled_sinusoid_start(sled_t *handle, double amplitude, double period)
 {
 	assert(handle);
+	syslog(LOG_DEBUG, "%s(%.3f, %.2f)", __FUNCTION__, amplitude, period);
 
 	sled_profile_set_target(handle, handle->sinusoid_there, pos_absolute, handle->last_position + amplitude * 2.0, period / 2.0);
 	sled_profile_set_target(handle, handle->sinusoid_back, pos_absolute, handle->last_position, period / 2.0);
@@ -276,7 +278,9 @@ int sled_sinusoid_start(sled_t *handle, double amplitude, double period)
  */
 int sled_sinusoid_stop(sled_t *handle)
 {
-	printf("sled_sinusoid_stop()\n");
+	assert(handle);
+	syslog(LOG_DEBUG, "%s()", __FUNCTION__);
+
 	return -1;
 }
 
@@ -292,6 +296,7 @@ int sled_sinusoid_stop(sled_t *handle)
 int sled_light_set_state(sled_t *handle, bool state)
 {
 	assert(handle);
+	syslog(LOG_DEBUG, "%s(%s)", __FUNCTION__, state?"on":"off");
 
 	// SDOs must be enabled for the light-switch to work.
 	if(mch_sdo_active_state(handle->mch_sdo) == ST_SDO_DISABLED)
