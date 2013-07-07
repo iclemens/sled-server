@@ -4,7 +4,7 @@ CC=gcc
 
 YAC = parser.yac
 LEX = parser.lex
-SRC = main.cc
+SRC = main.cc server.cc
 
 OBJ = $(patsubst %.cc,.obj/%.o,$(SRC))
 OBJ += $(patsubst %.yac,.obj/%.yac.o,$(YAC))

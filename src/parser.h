@@ -3,7 +3,7 @@
 
 #include <libsled/sled.h>
 #include <libsled/sled_profile.h>
-#include "main.h"
+#include "server.h"
 
 
 enum status_t {
