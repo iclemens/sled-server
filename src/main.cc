@@ -7,6 +7,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <pwd.h>
 
 #include <sched.h>
 #include <sys/mman.h>
@@ -126,6 +127,25 @@ void daemonize()
 }
 
 
+/**
+ * Returns user-id given a name.
+ */
+uid_t get_uid_by_name(const char *name)
+{
+	if(name == NULL)
+		return -1;
+
+	passwd *pwent = getpwnam(name);
+
+	if(pwent == NULL)
+		return -1;
+
+	uid_t uid = pwent->pw_uid;
+
+	return uid;
+}
+
+
 void print_help()
 {
 	printf("Sled control server\n");
@@ -140,25 +160,28 @@ void print_help()
 
 int main(int argc, char **argv)
 {
-	int daemonize_flag = 1;	
+	int daemonize_flag = 1;
+	uid_t uid = get_uid_by_name("sled");
 
 	/* Parse command line arguments */
 	static struct option long_options[] =
 		{
 			{"no-daemon",	no_argument, &daemonize_flag, 0},
 			{"help",		no_argument, 0, 'h'},
+			{"user",		required_argument, 0, 'u'},
 			{"\0", 0, 0, 0}
 		};
 
 	int option_index = 0;
 	int c = 0;
 
-	while((c = getopt_long(argc, argv, "h", long_options, &option_index)) != -1) {
+	while((c = getopt_long(argc, argv, "hu:", long_options, &option_index)) != -1) {
 		switch(c) {
-			case 0:
-				if(option_index == 1) {
-					print_help();
-					exit(EXIT_SUCCESS);
+			case 'u':
+				uid = get_uid_by_name(optarg);
+				if(uid == -1) {
+					fprintf(stderr, "Invalid user specified (%s).\n", optarg);
+					exit(EXIT_FAILURE);
 				}
 				break;
 
@@ -167,6 +190,11 @@ int main(int argc, char **argv)
 				exit(EXIT_SUCCESS);
 				break;
 		}
+	}
+
+	if(uid == -1) {
+		fprintf(stderr, "Default user 'sled' does not exist, and no user was specified.\n");
+		exit(EXIT_FAILURE);
 	}
 
 	/* Open system log. */
@@ -183,6 +211,12 @@ int main(int argc, char **argv)
 	if(setup_realtime() == -1) {
 		fprintf(stderr, "Could not setup realtime environment.\n");
 		return 1;
+	}
+
+	/* Drop privileges */
+	if(setuid(uid) == -1) {
+		perror("setuid failed");
+		exit(EXIT_FAILURE);
 	}
 
 	/* Setup libevent */
