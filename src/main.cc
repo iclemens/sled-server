@@ -1,9 +1,12 @@
 #include "parser.h"
 #include <librtc3dserver/rtc3d.h>
 
+#include <syslog.h>
 #include <stdexcept>
 #include <utility>
 
+#include <sched.h>
+#include <sys/mman.h>
 #include <execinfo.h>
 #include <signal.h>
 
@@ -17,6 +20,7 @@
 #include <time.h>
 
 #define MAX_EVENTS 10
+#define PRIORITY 49
 
 
 /**
@@ -24,14 +28,39 @@
  */
 void signal_handler(int sig)
 {
-  if(SIGSEGV == sig) {
-    void *array[10];
-    size_t size;
+	if(SIGSEGV == sig) {
+		void *array[10];
+		size_t size;
 
-    size = backtrace(array, 10);
-    backtrace_symbols_fd(array, size, 2);
-    exit(1);
-  }
+		size = backtrace(array, 10);
+		backtrace_symbols_fd(array, size, 2);
+		exit(1);
+	}
+}
+
+
+/**
+ * Try to setup real-time environment.
+ *
+ * See https://rt.wiki.kernel.org/index.php/RT_PREEMPT_HOWTO
+ */
+int setup_realtime()
+{
+	/* Declare ourself as a realtime task */
+	sched_param param;
+	param.sched_priority = PRIORITY;
+	if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
+		perror("sched_setscheduler failed");
+		return -1;
+	}
+
+	/* Lock memory */
+	if(mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
+		perror("mlockall failed");
+		return -1;
+	}
+
+	return 0;
 }
 
 
@@ -51,13 +80,12 @@ double get_time()
  */
 int tlate_profile_id(sled_server_ctx_t* ctx, int profile)
 {
-  if(ctx->profile_tlate.count(profile) == 1) {
-		printf(" Maps to: %d\n", ctx->profile_tlate[profile]);
-    return ctx->profile_tlate[profile];
+	if(ctx->profile_tlate.count(profile) == 1) {
+		return ctx->profile_tlate[profile];
 	}
 
-  int profile_id = sled_profile_create(ctx->sled);
-  ctx->profile_tlate.insert( std::pair<int, int>(profile, profile_id) );
+	int profile_id = sled_profile_create(ctx->sled);
+	ctx->profile_tlate.insert( std::pair<int, int>(profile, profile_id) );
 
 	return profile_id;
 }
@@ -69,9 +97,9 @@ int tlate_profile_id(sled_server_ctx_t* ctx, int profile)
  */
 void rtc3d_disconnect_handler(rtc3d_connection_t *rtc3d_conn, void **ptr)
 {
-  sled_server_ctx_t *ctx = (sled_server_ctx_t *) rtc3d_get_global_data(rtc3d_conn);
-  ctx->stream_clients.remove(rtc3d_conn);
-  printf("Removing client.\n");
+	sled_server_ctx_t *ctx = (sled_server_ctx_t *) rtc3d_get_global_data(rtc3d_conn);
+	ctx->stream_clients.remove(rtc3d_conn);
+	syslog(LOG_NOTICE, "%s() removing client", __FUNCTION__);
 }
 
 
@@ -81,73 +109,71 @@ void rtc3d_disconnect_handler(rtc3d_connection_t *rtc3d_conn, void **ptr)
  */
 void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 {
-  sled_server_ctx_t *ctx = (sled_server_ctx_t *) rtc3d_get_global_data(rtc3d_conn);
-  command_t command;
+	sled_server_ctx_t *ctx = (sled_server_ctx_t *) rtc3d_get_global_data(rtc3d_conn);
+	command_t command;
 
-  int retval = parser_parse_string(ctx->parser, cmd, &command);
+	int retval = parser_parse_string(ctx->parser, cmd, &command);
 
-  if(retval == -1) {
-    rtc3d_send_error(rtc3d_conn, (char *) "err-syntaxerror");
-    return;
-  }
+	if(retval == -1) {
+		rtc3d_send_error(rtc3d_conn, (char *) "err-syntaxerror");
+		return;
+	}
 
-  switch(command.type) {
-    case cmd_setbyteorder: {
-      rtc3d_set_byte_order(rtc3d_conn, command.byte_order);
-      rtc3d_send_command(rtc3d_conn, (char *) "ok-setbyteorder");
-      break;
-    }
-
-
-    case cmd_streamframes: {
-      if(command.boolean) {
-        ctx->stream_clients.remove(rtc3d_conn);
-        ctx->stream_clients.push_back(rtc3d_conn);
-        printf("Adding client.\n");
-      } else {
-        ctx->stream_clients.remove(rtc3d_conn);
-      }
-      rtc3d_send_command(rtc3d_conn, (char *) "ok-streamframes");
-      break;
-    }
+	switch(command.type) {
+		case cmd_setbyteorder: {
+			rtc3d_set_byte_order(rtc3d_conn, command.byte_order);
+			rtc3d_send_command(rtc3d_conn, (char *) "ok-setbyteorder");
+			break;
+		}
 
 
-    case cmd_sendcurrentframe: {
-      double position;
-      if(sled_rt_get_position(ctx->sled, position) == -1)
-        rtc3d_send_error(rtc3d_conn, (char *) "err-sendcurrentframe");
-      else
-        rtc3d_send_data(rtc3d_conn, -1, -1, position * 1000.0);
-      break;
-    }
+		case cmd_streamframes: {
+			if(command.boolean) {
+				ctx->stream_clients.remove(rtc3d_conn);
+				ctx->stream_clients.push_back(rtc3d_conn);
+				syslog(LOG_NOTICE, "%s() adding client", __FUNCTION__);
+			} else {
+				ctx->stream_clients.remove(rtc3d_conn);
+			}
+			rtc3d_send_command(rtc3d_conn, (char *) "ok-streamframes");
+			break;
+		}
 
 
-    case cmd_profile_execute: {
-      int profile_id = tlate_profile_id(ctx, command.profile);
-      int retval = sled_profile_execute(ctx->sled, profile_id);
-
-      printf("sled_profile_execute(%d) -> %d\n", profile_id, retval);
-
-      if(retval == -1)
-        rtc3d_send_error(rtc3d_conn, (char *) "err-profile-execute");
-      else
-        rtc3d_send_command(rtc3d_conn, (char *) "ok-profile-execute");
-      break;
-    }
+		case cmd_sendcurrentframe: {
+			double position;
+			if(sled_rt_get_position(ctx->sled, position) == -1)
+				rtc3d_send_error(rtc3d_conn, (char *) "err-sendcurrentframe");
+			else
+				rtc3d_send_data(rtc3d_conn, -1, -1, position * 1000.0);
+			break;
+		}
 
 
-    case cmd_profile_set: {
-      int profile_id = tlate_profile_id(ctx, command.profile);
+		case cmd_profile_execute: {
+			int profile_id = tlate_profile_id(ctx, command.profile);
+			int retval = sled_profile_execute(ctx->sled, profile_id);
+
+			if(retval == -1)
+				rtc3d_send_error(rtc3d_conn, (char *) "err-profile-execute");
+			else
+				rtc3d_send_command(rtc3d_conn, (char *) "ok-profile-execute");
+			break;
+		}
+
+
+		case cmd_profile_set: {
+			int profile_id = tlate_profile_id(ctx, command.profile);
 
 			if(profile_id < 0) {
-				fprintf(stderr, "Invalid profile id: %d\n", profile_id);
+				syslog(LOG_ERR, "%s() invalid profile %d", __FUNCTION__, profile_id);
 				rtc3d_send_error(rtc3d_conn, (char *) "err-profile-set");
 				break;
 			}
 
 			// Check position...
 			if(abs(command.position) > 0.5) {
-				fprintf(stderr, "Invalid profile, position out of bounds.\n");
+				syslog(LOG_ERR, "%s() invalid profile, position out of bounds", __FUNCTION__);
 				rtc3d_send_error(rtc3d_conn, (char *) "err-profile-set");
 			}
 
@@ -155,88 +181,86 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 					command.position_type, 
 					command.position, 
 					command.time) == -1) {
-				fprintf(stderr, "Setting of position failed, target was: %f m in %f s\n", command.position, command.time);
+				syslog(LOG_ERR, "setting of position failed (%.3fm in %.2fs)", command.position, command.time);
 				rtc3d_send_error(rtc3d_conn, (char *) "err-profile-set");
 				break;
 			}
 
 			if(command.next_profile >= 0) {
-	      int next_profile_id = tlate_profile_id(ctx, command.next_profile);
+				int next_profile_id = tlate_profile_id(ctx, command.next_profile);
 
 				if(next_profile_id < 0) {
 					rtc3d_send_error(rtc3d_conn, (char *) "err-profile-set");
 					break;
 				}
 
-				sled_profile_set_next(ctx->sled, profile_id, next_profile_id, command.next_delay / 1000.0, command.blend_type);
+				sled_profile_set_next(ctx->sled, profile_id, next_profile_id, command.next_delay, command.blend_type);
 			}
 
-      rtc3d_send_command(rtc3d_conn, (char *) "ok-profile-set");
+			rtc3d_send_command(rtc3d_conn, (char *) "ok-profile-set");
 
-      break;
-    }
-
-
-    case cmd_sinusoid: {
-			fprintf(stderr, "Sinusoid %f %f\n", command.amplitude, command.period);
 			break;
-      if(command.boolean) {
-        if(sled_sinusoid_start(ctx->sled, command.amplitude, command.period) == -1) {
-					fprintf(stderr, "sled_sinusoid_start(...) failed.\n");
-          rtc3d_send_error(rtc3d_conn, (char *) "err-sinusoid-start");
-        } else {
-          rtc3d_send_command(rtc3d_conn, (char *) "ok-sinusoid-start");
+		}
+
+
+		case cmd_sinusoid: {
+			if(command.boolean) {
+				if(sled_sinusoid_start(ctx->sled, command.amplitude, command.period) == -1) {
+					syslog(LOG_ERR, "%s() could not start sinusoid", __FUNCTION__);
+					rtc3d_send_error(rtc3d_conn, (char *) "err-sinusoid-start");
+				} else {
+					rtc3d_send_command(rtc3d_conn, (char *) "ok-sinusoid-start");
 				}
-      } else {
-        if(sled_sinusoid_stop(ctx->sled) == -1) {
-					fprintf(stderr, "sled_sinusoid_stop(...) failed.\n");
-          rtc3d_send_error(rtc3d_conn, (char *) "err-sinusoid-stop");
-        } else {
-          rtc3d_send_command(rtc3d_conn, (char *) "ok-sinusoid-stop");
+			} else {
+				if(sled_sinusoid_stop(ctx->sled) == -1) {
+					syslog(LOG_ERR, "%s() could not stop sinusoid", __FUNCTION__);
+					rtc3d_send_error(rtc3d_conn, (char *) "err-sinusoid-stop");
+				} else {
+					rtc3d_send_command(rtc3d_conn, (char *) "ok-sinusoid-stop");
 				}
-      }
+			}
 
-      break;
-    }
-
-
-    case cmd_lights: {
-      if(sled_light_set_state(ctx->sled, command.boolean) == -1)
-        rtc3d_send_error(rtc3d_conn, (char *) "err-light");
-      else
-        rtc3d_send_command(rtc3d_conn, (char *) "ok-light");
-      break;
-    }
+			break;
+		}
 
 
-    case cmd_sendstatus: {
-      break;
-    }
+		case cmd_lights: {
+			if(sled_light_set_state(ctx->sled, command.boolean) == -1)
+				rtc3d_send_error(rtc3d_conn, (char *) "err-light");
+			else
+				rtc3d_send_command(rtc3d_conn, (char *) "ok-light");
+			break;
+		}
 
-    case cmd_home: {
-      break;
-    }
 
-    case cmd_clearfault: {
-      break;
-    }
+		case cmd_sendstatus: {
+			break;
+		}
 
-    case cmd_setinternalstatus: {
-    }
+		case cmd_home: {
+			break;
+		}
 
-    case cmd_sendinternalstatus: {
-    }
+		case cmd_clearfault: {
+			break;
+		}
 
-    case cmd_bye: {
-      rtc3d_send_command(rtc3d_conn, (char *) "bye");
-      rtc3d_disconnect(rtc3d_conn);
-      break;
-    }
+		case cmd_setinternalstatus: {
+		}
 
-    default: {
-      rtc3d_send_error(rtc3d_conn, (char *) "err-notsupported");
-    }
-  }
+		case cmd_sendinternalstatus: {
+		}
+
+		case cmd_bye: {
+			rtc3d_send_command(rtc3d_conn, (char *) "bye");
+			rtc3d_disconnect(rtc3d_conn);
+			break;
+		}
+
+		default: {
+			rtc3d_send_error(rtc3d_conn, (char *) "err-notsupported");
+		}
+	}
 
 }
 
@@ -246,23 +270,23 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
  */
 sled_server_ctx_t *setup_sled_server_context(event_base *ev_base)
 {
-  sled_server_ctx_t *ctx;
+	sled_server_ctx_t *ctx;
 
-  try {
-    ctx = new sled_server_ctx_t();
-  } catch(std::bad_alloc e) {
-    return NULL;
-  }
+	try {
+		ctx = new sled_server_ctx_t();
+	} catch(std::bad_alloc e) {
+		return NULL;
+	}
 
-  ctx->parser = parser_create();
-  if(ctx->parser == NULL) {
-    delete ctx;
-    return NULL;
-  }
+	ctx->parser = parser_create();
+	if(ctx->parser == NULL) {
+		delete ctx;
+		return NULL;
+	}
 
-  ctx->sled = sled_create(ev_base);
+	ctx->sled = sled_create(ev_base);
 
-  return ctx;
+	return ctx;
 }
 
 
@@ -271,11 +295,11 @@ sled_server_ctx_t *setup_sled_server_context(event_base *ev_base)
  */
 void teardown_sled_server_context(sled_server_ctx_t **ctx)
 {
-  sled_destroy(&(*ctx)->sled);
-  parser_destroy(&(*ctx)->parser);
+	sled_destroy(&(*ctx)->sled);
+	parser_destroy(&(*ctx)->parser);
 
-  delete *ctx;
-  *ctx = NULL;
+	delete *ctx;
+	*ctx = NULL;
 }
 
 
@@ -316,7 +340,16 @@ void on_timeout(evutil_socket_t sock, short events, void *arg)
 
 int main()
 {
+	/* Print stack-trace on segmentation fault. */
 	signal(SIGSEGV, signal_handler);
+
+	/* Open system log. */
+	openlog("sled", LOG_NDELAY | LOG_NOWAIT, LOG_LOCAL3);	
+
+	if(setup_realtime() == -1) {
+		fprintf(stderr, "Could not setup realtime environment.\n");
+		return 1;
+	}
 
 	/* Setup libevent */
 	event_config *cfg = event_config_new();
