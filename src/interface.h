@@ -51,7 +51,6 @@ void intf_destroy(intf_t **intf);
 
 int intf_open(intf_t *intf);
 int intf_close(intf_t *intf);
-int intf_is_open(intf_t *intf);
 
 int intf_send_nmt_command(intf_t *intf, uint8_t command);
 int intf_send_read_req(intf_t *intf, uint16_t index, uint8_t subindex, intf_read_callback_t read_callback, intf_abort_callback_t abort_callback, void *data);

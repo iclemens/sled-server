@@ -16,6 +16,12 @@
 #include <sys/stat.h>
 
 
+/**
+ * Writes PEAK CAN interface status to system log.
+ *
+ * @param function  Function where the status message was received.
+ * @param status  Status message received.
+ */
 void intf_log_status(const char *function, int status)
 {
 	if(status & 0x01)
@@ -55,6 +61,9 @@ void intf_clear_sdo_callbacks(intf_t *intf)
 
 /**
  * Setup CAN Interface
+ *
+ * @param ev_base  LibEvent event_base.
+ * @return CAN Interface instance.
  */
 intf_t *intf_create(event_base *ev_base)
 {
@@ -83,6 +92,8 @@ intf_t *intf_create(event_base *ev_base)
 
 /**
  * Destroy CAN Interface
+ *
+ * @param intf  Interface to destroy.
  */
 void intf_destroy(intf_t **intf)
 {
@@ -94,6 +105,9 @@ void intf_destroy(intf_t **intf)
 
 /**
  * Open connection to device
+ *
+ * @param intf  Interface to open.
+ * @return 0 on success, -1 on failure.
  */
 int intf_open(intf_t *intf)
 {
@@ -149,17 +163,6 @@ int intf_open(intf_t *intf)
 
 	return 0;
 #endif
-}
-
-
-int intf_is_open(intf_t *intf)
-{
-	assert(intf);
-
-	if(intf->handle)
-		return 1;
-	else
-		return 0;
 }
 
 
