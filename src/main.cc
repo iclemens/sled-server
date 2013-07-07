@@ -192,7 +192,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(uid == -1) {
+	if(daemonize_flag && (uid == -1)) {
 		fprintf(stderr, "Default user 'sled' does not exist, and no user was specified.\n");
 		exit(EXIT_FAILURE);
 	}
@@ -214,9 +214,11 @@ int main(int argc, char **argv)
 	}
 
 	/* Drop privileges */
-	if(setuid(uid) == -1) {
-		perror("setuid failed");
-		exit(EXIT_FAILURE);
+	if(uid != -1) {
+		if(setuid(uid) == -1) {
+			perror("setuid failed");
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	/* Setup libevent */
