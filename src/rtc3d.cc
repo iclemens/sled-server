@@ -5,6 +5,7 @@
 #include <exception>
 #include <map>
 
+#include <syslog.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -36,7 +37,7 @@
  * @param net_conn Network connection that just connected.
  * @return RTC3D client context structure.
  */
-void *connect_handler(net_connection_t *net_conn) 
+void *connect_handler(net_connection_t *net_conn)
 {
 	rtc3d_server_t *rtc3d_server = (rtc3d_server_t *) net_get_global_data(net_conn);
 	rtc3d_connection_t *rtc3d_conn = NULL;
@@ -48,7 +49,7 @@ void *connect_handler(net_connection_t *net_conn)
 		return NULL;
 	}
 
-	// Store network connection and context  
+	// Store network connection and context
 	rtc3d_conn->net_conn = net_conn;
 	rtc3d_conn->user_context = NULL;
 
@@ -109,13 +110,13 @@ uint32_t get_uint32(rtc3d_connection_t *rtc3d_conn, int offset)
  * @param rtc3d_conn Connection to read the data from.
  */
 void packet_handler(rtc3d_connection_t *rtc3d_conn) {
-  rtc3d_server_t *rtc3d_server = (rtc3d_server_t *) net_get_global_data(rtc3d_conn->net_conn); 
+  rtc3d_server_t *rtc3d_server = (rtc3d_server_t *) net_get_global_data(rtc3d_conn->net_conn);
   int type = get_uint32(rtc3d_conn, 0);
 
   switch(type) {
     case PTYPE_COMMAND: {
       rtc3d_conn->data[rtc3d_conn->size] = '\0';
-      printf("Command (%d): %s\n", rtc3d_conn->size - 4, &rtc3d_conn->data[4]);
+      syslog(LOG_DEBUG, "%s() command (%d): %s", __FUNCTION__, rtc3d_conn->size - 4, &rtc3d_conn->data[4]);
 
       if(rtc3d_server->command_handler)
         rtc3d_server->command_handler(rtc3d_conn, &rtc3d_conn->data[4]);
@@ -139,7 +140,7 @@ void packet_handler(rtc3d_connection_t *rtc3d_conn) {
     };
 
     default: {
-      fprintf(stderr, "Ignoring packet, unknown type: %d\n", type);
+		syslog(LOG_NOTICE, "%s() packet has unknown type (%d)", __FUNCTION__, type);
     };
   };
 }
@@ -223,7 +224,7 @@ rtc3d_server_t *rtc3d_setup_server(event_base *event_base, void *user_context, i
 
   rtc3d_server->net_server = net_setup_server(event_base, rtc3d_server, 3375);
   if(!rtc3d_server->net_server) {
-    fprintf(stderr, "net_setup_server() failed\n");
+    syslog(LOG_ERR, "%s() failed", __FUNCTION__);
     delete rtc3d_server;
     return NULL;
   }
