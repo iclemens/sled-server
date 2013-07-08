@@ -216,8 +216,7 @@ int intf_write(intf_t *intf, can_message_t msg)
 	for(int i = 0; i < 8; i++)
 		cmsg.DATA[i] = msg.data[i];
 
-	syslog(LOG_DEBUG, "%s() %04x %02x %02x \
-		(%02x %02x %02x %02x %02x %02x %02x %02x)\n",
+	syslog(LOG_DEBUG, "%s() %04x %02x %02x (%02x %02x %02x %02x %02x %02x %02x %02x)\n",
 		__FUNCTION__, cmsg.ID, cmsg.MSGTYPE, cmsg.LEN,
 		cmsg.DATA[0], cmsg.DATA[1], cmsg.DATA[2], cmsg.DATA[3],
 		cmsg.DATA[4], cmsg.DATA[5], cmsg.DATA[6], cmsg.DATA[7]);
@@ -365,8 +364,7 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 			if(intf->write_callback) {
 				intf->write_callback(intf->sdo_callback_data, index, subindex);
 			} else {
-				syslog(LOG_NOTICE, "%s() received a write response, but \
-					no callback function has been set.", __FUNCTION__);
+				syslog(LOG_NOTICE, "%s() received a write response, but no callback function has been set.", __FUNCTION__);
 			}
 		}
 
@@ -375,8 +373,7 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 			if(intf->read_callback) {
 				intf->read_callback(intf->sdo_callback_data, index, subindex, value);
 			} else {
-				syslog(LOG_NOTICE, "%s() received a read response, but \
-					no callback function has been set.", __FUNCTION__);
+				syslog(LOG_NOTICE, "%s() received a read response, but no callback function has been set.", __FUNCTION__);
 			}
 		}
 
@@ -385,8 +382,7 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 			if(intf->abort_callback) {
 				intf->abort_callback(intf->sdo_callback_data, index, subindex, value);
 			} else {
-				syslog(LOG_NOTICE, "%s() received an abort response, but \
-					no callback function has been set.", __FUNCTION__);
+				syslog(LOG_NOTICE, "%s() received an abort response, but no callback function has been set.", __FUNCTION__);
 			}
 		}
 	}
@@ -419,15 +415,13 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 
 	// Receive queue was empty, no message read
 	if(result == CAN_ERR_QRCVEMPTY) {
-		syslog(LOG_NOTICE, "%s() expected message in queue, \
-			but found none.", __FUNCTION__);
+		syslog(LOG_NOTICE, "%s() expected message in queue, but found none.", __FUNCTION__);
 		return;
 	}
 
 	// There was an error
 	if(result != CAN_ERR_OK) {
-		syslog(LOG_ALERT, "%s() reading from the CAN bus failed \
-			interface will be closed.", __FUNCTION__);
+		syslog(LOG_ALERT, "%s() reading from the CAN bus failed interface will be closed.", __FUNCTION__);
 		intf_close(intf);
 		return;
 	}
@@ -438,8 +432,7 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 		int32_t status = int32_t(CAN_Status(intf->handle));
 
 		if(status < 0) {
-			syslog(LOG_ALERT, "%s() received invalid status (%x) \
-				interface will be closed.", __FUNCTION__, status);
+			syslog(LOG_ALERT, "%s() received invalid status (%x) interface will be closed.", __FUNCTION__, status);
 			intf_close(intf);
 			return;
 		}
