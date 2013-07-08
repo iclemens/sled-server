@@ -233,6 +233,9 @@ void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t ti
 
 	*x = point;
 	*xi = htonl(*xi);
+
+	*y = 0;
+	*z = 0;
 	
   net_send(rtc3d_conn->net_conn, buffer, 8 + 4 + 20 + 4 + 16, F_ADOPT_BUFFER);
 }
