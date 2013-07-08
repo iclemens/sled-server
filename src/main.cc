@@ -1,4 +1,3 @@
-
 #include <syslog.h>
 
 #include <getopt.h>
@@ -31,6 +30,9 @@
  */
 void signal_handler(int sig)
 {
+  syslog(LOG_NOTICE, "%s() received signal %d (%s).",
+    __FUNCTION__, sig, strsignal(sig));
+
 	if(SIGSEGV == sig) {
 		void *array[10];
 		size_t size;
@@ -38,6 +40,11 @@ void signal_handler(int sig)
 		size = backtrace(array, 10);
 		backtrace_symbols_fd(array, size, fileno(stdout));
 		exit(EXIT_FAILURE);
+	}
+
+	if(SIGTERM == sig) {
+		syslog(LOG_WARNING, "%s() warning, proper shutdown procedure has not been implemented", __FUNCTION__);
+		exit(EXIT_SUCCESS);
 	}
 }
 
@@ -207,6 +214,7 @@ int main(int argc, char **argv)
 
 	/* Print stack-trace on segmentation fault. */
 	signal(SIGSEGV, signal_handler);
+	signal(SIGTERM, signal_handler);
 
 	if(setup_realtime() == -1) {
 		fprintf(stderr, "Could not setup realtime environment.\n");
