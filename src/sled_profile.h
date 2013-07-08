@@ -25,6 +25,7 @@ int sled_profile_create_pt(sled_t *sled, double position, double time);
 int sled_profile_execute(sled_t *sled, int profile);
 int sled_profile_destroy(sled_t *sled, int profile);
 
+int sled_profiles_reset(sled_t *sled);
 int sled_profile_write_pending_changes(sled_t *sled, int profile_id);
 
 int sled_profile_set_table(sled_t *sled, int profile, int table);

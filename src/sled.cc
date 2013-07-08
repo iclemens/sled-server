@@ -117,7 +117,13 @@ CALLBACK_FUNCTION_EVENT(net, on_sdos_enabled, sdo, EV_NET_SDO_ENABLED)
 CALLBACK_FUNCTION_EVENT(net, on_sdos_disabled, sdo, EV_NET_SDO_DISABLED)
 
 // Notify DS402 that NMT is (in)operational.
-CALLBACK_FUNCTION_EVENT(net, on_enter_operational, ds, EV_DS_NET_OPERATIONAL);
+void mch_net_on_enter_operational(mch_net_t *mch_net, void *payload)
+{
+  sled_t *sled = (sled_t *) payload;
+	sled_profiles_reset(sled);
+  mch_ds_handle_event(sled->mch_ds, EV_DS_NET_OPERATIONAL);
+}
+
 CALLBACK_FUNCTION_EVENT(net, on_leave_operational, ds, EV_DS_NET_INOPERATIONAL);
 
 // Inform MP machine that DS is (in)operational.

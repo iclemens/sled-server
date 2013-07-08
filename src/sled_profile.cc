@@ -204,6 +204,21 @@ void sled_profile_clear(sled_t *sled, int profile, bool in_use)
 
 
 /**
+ * Mark all used profiles as unsaved.
+ */
+int sled_profiles_reset(sled_t *sled)
+{
+	for(int i = 0; i < MAX_PROFILES; i++) {
+		sled_profile_t *p = &(sled->profiles[i]);
+		if(p->in_use)
+			sled_profile_mark_as_unsaved(p);
+	}
+
+	return 0;
+}
+
+
+/**
  * Allocates a profile on the sled.
  *
  * Returns profile handle or -1 on failure.
