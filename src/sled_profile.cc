@@ -136,7 +136,7 @@ void on_failure_callback(void *data, uint16_t index, uint8_t subindex, uint32_t 
 /**
  * Writes all pending changes to the device.
  */
-void sled_profile_write_pending_changes(sled_t *sled, int profile_id)
+int sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 {
 	sled_profile_t *profile = &(sled->profiles[profile_id]);
 
@@ -144,7 +144,7 @@ void sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 
 	// No changes pending, bail out
 	if(!sled_profile_has_changes_pending(profile))
-		return;
+		return 0;
 
 	// Load correct profile in slot 0
 	if(sled->current_profile != profile->profile) {
@@ -172,6 +172,8 @@ void sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 	// Write profiles that the current profile depends on...
 	if(profile->next_profile >= 0)
 		sled_profile_write_pending_changes(sled, profile->next_profile);
+
+	return 0;
 }
 
 
