@@ -4,7 +4,7 @@
 %{
 #include <stdio.h>
 #include "parser.h"
-#include "parser.yac.hh"
+#include "parser.hh"
 
 extern int yyparse(parser_t *parser);
 %}

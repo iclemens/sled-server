@@ -4,7 +4,7 @@
 #include <map>
 #include <list>
 #include <libsled/sled.h>
-#include <librtc3dserver/rtc3d.h>
+#include <librtc3d-server/rtc3d.h>
 
 enum command_type_t {
   cmd_setbyteorder,
