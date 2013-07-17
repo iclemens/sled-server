@@ -1,7 +1,7 @@
 libsled
 =======
 
-Sled control software.
+This library can be used to control the linear sled located in the [Sensorimotor Lab](http://www.sensorimotorlab.com/) of [Radboud University](http://www.ru.nl/english/). It is driven by a Kollmorgen S700 which is connected to our control computer via a PEAK CAN interface.
 
 Initializing the library
 ------------------------
