@@ -3,6 +3,33 @@ libsled
 
 Sled control software.
 
+Initializing the library
+------------------------
+
+To initialize the sled library, use the sled\_create function. The library currently depends on libevent2 to provide platform independent event handling, therefore an initialized event\_base should be passed to the sled library.
+
+  sled\_t \*sled = sled\_create(event\_base);
+
+After using the library, use the sled\_destroy function to free memory. Note that we do not currently disable the sled motor.
+
+  sled\_destroy(sled);
+
+Real-time control
+-----------------
+
+_Warning: The real-time control API is not stable yet, and therefore subject to change._
+
+It is possible to retreive the last position from the sled using the sled\_rt\_get\_position function.
+
+  double position;
+  sled\_rt\_get\_position(sled, &position);
+
+It is possible for the function to return the same sample more than once, for example when called at too high a frequency. 
+
+To provide the sled with a new (position) set-point, the sled\_rt\_set\_position should be invoked.
+
+  double position = 0;
+  sled\_rt\_set\_position(sled, position);
 
 Modules
 -------
