@@ -174,9 +174,24 @@ sled_t *sled_create(event_base *ev_base)
 	sled_t *sled = (sled_t *) malloc(sizeof(sled_t));
 	sled->ev_base = ev_base;
 
+	////////////////////////
+	// Initialise profiles
+
 	// Reset sled profiles
 	for(int profile = 0; profile < MAX_PROFILES; profile++)
 		sled_profile_clear(sled, profile, false);
+
+	// Register sinusoid profiles
+	sled->sinusoid_there = sled_profile_create(sled);
+	sled->sinusoid_back = sled_profile_create(sled);
+
+	sled_profile_set_table(sled, sled->sinusoid_there, 2);	// Should be 0, but no acceleration has been set...
+	sled_profile_set_table(sled, sled->sinusoid_back, 2);
+	sled_profile_set_next(sled, sled->sinusoid_there, sled->sinusoid_back, 0.0, bln_after);
+	sled_profile_set_next(sled, sled->sinusoid_back, sled->sinusoid_there, 0.0, bln_after);
+
+	////////////////////////////
+	// Interface-specific part
 
 	// Create interface
 	sled->interface = intf_create(sled->ev_base);
@@ -189,15 +204,6 @@ sled_t *sled_create(event_base *ev_base)
 	intf_set_close_handler(sled->interface, intf_on_close);
 	intf_set_nmt_state_handler(sled->interface, intf_on_nmt);
 	intf_set_tpdo_handler(sled->interface, intf_on_tpdo);
-
-	// Register sinusoid profiles
-	sled->sinusoid_there = sled_profile_create(sled);
-	sled->sinusoid_back = sled_profile_create(sled);
-
-	sled_profile_set_table(sled, sled->sinusoid_there, 2);	// Should be 0, but no acceleration has been set...
-	sled_profile_set_table(sled, sled->sinusoid_back, 2);
-	sled_profile_set_next(sled, sled->sinusoid_there, sled->sinusoid_back, 0.0, bln_after);
-	sled_profile_set_next(sled, sled->sinusoid_back, sled->sinusoid_there, 0.0, bln_after);
 
 	// Create watch-dog timer
 	timeval watchdog_timeout;
