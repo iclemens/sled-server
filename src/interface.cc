@@ -116,7 +116,7 @@ int intf_open(intf_t *intf)
 	#ifdef WIN32
 	return -1;
 	#else
-	const char *device = "/dev/pcanusb0";
+	const char *device = "/dev/pcanpci0";
 
 	// Device is already open
 	if(intf->handle) {
