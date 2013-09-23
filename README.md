@@ -36,8 +36,8 @@ Building
 Copyright and license
 ---------------------
 
-Copyright (c) 2013 Ivar Clemens
-Copyright (c) 2013 Donders Institute / Radboud University
+* Copyright (c) 2013 Ivar Clemens
+* Copyright (c) 2013 Donders Institute / Radboud University
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
