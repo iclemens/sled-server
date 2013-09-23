@@ -152,12 +152,14 @@ uid_t get_uid_by_name(const char *name)
 	return uid;
 }
 
+// These make sure macros are expanded before concatenation
+#define STRR(x) #x
+#define STR(x) STRR(x)
 
 void print_help()
 {
-	printf("Sled control server\n");
-	printf("\n");
-	printf("Compiled on %s %s\n", __DATE__, __TIME__);
+  printf("Sled control server " STR(VERSION_MAJOR) "." STR(VERSION_MINOR) " \n\n");
+  printf("Compiled from " STR(VERSION_BRANCH) "/" STR(VERSION_HASH) " on " __DATE__ " " __TIME__ "\n");
 	printf("\n");
 	printf("  --no-daemon   Do not daemonize.\n");
 	printf("  --help        Print help text.\n");
