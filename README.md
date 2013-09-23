@@ -33,6 +33,23 @@ Building
 	make
 	sudo make install
 
+Parts
+-----
+
+The server consists of three distinct parts:
+* librtc3d: Implements network server and low-level protocol handling.
+* libsled: Implements basic CAN master and sled control functions.
+* sled-server: Glue that links these two.
+
+Currently everything works in one thread. Using libevent we wait for file handles (either CAN-Bus or TCP-socket) to become ready to read. Libevent then automatically calls an event handler which reads from the file handle, does some buffering (in case of an incomplete message), and executes the command. In addition, we have registered a timer with libevent which periodically sends sled position to all clients that have signed up to receive it.
+
+Major issues
+------------
+
+* None of the code is currently thread-safe. This is not required at the moment, because we do not use threads.
+* Functions that are only used within the file are NOT declared static!
+* We are currently NOT const-correct.
+
 Copyright and license
 ---------------------
 
