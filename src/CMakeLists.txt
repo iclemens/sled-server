@@ -16,6 +16,6 @@ flex_target(scanner scanner.lex ${CMAKE_CURRENT_BINARY_DIR}/scanner.cc)
 add_executable(${Executable_Name} ${Source_Files} 
   ${CMAKE_CURRENT_BINARY_DIR}/scanner.cc 
   ${CMAKE_CURRENT_BINARY_DIR}/parser.cc)
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR})
 target_link_libraries(${Name_Executable} ${Name_Libsled} ${Name_Librtc3d} pcan event)
 
