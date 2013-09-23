@@ -41,6 +41,8 @@ The server consists of three distinct parts:
 * libsled: Implements basic CAN master and sled control functions.
 * sled-server: Glue that links these two.
 
+Even though these modules are statically linked, we will keep them as separate libraries for now as this will facilitate testing.
+
 Currently everything works in one thread. Using libevent we wait for file handles (either CAN-Bus or TCP-socket) to become ready to read. Libevent then automatically calls an event handler which reads from the file handle, does some buffering (in case of an incomplete message), and executes the command. In addition, we have registered a timer with libevent which periodically sends sled position to all clients that have signed up to receive it.
 
 Major issues
