@@ -26,5 +26,5 @@ install(TARGETS ${Name_Librtc3d} ARCHIVE DESTINATION lib)
 install(TARGETS ${Name_Librtc3d}_shared LIBRARY DESTINATION lib)
 
 # Install include files
-install(FILES ${Include_Files} DESTINATION "include/librtc3d-server")
+install(FILES ${Include_Files} DESTINATION "include/librtc3d")
 
