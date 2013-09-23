@@ -7,8 +7,7 @@
 #include <syslog.h>
 #include <time.h>
 
-
-double get_time()
+static double get_time()
 {
 	timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);

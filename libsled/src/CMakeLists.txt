@@ -19,16 +19,16 @@ set(Include_Files sled.h sled_profile.h)
 
 
 # Generate both static and shared libraries
-add_library(sled_static STATIC ${Source_Files})
-add_library(sled SHARED ${Source_Files})
+add_library(sled STATIC ${Source_Files})
+add_library(sled_shared SHARED ${Source_Files})
 
 # Set verion and install
 set(Version ${Version_Major}.${Version_Minor}.${Version_Rel})
-set_target_properties(sled PROPERTIES SOVERSION ${Version_Major})
-set_target_properties(sled PROPERTIES VERSION ${Version})
+set_target_properties(sled_shared PROPERTIES SOVERSION ${Version_Major})
+set_target_properties(sled_shared PROPERTIES VERSION ${Version})
 
-install(TARGETS sled_static ARCHIVE DESTINATION lib)
-install(TARGETS sled LIBRARY DESTINATION lib)
+install(TARGETS sled ARCHIVE DESTINATION lib)
+install(TARGETS sled_shared LIBRARY DESTINATION lib)
 
 # Install include files
 install(FILES ${Include_Files} DESTINATION "include/libsled")

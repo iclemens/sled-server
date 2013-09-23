@@ -7,6 +7,7 @@
 #include <syslog.h>
 #include <event2/event.h>
 
+
 /**
  * Returns current time in seconds.
  *
