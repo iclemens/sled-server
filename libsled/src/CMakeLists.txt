@@ -1,8 +1,5 @@
 
-# Version information
-set(Version_Major 1)
-set(Version_Minor 0)
-set(Version_Rel 0)
+include(../../Version.cmake)
 
 # Sources
 set(Source_Files sled.cc sled_profile.cc interface.cc 
@@ -19,16 +16,16 @@ set(Include_Files sled.h sled_profile.h)
 
 
 # Generate both static and shared libraries
-add_library(sled STATIC ${Source_Files})
-add_library(sled_shared SHARED ${Source_Files})
+add_library(${Name_Libsled} STATIC ${Source_Files})
+add_library(${Name_Libsled}_shared SHARED ${Source_Files})
 
 # Set verion and install
 set(Version ${Version_Major}.${Version_Minor}.${Version_Rel})
-set_target_properties(sled_shared PROPERTIES SOVERSION ${Version_Major})
-set_target_properties(sled_shared PROPERTIES VERSION ${Version})
+set_target_properties(${Name_Libsled}_shared PROPERTIES SOVERSION ${Version_Major})
+set_target_properties(${Name_Libsled}_shared PROPERTIES VERSION ${Version})
 
-install(TARGETS sled ARCHIVE DESTINATION lib)
-install(TARGETS sled_shared LIBRARY DESTINATION lib)
+install(TARGETS ${Name_Libsled} ARCHIVE DESTINATION lib)
+install(TARGETS ${Name_Libsled}_shared LIBRARY DESTINATION lib)
 
 # Install include files
 install(FILES ${Include_Files} DESTINATION "include/libsled")
