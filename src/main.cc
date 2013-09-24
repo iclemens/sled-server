@@ -208,7 +208,11 @@ int main(int argc, char **argv)
 
 	/* Open system log. */
 	openlog("sled", LOG_NDELAY | LOG_NOWAIT, LOG_LOCAL3);
-	syslog(LOG_DEBUG, "%s() compiled %s %s", __FUNCTION__, __DATE__, __TIME__);
+
+  /* Write version information to log */
+	syslog(LOG_DEBUG, STR(__FUNCTION__) "() " STR(VERSION_BRANCH) 
+    " version " STR(VERSION_MAJOR) "." STR(VERSION_MINOR) " " STR(VERSION_HASH) 
+    " compiled " __DATE__ " " __TIME__);
 
 	/* Daemonize process. */
 	if(daemonize_flag)
