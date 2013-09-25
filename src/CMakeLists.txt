@@ -19,3 +19,5 @@ add_executable(${Executable_Name} ${Source_Files}
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR})
 target_link_libraries(${Name_Executable} ${Name_Libsled} ${Name_Librtc3d} pcan event)
 
+# Install executable
+install(TARGETS ${Name_Executable} RUNTIME DESTINATION bin)
