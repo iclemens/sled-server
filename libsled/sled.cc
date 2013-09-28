@@ -184,8 +184,8 @@ sled_t *sled_create(event_base *ev_base)
 	sled->sinusoid_there = sled_profile_create(sled);
 	sled->sinusoid_back = sled_profile_create(sled);
 
-	sled_profile_set_table(sled, sled->sinusoid_there, 2);	// Should be 0, but no acceleration has been set...
-	sled_profile_set_table(sled, sled->sinusoid_back, 2);
+	sled_profile_set_table(sled, sled->sinusoid_there, 0);
+	sled_profile_set_table(sled, sled->sinusoid_back, 0);
 	sled_profile_set_next(sled, sled->sinusoid_there, sled->sinusoid_back, 0.0, bln_after);
 	sled_profile_set_next(sled, sled->sinusoid_back, sled->sinusoid_there, 0.0, bln_after);
 
