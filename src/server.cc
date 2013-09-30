@@ -145,6 +145,8 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 				}
 
 				sled_profile_set_next(ctx->sled, profile_id, next_profile_id, command.next_delay, command.blend_type);
+			} else {
+				sled_profile_set_next(ctx->sled, profile_id, -1, 0, bln_none);
 			}
 
 			rtc3d_send_command(rtc3d_conn, (char *) "ok-profile-set");
