@@ -90,6 +90,7 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 		int32_t position = (data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0];
 		int32_t velocity = (data[7] << 24) | (data[6] << 16) | (data[5] << 8) | data[4];
 
+		sled->last_time = get_time();
 		sled->last_position = position / 1000.0 / 1000.0;
 		sled->last_velocity = velocity / 1000.0 / 1000.0;
 	}
@@ -243,6 +244,23 @@ int sled_rt_new_setpoint(sled_t *handle, double position)
 {
 	// No can do
 	return -1;
+}
+
+
+/**
+ * Returns current sled position and time it was received.
+ */
+int sled_rt_get_position_and_time(sled_t *handle, double &position, double &time)
+{
+	assert(handle);
+
+	if(mch_net_active_state(handle->mch_net) != ST_NET_OPERATIONAL)
+		return -1;
+
+	time = handle->last_time;
+	position = handle->last_position;
+
+	return 0;
 }
 
 
