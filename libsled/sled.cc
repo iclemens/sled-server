@@ -108,19 +108,19 @@ void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
 
 
 // Inform network interface that the interface has opened / closed.
-CALLBACK_FUNCTION_EVENT(intf, on_opened, net, EV_NET_INTF_OPENED)
-CALLBACK_FUNCTION_EVENT(intf, on_closed, net, EV_NET_INTF_CLOSED)
+CALLBACK_FUNCTION_EVENT(intf, on_opened, net, EV_NET_INTF_OPENED);
+CALLBACK_FUNCTION_EVENT(intf, on_closed, net, EV_NET_INTF_CLOSED);
 
 // Inform SDO machine that SDO transmission is (not) possible.
-CALLBACK_FUNCTION_EVENT(net, on_sdos_enabled, sdo, EV_NET_SDO_ENABLED)
-CALLBACK_FUNCTION_EVENT(net, on_sdos_disabled, sdo, EV_NET_SDO_DISABLED)
+CALLBACK_FUNCTION_EVENT(net, on_sdos_enabled, sdo, EV_NET_SDO_ENABLED);
+CALLBACK_FUNCTION_EVENT(net, on_sdos_disabled, sdo, EV_NET_SDO_DISABLED);
 
 // Notify DS402 that NMT is (in)operational.
 void mch_net_on_enter_operational(mch_net_t *mch_net, void *payload)
 {
-  sled_t *sled = (sled_t *) payload;
+	sled_t *sled = (sled_t *) payload;
 	sled_profiles_reset(sled);
-  mch_ds_handle_event(sled->mch_ds, EV_DS_NET_OPERATIONAL);
+	mch_ds_handle_event(sled->mch_ds, EV_DS_NET_OPERATIONAL);
 }
 
 CALLBACK_FUNCTION_EVENT(net, on_leave_operational, ds, EV_DS_NET_INOPERATIONAL);
