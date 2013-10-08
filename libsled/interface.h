@@ -29,6 +29,8 @@ struct intf_t;
 #define OB_O_O1		0x35AE	// State of digital output 1
 #define OB_O_O2		0x35B1	// State of digital output 2
 
+#define OB_MOTION_TASK       0x2080  // Motion task to be executed
+#define OB_ACTIVE_TASK       0x2081  // Currently active motion task
 #define OB_COPY_MOTION_TASK	 0x2082	 // Copy motion task
 #define OB_CONTROL_WORD 		 0x6040	 // Control word
 
