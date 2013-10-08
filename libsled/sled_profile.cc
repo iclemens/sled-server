@@ -43,7 +43,7 @@ int sled_profile_get_controlword(sled_profile_t *profile)
 
 /**
  * Marks a profile as unsaved. Changes will be written
- * the the device as soon as possible.
+ * to the device as soon as possible.
  */
 void sled_profile_mark_as_unsaved(sled_profile_t *profile)
 {
@@ -60,6 +60,9 @@ void sled_profile_mark_as_unsaved(sled_profile_t *profile)
 }
 
 
+/**
+ * Returns true when changes are pending. False if not.
+ */
 bool sled_profile_has_changes_pending(sled_profile_t *profile)
 {
 	assert(profile);
@@ -115,7 +118,7 @@ void on_failure_callback(void *data, uint16_t index, uint8_t subindex, uint32_t 
 	sled_profile_t *profile = (sled_profile_t *) data;
 	sled_profile_set_field_state(profile, index, FIELD_INVALID);
 
-	syslog(LOG_ERR, "%s() uplaoding of profile failed \
+	syslog(LOG_ERR, "%s() uploading of profile failed \
 		abort code %04x on index %04x:%02x",
 		__FUNCTION__, abort, index, subindex);
 
