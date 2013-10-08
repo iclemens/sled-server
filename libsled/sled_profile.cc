@@ -119,8 +119,8 @@ void on_failure_callback(void *data, uint16_t index, uint8_t subindex, uint32_t 
 	sled_profile_set_field_state(profile, index, FIELD_INVALID);
 
 	syslog(LOG_ERR, "%s() uploading of profile failed \
-		abort code %04x on index %04x:%02x",
-		__FUNCTION__, abort, index, subindex);
+			abort code %04x on index %04x:%02x",
+			__FUNCTION__, abort, index, subindex);
 
 	exit(1);
 }
@@ -130,10 +130,14 @@ void on_failure_callback(void *data, uint16_t index, uint8_t subindex, uint32_t 
 	if(profile->_ ## name == FIELD_CHANGED) { \
 		profile->_ ## name = FIELD_WRITING; \
 		mch_sdo_queue_write_with_cb( \
-			sled->mch_sdo, index, 0x01, value, 0x04, \
-			on_success_callback, on_failure_callback, (void *) profile \
-		); \
+				sled->mch_sdo, index, 0x01, value, 0x04, \
+				on_success_callback, on_failure_callback, (void *) profile \
+				); \
 	}
+
+
+#define COPY_MOTION_TASK(from, to) \
+	mch_sdo_queue_write(sled->mch_sdo, OB_COPY_MOTION_TASK, 0x0, (from & 0xFFFF) | ((to & 0xFFFF) << 16), 0x04);
 
 
 /**
@@ -151,26 +155,26 @@ int sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 
 	// Load correct profile in slot 0
 	if(sled->current_profile != profile->profile) {
-		mch_sdo_queue_write(sled->mch_sdo, OB_COPY_MOTION_TASK, 0x0, profile->profile & 0xFFFF , 0x04);
-		sled->current_profile = profile->profile;
+		COPY_MOTION_TASK(profile->profile, 0x00)
+			sled->current_profile = profile->profile;
 	}
 
-	WRITE_FIELD_IF_CHANGED(ob_o_p,   OB_O_P,   int32_t(profile->position * 1000.0 * 1000.0))
-	WRITE_FIELD_IF_CHANGED(ob_o_v,   OB_O_V,   0x00)
-	WRITE_FIELD_IF_CHANGED(ob_o_c,   OB_O_C,   sled_profile_get_controlword(profile))
-	WRITE_FIELD_IF_CHANGED(ob_o_acc, OB_O_ACC, int32_t(profile->time * 1000.0 / 2.0))
-	WRITE_FIELD_IF_CHANGED(ob_o_dec, OB_O_DEC, int32_t(profile->time * 1000.0 / 2.0))
-	WRITE_FIELD_IF_CHANGED(ob_o_tab, OB_O_TAB, profile->table)
+	WRITE_FIELD_IF_CHANGED(ob_o_p,   OB_O_P,   int32_t(profile->position * 1000.0 * 1000.0));
+	WRITE_FIELD_IF_CHANGED(ob_o_v,   OB_O_V,   0x00);
+	WRITE_FIELD_IF_CHANGED(ob_o_c,   OB_O_C,   sled_profile_get_controlword(profile));
+	WRITE_FIELD_IF_CHANGED(ob_o_acc, OB_O_ACC, int32_t(profile->time * 1000.0 / 2.0));
+	WRITE_FIELD_IF_CHANGED(ob_o_dec, OB_O_DEC, int32_t(profile->time * 1000.0 / 2.0));
+	WRITE_FIELD_IF_CHANGED(ob_o_tab, OB_O_TAB, profile->table);
 
 	int next_profile = 0;
 	if(profile->next_profile >= 0)
 		next_profile = sled->profiles[profile->next_profile].profile;
 
-	WRITE_FIELD_IF_CHANGED(ob_o_fn,  OB_O_FN,  next_profile)
-	WRITE_FIELD_IF_CHANGED(ob_o_ft,  OB_O_FT,  profile->delay)
+	WRITE_FIELD_IF_CHANGED(ob_o_fn,  OB_O_FN,  next_profile);
+	WRITE_FIELD_IF_CHANGED(ob_o_ft,  OB_O_FT,  profile->delay);
 
 	// Copy back to profile (this could be defered to a later time)
-	mch_sdo_queue_write(sled->mch_sdo, OB_COPY_MOTION_TASK, 0x0, (profile->profile & 0xFFFF) << 16, 0x04);
+	COPY_MOTION_TASK(0x00, profile->profile);
 
 	// Write profiles that the current profile depends on...
 	if(profile->next_profile >= 0)
@@ -185,24 +189,24 @@ int sled_profile_write_pending_changes(sled_t *sled, int profile_id)
  */
 void sled_profile_clear(sled_t *sled, int profile, bool in_use)
 {
-  if(profile < 0 || profile >= MAX_PROFILES)
-    return;
+	if(profile < 0 || profile >= MAX_PROFILES)
+		return;
 
-  sled_profile_t *p = &(sled->profiles[profile]);
+	sled_profile_t *p = &(sled->profiles[profile]);
 
-  p->profile = 201 + profile;
-  p->in_use = in_use;
+	p->profile = 201 + profile;
+	p->in_use = in_use;
 
-  p->table = 2;
-  p->position_type = pos_absolute;
-  p->position = 0.0;
-  p->time = 1.0;
+	p->table = 2;
+	p->position_type = pos_absolute;
+	p->position = 0.0;
+	p->time = 1.0;
 
-  p->next_profile = -1;
-  p->delay = 0.0;
-  p->blend_type = bln_none;
+	p->next_profile = -1;
+	p->delay = 0.0;
+	p->blend_type = bln_none;
 
-  sled_profile_mark_as_unsaved(p);
+	sled_profile_mark_as_unsaved(p);
 }
 
 
@@ -228,15 +232,15 @@ int sled_profiles_reset(sled_t *sled)
  */
 int sled_profile_create(sled_t *sled)
 {
-  for(int i = 0; i < MAX_PROFILES; i++) {
-    if(!sled->profiles[i].in_use) {
-      sled_profile_clear(sled, i, true);
-      sled->profiles[i].in_use = true;
-      return i;
-    }
-  }
+	for(int i = 0; i < MAX_PROFILES; i++) {
+		if(!sled->profiles[i].in_use) {
+			sled_profile_clear(sled, i, true);
+			sled->profiles[i].in_use = true;
+			return i;
+		}
+	}
 
-  return -1;
+	return -1;
 }
 
 
@@ -247,15 +251,15 @@ int sled_profile_create(sled_t *sled)
  */
 int sled_profile_create_pt(sled_t *sled, double position, double time)
 {
-  int profile = sled_profile_create(sled);
+	int profile = sled_profile_create(sled);
 
-  if(profile == -1)
-    return -1;
+	if(profile == -1)
+		return -1;
 
-  sled->profiles[profile].position = position;
-  sled->profiles[profile].time = time;
+	sled->profiles[profile].position = position;
+	sled->profiles[profile].time = time;
 
-  return profile;
+	return profile;
 }
 
 
@@ -266,15 +270,15 @@ int sled_profile_create_pt(sled_t *sled, double position, double time)
  */
 int sled_profile_destroy(sled_t *sled, int profile)
 {
-  if(profile < 0 || profile >= MAX_PROFILES)
-    return -1;
+	if(profile < 0 || profile >= MAX_PROFILES)
+		return -1;
 
-  if(!sled->profiles[profile].in_use)
-    return -1;
+	if(!sled->profiles[profile].in_use)
+		return -1;
 
-  sled->profiles[profile].in_use = false;
+	sled->profiles[profile].in_use = false;
 
-  return 0;
+	return 0;
 }
 
 
@@ -285,18 +289,18 @@ int sled_profile_destroy(sled_t *sled, int profile)
  */
 int sled_profile_set_table(sled_t *sled, int profile, int table)
 {
-  if(profile < 0 || profile >= MAX_PROFILES)
-    return -1;
+	if(profile < 0 || profile >= MAX_PROFILES)
+		return -1;
 
-  if(!sled->profiles[profile].in_use)
-    return -1;
+	if(!sled->profiles[profile].in_use)
+		return -1;
 
 	if(sled->profiles[profile].table != table) {
-	  sled->profiles[profile].table = table;
-  	sled->profiles[profile]._ob_o_tab = FIELD_CHANGED;
+		sled->profiles[profile].table = table;
+		sled->profiles[profile]._ob_o_tab = FIELD_CHANGED;
 	}
 
-  return 0;
+	return 0;
 }
 
 
@@ -309,13 +313,13 @@ int sled_profile_set_target(sled_t *sled, int profile, position_type_t type, dou
 {
 	if(profile < 0 || profile >= MAX_PROFILES) {
 		syslog(LOG_ERR, "%s(%d, ...) invalid profile",
-			   __FUNCTION__, profile);
+				__FUNCTION__, profile);
 		return -1;
 	}
 
 	if(!sled->profiles[profile].in_use) {
 		syslog(LOG_ERR, "%s(%d, ...) profile not in use",
-			   __FUNCTION__, profile);
+				__FUNCTION__, profile);
 		return -1;
 	}
 
@@ -326,16 +330,16 @@ int sled_profile_set_target(sled_t *sled, int profile, position_type_t type, dou
 
 	if(sled->profiles[profile].position != position) {
 		sled->profiles[profile]._ob_o_p = FIELD_CHANGED;
-	  sled->profiles[profile].position = position;
+		sled->profiles[profile].position = position;
 	}
 
 	if(sled->profiles[profile].time != time) {
 		sled->profiles[profile]._ob_o_acc = FIELD_CHANGED;
 		sled->profiles[profile]._ob_o_dec = FIELD_CHANGED;
-	  sled->profiles[profile].time = time;
+		sled->profiles[profile].time = time;
 	}
 
-  return 0;
+	return 0;
 }
 
 
@@ -346,30 +350,30 @@ int sled_profile_set_target(sled_t *sled, int profile, position_type_t type, dou
  */
 int sled_profile_set_next(sled_t *sled, int profile, int next_profile, double delay, blend_type_t blend_type)
 {
-  if(profile < 0 || profile >= MAX_PROFILES)
-    return -1;
+	if(profile < 0 || profile >= MAX_PROFILES)
+		return -1;
 
-  if(!sled->profiles[profile].in_use)
-    return -1;
+	if(!sled->profiles[profile].in_use)
+		return -1;
 
 	if(sled->profiles[profile].next_profile != next_profile) {
 		sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
 		sled->profiles[profile]._ob_o_fn = FIELD_CHANGED;
-	  sled->profiles[profile].next_profile = next_profile;
+		sled->profiles[profile].next_profile = next_profile;
 	}
 
 	if(sled->profiles[profile].delay != delay) {
 		sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
 		sled->profiles[profile]._ob_o_ft = FIELD_CHANGED;
-	  sled->profiles[profile].delay = delay;
+		sled->profiles[profile].delay = delay;
 	}
 
 	if(sled->profiles[profile].blend_type != blend_type) {
 		sled->profiles[profile]._ob_o_c = FIELD_CHANGED;
-	  sled->profiles[profile].blend_type = blend_type;
+		sled->profiles[profile].blend_type = blend_type;
 	}
 
-  return 0;
+	return 0;
 }
 
 
@@ -391,25 +395,18 @@ int sled_profile_execute(sled_t *sled, int profile)
 		return -1;
 
 	syslog(LOG_DEBUG, "%s(%d) internal number: %d", __FUNCTION__,
-		profile, sled->profiles[profile].profile);
+			profile, sled->profiles[profile].profile);
 
 	if(mch_mp_active_state(sled->mch_mp) != ST_MP_PP_IDLE) {
 		syslog(LOG_ERR, "%s(%d) unable to execute, motor not idle",
-			__FUNCTION__, profile);
+				__FUNCTION__, profile);
 		return -1;
 	}
 
 	sled_profile_write_pending_changes(sled, profile);
 
-	/**
-	 * FIXME: We only want to execute once changes have been verified...
-	 */
-	if(sled->current_profile != profile) {
-		mch_sdo_queue_write(sled->mch_sdo, OB_COPY_MOTION_TASK, 0x0, sled->profiles[profile].profile & 0xFFFF , 0x04);
-		sled->current_profile = profile;
-	}
-
-	mch_sdo_queue_write(sled->mch_sdo, 0x2080, 0x00, sled->profiles[profile].profile, 0x02);
+	// Set motion profile to be executed
+	mch_sdo_queue_write(sled->mch_sdo, OB_MOTION_TASK, 0x00, sled->profiles[profile].profile, 0x02);
 
 	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x1F, 0x02);
 	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x0F, 0x02);
