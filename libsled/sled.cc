@@ -75,15 +75,28 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 		else
 			mch_ds_handle_event(sled->mch_ds, EV_DS_VOLTAGE_DISABLED);
 
-		if((status & 0x1000) == 0x1000)
-			mch_mp_handle_event(sled->mch_mp, EV_MP_HOMED);
-		else
-			mch_mp_handle_event(sled->mch_mp, EV_MP_NOTHOMED);
+		if((status & 0x400) == 0x400)
+			mch_mp_handle_event(sled->mch_mp, EV_MP_TARGET_REACHED);
 
-		if(mode == 0x06)
-			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_HOMING);
-		if(mode == 0x01)
+		// Profile position (PP) mode
+		if(mode == 0x01) {
 			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_PP);
+
+			if((status & 0x1000) == 0x1000)
+				mch_mp_handle_event(sled->mch_mp, EV_MP_SETPOINT_ACK);
+			else
+				mch_mp_handle_event(sled->mch_mp, EV_MP_SETPOINT_NACK);
+		}
+
+		// Homing mode
+		if(mode == 0x06) {
+			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_HOMING);
+
+			if((status & 0x1000) == 0x1000)
+				mch_mp_handle_event(sled->mch_mp, EV_MP_HOMED);
+			else
+				mch_mp_handle_event(sled->mch_mp, EV_MP_NOTHOMED);
+		}
 	}
 
 	if(pdo == 2) {

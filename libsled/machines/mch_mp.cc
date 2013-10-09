@@ -53,6 +53,21 @@ mch_mp_state_t mch_mp_next_state_given_event(mch_mp_t *machine, mch_mp_event_t e
 			if(event == EV_MP_HOMED)
 				return ST_MP_SWITCH_MODE_PP;
 			break;
+
+		case ST_MP_PP_IDLE:
+			if(event == EV_MP_SETPOINT_SET)
+				return ST_MP_PP_SP_NACK;
+			break;
+
+		case ST_MP_PP_SP_NACK:
+			if(event == EV_MP_SETPOINT_ACK)
+				return ST_MP_PP_SP_ACK;
+			break;
+
+		case ST_MP_PP_SP_ACK:
+			if(event == EV_MP_SETPOINT_NACK)
+				return ST_MP_PP_IDLE;
+			break;
 	}
 
 	return machine->state;
@@ -71,9 +86,14 @@ void mch_mp_on_enter(mch_mp_t *machine)
 			break;
 
 		case ST_MP_HH_HOMING:
+			// Set new_setpoint bit to initiate homing sequence.
 			mch_mp_send_control_word(machine, 0x1F);
 			break;
 
+		case ST_MP_PP_SP_ACK:
+			// Setpoint has been acknowledged, reset new_setpoint.
+			mch_mp_send_control_word(machine, 0x0F);
+			break;
 	}
 }
 
@@ -82,7 +102,9 @@ void mch_mp_on_exit(mch_mp_t *machine)
 {
 	switch(machine->state) {
 		case ST_MP_HH_HOMING:
+			// Reset new_setpoint_bit when homing is complete.
 			mch_mp_send_control_word(machine, 0x0F);
 			break;
 	}
 }
+
