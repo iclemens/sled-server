@@ -95,7 +95,7 @@ struct sled_t {
 	mch_mp_t *mch_mp;
 
 	// Last position and velocity
-	double last_position, last_velocity;
+	double last_time, last_position, last_velocity;
 
 	// Profiles for sinusoid
 	int sinusoid_there, sinusoid_back;
