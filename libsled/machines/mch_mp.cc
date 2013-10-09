@@ -87,12 +87,12 @@ void mch_mp_on_enter(mch_mp_t *machine)
 
 		case ST_MP_HH_HOMING:
 			// Set new_setpoint bit to initiate homing sequence.
-			mch_mp_send_control_word(machine, 0x1F);
+			mch_mp_send_control_word(machine, 0x1F | 0x20);
 			break;
 
 		case ST_MP_PP_SP_ACK:
 			// Setpoint has been acknowledged, reset new_setpoint.
-			mch_mp_send_control_word(machine, 0x0F);
+			mch_mp_send_control_word(machine, 0x0F | 0x20);
 			break;
 	}
 }
@@ -103,7 +103,7 @@ void mch_mp_on_exit(mch_mp_t *machine)
 	switch(machine->state) {
 		case ST_MP_HH_HOMING:
 			// Reset new_setpoint_bit when homing is complete.
-			mch_mp_send_control_word(machine, 0x0F);
+			mch_mp_send_control_word(machine, 0x0F | 0x20);
 			break;
 	}
 }

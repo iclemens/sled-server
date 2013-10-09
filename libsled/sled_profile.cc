@@ -407,7 +407,7 @@ int sled_profile_execute(sled_t *sled, int profile)
 
 	// Set motion profile to be executed
 	mch_sdo_queue_write(sled->mch_sdo, OB_MOTION_TASK, 0x00, sled->profiles[profile].profile, 0x02);
-	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x1F, 0x02);
+	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x1F | 0x20, 0x02);
 
 	mch_mp_handle_event(sled->mch_mp, EV_MP_SETPOINT_SET);
 
