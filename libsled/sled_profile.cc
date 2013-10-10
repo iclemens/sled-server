@@ -165,7 +165,7 @@ int sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 	WRITE_FIELD_IF_CHANGED(ob_o_acc, OB_O_ACC, int32_t(profile->time * 1000.0 / 2.0 + 0.5));
 
 	// Subtract one to compensate for the controller being 1ms late.
-	WRITE_FIELD_IF_CHANGED(ob_o_dec, OB_O_DEC, int32_t(profile->time * 1000.0 / 2.0 + 0.5)) - 1;
+	WRITE_FIELD_IF_CHANGED(ob_o_dec, OB_O_DEC, int32_t(profile->time * 1000.0 / 2.0 + 0.5) - 1);
 	WRITE_FIELD_IF_CHANGED(ob_o_tab, OB_O_TAB, profile->table);
 
 	int next_profile = 0;
