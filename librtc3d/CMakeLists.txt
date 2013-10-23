@@ -12,10 +12,16 @@ set(Include_Files rtc3d.h rtc3d_dataframe.h)
 ##  End of configuration  ##
 ############################
 
+find_path(LibEvent_Include event2/event.h)
+include_directories(${LibEvent_Include})
+
+find_library(LibEvent_Library event)
 
 # Both static and shared library
 add_library(${Name_Librtc3d} STATIC ${Source_Files})
+
 add_library(${Name_Librtc3d}_shared SHARED ${Source_Files})
+target_link_libraries(${Name_Librtc3d}_shared ${LibEvent_Library})
 
 # Set verion and install
 set(Version ${Version_Major}.${Version_Minor}.${Version_Rel})

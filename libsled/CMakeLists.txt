@@ -14,10 +14,16 @@ set(Include_Files sled.h sled_profile.h)
 ##  End of configuration  ##
 ############################
 
+find_path(LibEvent_Include event2/event.h)
+include_directories(${LibEvent_Include})
+
+find_library(LibEvent_Library event)
 
 # Generate both static and shared libraries
 add_library(${Name_Libsled} STATIC ${Source_Files})
 add_library(${Name_Libsled}_shared SHARED ${Source_Files})
+
+target_link_libraries(${Name_Libsled}_shared ${LibEvent_Library})
 
 # Set verion and install
 set(Version ${Version_Major}.${Version_Minor}.${Version_Rel})
