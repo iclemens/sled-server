@@ -353,7 +353,6 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 	// Setup fragment
 	fragment_t *frag = (fragment_t *) malloc(sizeof(fragment_t));
 	if(frag == NULL) {
-		printf("Memory allocation failed; current buffer size: %d\n", conn->bytes_remaining);
 		perror("net_send():malloc()");
 		if(flags & F_ADOPT_BUFFER)
 			free(buf);
@@ -365,7 +364,6 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 	} else {
 		frag->data = (char *) malloc(size + 1);
 		if(frag->data == NULL) {
-			printf("Memory allocation failed; current buffer size: %d\n", conn->bytes_remaining);
 			perror("net_send():malloc()");
 			free(frag);
 			return -1;
