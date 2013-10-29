@@ -65,10 +65,10 @@ int setup_realtime()
 	}
 
 	/* Lock memory */
-	if(mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
+/*	if(mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
 		perror("mlockall failed");
 		return -1;
-	}
+	}*/
 
 	return 0;
 }
