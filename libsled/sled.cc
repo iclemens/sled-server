@@ -7,6 +7,11 @@
 #include <syslog.h>
 #include <time.h>
 
+
+/* Maximum amount of seconds between NMT messages */
+#define MAX_NMT_DELAY 2.0
+
+
 static double get_time()
 {
 	timespec ts;
@@ -116,8 +121,10 @@ void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
 	double delta = get_time() - sled->time_last_nmt_msg;
 
 	// More than two seconds ago...
-	if(delta > 2.0) {
-		syslog(LOG_ERR, "%s() delay was %.2f seconds.", __FUNCTION__, delta);
+	if(delta > MAX_NMT_DELAY) {
+		syslog(LOG_ERR, "%s() last NMT message dated was received "
+			"%.2f seconds ago where only %.2f seconds are allowed",
+			__FUNCTION__, delta, MAX_NMT_DELAY);
 		mch_net_handle_event(sled->mch_net, EV_NET_WATCHDOG_FAILED);
 	}
 }
@@ -188,6 +195,9 @@ sled_t *sled_create(event_base *ev_base)
 {
 	sled_t *sled = (sled_t *) malloc(sizeof(sled_t));
 	sled->ev_base = ev_base;
+
+	/* Make sure the watchdog times out */
+	sled->time_last_nmt_msg = get_time() - MAX_NMT_DELAY;
 
 	////////////////////////
 	// Initialise profiles
