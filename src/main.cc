@@ -15,7 +15,6 @@
 #include <execinfo.h>
 #include <signal.h>
 
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +45,8 @@ void signal_handler(int sig)
 	}
 
 	if(SIGTERM == sig) {
-		syslog(LOG_WARNING, "%s() warning, proper shutdown procedure has not been implemented", __FUNCTION__);
+		syslog(LOG_WARNING, "%s() warning, proper shutdown "
+			"procedure has not been implemented", __FUNCTION__);
 		exit(EXIT_SUCCESS);
 	}
 }
@@ -140,7 +140,8 @@ void daemonize()
 
 	/* Change working directory */
 	if((chdir("/")) < 0) {
-		syslog(LOG_ALERT, "%s() could not change working directory", __FUNCTION__);
+		syslog(LOG_ALERT, "%s() could not change "
+			"working directory", __FUNCTION__);
 		exit(EXIT_FAILURE);
 	}
 
@@ -179,8 +180,11 @@ uid_t get_uid_by_name(const char *name)
 
 void print_help()
 {
-  printf("Sled control server " STR(VERSION_MAJOR) "." STR(VERSION_MINOR) " \n\n");
-  printf("Compiled from " STR(VERSION_BRANCH) "/" STR(VERSION_HASH) " on " __DATE__ " " __TIME__ "\n");
+  printf("Sled control server " 
+	STR(VERSION_MAJOR) "." STR(VERSION_MINOR) " \n\n");
+  printf("Compiled from " STR(VERSION_BRANCH) "/" STR(VERSION_HASH) 
+	" on " __DATE__ " " __TIME__ "\n");
+
 	printf("\n");
 	printf("  --no-daemon   Do not daemonize.\n");
 	printf("  --help        Print help text.\n");
@@ -223,17 +227,20 @@ int main(int argc, char **argv)
 	}
 
 	if(daemonize_flag && (uid == -1)) {
-		fprintf(stderr, "Default user 'sled' does not exist, and no user was specified.\n");
+		fprintf(stderr, "Default user 'sled' does not exist, "
+			"and no user was specified.\n");
 		exit(EXIT_FAILURE);
 	}
 
 	/* Open system log. */
 	openlog("sled", LOG_NDELAY | LOG_NOWAIT, LOG_LOCAL3);
 
-  /* Write version information to log */
-	syslog(LOG_DEBUG, STR(__FUNCTION__) "() " STR(VERSION_BRANCH) 
-    " version " STR(VERSION_MAJOR) "." STR(VERSION_MINOR) " " STR(VERSION_HASH) 
-    " compiled " __DATE__ " " __TIME__);
+	/* Write version information to log */
+	syslog(LOG_DEBUG, "%s() " STR(VERSION_BRANCH) 
+    	" version " STR(VERSION_MAJOR) "." 
+					STR(VERSION_MINOR) " " 
+					STR(VERSION_HASH) 
+    	" compiled " __DATE__ " " __TIME__, __FUNCTION__);
 
 	/* Daemonize process. */
 	if(daemonize_flag)
