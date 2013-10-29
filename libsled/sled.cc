@@ -122,7 +122,7 @@ void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
 
 	// More than two seconds ago...
 	if(delta > MAX_NMT_DELAY) {
-		syslog(LOG_ERR, "%s() last NMT message dated was received "
+		syslog(LOG_ERR, "%s() last NMT message was received "
 			"%.2f seconds ago where only %.2f seconds are allowed",
 			__FUNCTION__, delta, MAX_NMT_DELAY);
 		mch_net_handle_event(sled->mch_net, EV_NET_WATCHDOG_FAILED);
