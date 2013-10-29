@@ -116,8 +116,10 @@ void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
 	double delta = get_time() - sled->time_last_nmt_msg;
 
 	// More than two seconds ago...
-	if(delta > 2.0)
+	if(delta > 2.0) {
+		syslog(LOG_ERR, "%s() delay was %.2f seconds.", __FUNCTION__, delta);
 		mch_net_handle_event(sled->mch_net, EV_NET_WATCHDOG_FAILED);
+	}
 }
 
 

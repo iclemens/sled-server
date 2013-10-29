@@ -105,6 +105,7 @@ void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
 	conn->local = NULL;
 	conn->frags_head = NULL;
 	conn->frags_tail = NULL;
+	conn->bytes_remaining = 0;
 
 	if(server->connect_handler)
 		conn->local = server->connect_handler(conn);
@@ -299,6 +300,7 @@ int write_single_fragment(net_connection_t *conn)
 	//printf("Wrote %d of %d bytes to %d\n", retval, size, conn->fd);
 
 	if(retval >= 0) {
+		conn->bytes_remaining -= retval;
 		frag->offset += retval;
 
 		if(frag->offset < frag->size)
@@ -351,7 +353,8 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 	// Setup fragment
 	fragment_t *frag = (fragment_t *) malloc(sizeof(fragment_t));
 	if(frag == NULL) {
-		perror("malloc()");
+		printf("Memory allocation failed; current buffer size: %d\n", conn->bytes_remaining);
+		perror("net_send():malloc()");
 		if(flags & F_ADOPT_BUFFER)
 			free(buf);
 		return -1;
@@ -361,12 +364,13 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 		frag->data = buf;
 	} else {
 		frag->data = (char *) malloc(size + 1);
-		frag->data[size] = 0;
 		if(frag->data == NULL) {
-			perror("malloc()");
+			printf("Memory allocation failed; current buffer size: %d\n", conn->bytes_remaining);
+			perror("net_send():malloc()");
 			free(frag);
 			return -1;
 		}
+		frag->data[size] = 0;
 		memcpy(frag->data, buf, size);
 
 		#ifdef DEBUG
@@ -387,6 +391,8 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 		conn->frags_tail = frag;
 	}
 
+	conn->bytes_remaining += size;
+
 	// If buffer not empty, add flag
 	if(conn->frags_head != NULL) {
 		// Already added
@@ -397,7 +403,7 @@ int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
 		int result = event_add(conn->write_event, NULL);
 
 		if(result == -1) {
-			perror("event_add()");
+			perror("net_send():event_add()");
 			return 0;
 		}
 	}

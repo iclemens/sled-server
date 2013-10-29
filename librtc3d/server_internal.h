@@ -3,6 +3,7 @@
 
 #include "server.h"
 #include <map>
+#include <stdint.h>
 
 struct net_server_t;
 struct event;
@@ -34,6 +35,7 @@ struct net_connection_t {
 	// Fragments to be written
 	fragment_t *frags_head;
 	fragment_t *frags_tail;
+	uint32_t bytes_remaining;
 };
 
 
