@@ -235,7 +235,9 @@ sled_t *sled_create(event_base *ev_base)
 	watchdog_timeout.tv_sec = 3;
 	watchdog_timeout.tv_usec = 0;
 
-	sled->watchdog = event_new(ev_base, -1, EV_PERSIST, nmt_watchdog, (void *) sled);
+	sled->watchdog = 
+		event_new(ev_base, -1, EV_PERSIST, nmt_watchdog, (void *) sled);
+	event_priority_set(sled->watchdog, 0);	/* Important */
 	event_add(sled->watchdog, &watchdog_timeout);
 
 	// Open interface

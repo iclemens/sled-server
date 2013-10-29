@@ -267,6 +267,7 @@ int main(int argc, char **argv)
 	event_config *cfg = event_config_new();
 	event_config_require_features(cfg, EV_FEATURE_FDS);
 	event_base *ev_base = event_base_new_with_config(cfg);
+	event_base_priority_init(ev_base, 2);
 
 	if(!ev_base) {
 		fprintf(stderr, "Error initializing libevent.\n");
