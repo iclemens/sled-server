@@ -10,8 +10,11 @@
 
 #include <sched.h>
 #include <sys/mman.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <execinfo.h>
 #include <signal.h>
+
 
 #include <string.h>
 #include <stdio.h>
@@ -23,7 +26,7 @@
 
 #define MAX_EVENTS 10
 #define PRIORITY 49
-
+#define MIN_MEMLOCK 104857600
 
 /**
  * Prints a backtrace on segmentation faults.
@@ -60,15 +63,33 @@ int setup_realtime()
 	sched_param param;
 	param.sched_priority = PRIORITY;
 	if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
-		perror("sched_setscheduler failed");
+		perror("setup_realtime():sched_setscheduler()");
+		return -1;
+	}
+
+	/* Check whether we can lock enough memory in RAM */
+	struct rlimit limit;
+	if(getrlimit(RLIMIT_MEMLOCK, &limit) == -1) {
+		perror("setup_realtime():getrlimit()");
+		return -1;
+	}
+
+	if(limit.rlim_cur < MIN_MEMLOCK) {
+		fprintf(stderr, "Memlock limit of %lu MB is not sufficient. "
+						"Increase to at least %lu MB by editing "
+						"/etc/security/limits.conf, logout and "
+						"try again.\n",
+						limit.rlim_cur / 1048576,
+						(long unsigned) MIN_MEMLOCK / 1048576);
 		return -1;
 	}
 
 	/* Lock memory */
-/*	if(mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
-		perror("mlockall failed");
+	if(mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
+		perror("setup_realtime():mlockall()");
 		return -1;
-	}*/
+	}
+
 
 	return 0;
 }
