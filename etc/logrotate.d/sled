@@ -1,0 +1,5 @@
+/var/log/sled.log {
+	daily
+	rotate 365
+}
+

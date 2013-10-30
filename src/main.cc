@@ -10,6 +10,8 @@
 
 #include <sched.h>
 #include <sys/mman.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <execinfo.h>
 #include <signal.h>
 
@@ -23,7 +25,7 @@
 
 #define MAX_EVENTS 10
 #define PRIORITY 49
-
+#define MIN_MEMLOCK 104857600
 
 /**
  * Prints a backtrace on segmentation faults.
@@ -43,7 +45,8 @@ void signal_handler(int sig)
 	}
 
 	if(SIGTERM == sig) {
-		syslog(LOG_WARNING, "%s() warning, proper shutdown procedure has not been implemented", __FUNCTION__);
+		syslog(LOG_WARNING, "%s() warning, proper shutdown "
+			"procedure has not been implemented", __FUNCTION__);
 		exit(EXIT_SUCCESS);
 	}
 }
@@ -60,15 +63,33 @@ int setup_realtime()
 	sched_param param;
 	param.sched_priority = PRIORITY;
 	if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
-		perror("sched_setscheduler failed");
+		perror("setup_realtime():sched_setscheduler()");
+		return -1;
+	}
+
+	/* Check whether we can lock enough memory in RAM */
+	struct rlimit limit;
+	if(getrlimit(RLIMIT_MEMLOCK, &limit) == -1) {
+		perror("setup_realtime():getrlimit()");
+		return -1;
+	}
+
+	if(limit.rlim_cur < MIN_MEMLOCK) {
+		fprintf(stderr, "Memlock limit of %lu MB is not sufficient. "
+						"Increase to at least %lu MB by editing "
+						"/etc/security/limits.conf, logout and "
+						"try again.\n",
+						limit.rlim_cur / 1048576,
+						(long unsigned) MIN_MEMLOCK / 1048576);
 		return -1;
 	}
 
 	/* Lock memory */
 	if(mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
-		perror("mlockall failed");
+		perror("setup_realtime():mlockall()");
 		return -1;
 	}
+
 
 	return 0;
 }
@@ -119,7 +140,8 @@ void daemonize()
 
 	/* Change working directory */
 	if((chdir("/")) < 0) {
-		syslog(LOG_ALERT, "%s() could not change working directory", __FUNCTION__);
+		syslog(LOG_ALERT, "%s() could not change "
+			"working directory", __FUNCTION__);
 		exit(EXIT_FAILURE);
 	}
 
@@ -158,8 +180,11 @@ uid_t get_uid_by_name(const char *name)
 
 void print_help()
 {
-  printf("Sled control server " STR(VERSION_MAJOR) "." STR(VERSION_MINOR) " \n\n");
-  printf("Compiled from " STR(VERSION_BRANCH) "/" STR(VERSION_HASH) " on " __DATE__ " " __TIME__ "\n");
+  printf("Sled control server " 
+	STR(VERSION_MAJOR) "." STR(VERSION_MINOR) " \n\n");
+  printf("Compiled from " STR(VERSION_BRANCH) "/" STR(VERSION_HASH) 
+	" on " __DATE__ " " __TIME__ "\n");
+
 	printf("\n");
 	printf("  --no-daemon   Do not daemonize.\n");
 	printf("  --help        Print help text.\n");
@@ -202,17 +227,20 @@ int main(int argc, char **argv)
 	}
 
 	if(daemonize_flag && (uid == -1)) {
-		fprintf(stderr, "Default user 'sled' does not exist, and no user was specified.\n");
+		fprintf(stderr, "Default user 'sled' does not exist, "
+			"and no user was specified.\n");
 		exit(EXIT_FAILURE);
 	}
 
 	/* Open system log. */
 	openlog("sled", LOG_NDELAY | LOG_NOWAIT, LOG_LOCAL3);
 
-  /* Write version information to log */
-	syslog(LOG_DEBUG, STR(__FUNCTION__) "() " STR(VERSION_BRANCH) 
-    " version " STR(VERSION_MAJOR) "." STR(VERSION_MINOR) " " STR(VERSION_HASH) 
-    " compiled " __DATE__ " " __TIME__);
+	/* Write version information to log */
+	syslog(LOG_DEBUG, "%s() " STR(VERSION_BRANCH) 
+    	" version " STR(VERSION_MAJOR) "." 
+					STR(VERSION_MINOR) " " 
+					STR(VERSION_HASH) 
+    	" compiled " __DATE__ " " __TIME__, __FUNCTION__);
 
 	/* Daemonize process. */
 	if(daemonize_flag)
@@ -239,6 +267,7 @@ int main(int argc, char **argv)
 	event_config *cfg = event_config_new();
 	event_config_require_features(cfg, EV_FEATURE_FDS);
 	event_base *ev_base = event_base_new_with_config(cfg);
+	event_base_priority_init(ev_base, 2);
 
 	if(!ev_base) {
 		fprintf(stderr, "Error initializing libevent.\n");

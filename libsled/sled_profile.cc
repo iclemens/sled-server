@@ -162,8 +162,10 @@ int sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 	WRITE_FIELD_IF_CHANGED(ob_o_p,   OB_O_P,   int32_t(profile->position * 1000.0 * 1000.0));
 	WRITE_FIELD_IF_CHANGED(ob_o_v,   OB_O_V,   0x00);
 	WRITE_FIELD_IF_CHANGED(ob_o_c,   OB_O_C,   sled_profile_get_controlword(profile));
-	WRITE_FIELD_IF_CHANGED(ob_o_acc, OB_O_ACC, int32_t(profile->time * 1000.0 / 2.0));
-	WRITE_FIELD_IF_CHANGED(ob_o_dec, OB_O_DEC, int32_t(profile->time * 1000.0 / 2.0));
+	WRITE_FIELD_IF_CHANGED(ob_o_acc, OB_O_ACC, int32_t(profile->time * 1000.0 / 2.0 + 0.5));
+
+	// Subtract one to compensate for the controller being 1ms late.
+	WRITE_FIELD_IF_CHANGED(ob_o_dec, OB_O_DEC, int32_t(profile->time * 1000.0 / 2.0 + 0.5) - 1);
 	WRITE_FIELD_IF_CHANGED(ob_o_tab, OB_O_TAB, profile->table);
 
 	int next_profile = 0;
@@ -171,7 +173,7 @@ int sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 		next_profile = sled->profiles[profile->next_profile].profile;
 
 	WRITE_FIELD_IF_CHANGED(ob_o_fn,  OB_O_FN,  next_profile);
-	WRITE_FIELD_IF_CHANGED(ob_o_ft,  OB_O_FT,  profile->delay);
+	WRITE_FIELD_IF_CHANGED(ob_o_ft,  OB_O_FT,  int32_t(profile->delay * 1000.0));
 
 	// Copy back to profile (this could be defered to a later time)
 	COPY_MOTION_TASK(0x00, profile->profile);
@@ -407,9 +409,9 @@ int sled_profile_execute(sled_t *sled, int profile)
 
 	// Set motion profile to be executed
 	mch_sdo_queue_write(sled->mch_sdo, OB_MOTION_TASK, 0x00, sled->profiles[profile].profile, 0x02);
+	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x1F | 0x20, 0x02);
 
-	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x1F, 0x02);
-	mch_sdo_queue_write(sled->mch_sdo, OB_CONTROL_WORD, 0x00, 0x0F, 0x02);
+	mch_mp_handle_event(sled->mch_mp, EV_MP_SETPOINT_SET);
 
 	return 0;
 }

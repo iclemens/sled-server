@@ -231,8 +231,8 @@ void on_timeout(evutil_socket_t sock, short events, void *arg)
 	}
 
 	// Get position
-	double position;
-	if(sled_rt_get_position(ctx->sled, position) == -1)
+	double position, time;
+	if(sled_rt_get_position_and_time(ctx->sled, position, time) == -1)
 		return;
 
 	// Send position to all clients
@@ -240,7 +240,7 @@ void on_timeout(evutil_socket_t sock, short events, void *arg)
 
 	for(std::list<rtc3d_connection_t *>::iterator it = (ctx->stream_clients).begin();
 		it != (ctx->stream_clients).end(); it++) {
-		rtc3d_send_data(*it, frame, tcurrent, position * 1000.0);
+		rtc3d_send_data(*it, frame, (uint64_t) (time * 1e6), position * 1000.0);
 	}
 
 	frame++;
@@ -284,7 +284,7 @@ sled_server_ctx_t *setup_sled_server_context(event_base *ev_base)
 	// Start periodic event
 	timeval timeout;
 	timeout.tv_sec = 0;
-	timeout.tv_usec = 10 * 1000;
+	timeout.tv_usec = 1000;
 
 	event *periodic = event_new(ev_base, fileno(stdout), EV_READ | EV_PERSIST, on_timeout, (void *) ctx);
 	event_add(periodic, &timeout);

@@ -156,9 +156,11 @@ int intf_open(intf_t *intf)
 		return -1;
 	}
 
-	// Register handle with libevent
+	// Register handle with libevent and set priority to important
 	intf->fd = LINUX_CAN_FileHandle(intf->handle);
-	intf->read_event = event_new(intf->ev_base, intf->fd, EV_READ | EV_PERSIST, intf_on_read, (void *) intf);
+	intf->read_event = event_new(intf->ev_base, intf->fd, 
+		EV_READ | EV_PERSIST, intf_on_read, (void *) intf);
+	event_priority_set(intf->read_event, 0);
 	event_add(intf->read_event, NULL);
 
 	return 0;

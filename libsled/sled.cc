@@ -7,6 +7,11 @@
 #include <syslog.h>
 #include <time.h>
 
+
+/* Maximum amount of seconds between NMT messages */
+#define MAX_NMT_DELAY 2.0
+
+
 static double get_time()
 {
 	timespec ts;
@@ -75,21 +80,35 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 		else
 			mch_ds_handle_event(sled->mch_ds, EV_DS_VOLTAGE_DISABLED);
 
-		if((status & 0x1000) == 0x1000)
-			mch_mp_handle_event(sled->mch_mp, EV_MP_HOMED);
-		else
-			mch_mp_handle_event(sled->mch_mp, EV_MP_NOTHOMED);
+		if((status & 0x400) == 0x400)
+			mch_mp_handle_event(sled->mch_mp, EV_MP_TARGET_REACHED);
 
-		if(mode == 0x06)
-			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_HOMING);
-		if(mode == 0x01)
+		// Profile position (PP) mode
+		if(mode == 0x01) {
 			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_PP);
+
+			if((status & 0x1000) == 0x1000)
+				mch_mp_handle_event(sled->mch_mp, EV_MP_SETPOINT_ACK);
+			else
+				mch_mp_handle_event(sled->mch_mp, EV_MP_SETPOINT_NACK);
+		}
+
+		// Homing mode
+		if(mode == 0x06) {
+			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_HOMING);
+
+			if((status & 0x1000) == 0x1000)
+				mch_mp_handle_event(sled->mch_mp, EV_MP_HOMED);
+			else
+				mch_mp_handle_event(sled->mch_mp, EV_MP_NOTHOMED);
+		}
 	}
 
 	if(pdo == 2) {
 		int32_t position = (data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0];
 		int32_t velocity = (data[7] << 24) | (data[6] << 16) | (data[5] << 8) | data[4];
 
+		sled->last_time = get_time();
 		sled->last_position = position / 1000.0 / 1000.0;
 		sled->last_velocity = velocity / 1000.0 / 1000.0;
 	}
@@ -102,8 +121,12 @@ void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
 	double delta = get_time() - sled->time_last_nmt_msg;
 
 	// More than two seconds ago...
-	if(delta > 2.0)
+	if(delta > MAX_NMT_DELAY) {
+		syslog(LOG_ERR, "%s() last NMT message was received "
+			"%.2f seconds ago where only %.2f seconds are allowed",
+			__FUNCTION__, delta, MAX_NMT_DELAY);
 		mch_net_handle_event(sled->mch_net, EV_NET_WATCHDOG_FAILED);
+	}
 }
 
 
@@ -173,6 +196,9 @@ sled_t *sled_create(event_base *ev_base)
 	sled_t *sled = (sled_t *) malloc(sizeof(sled_t));
 	sled->ev_base = ev_base;
 
+	/* Make sure the watchdog times out */
+	sled->time_last_nmt_msg = get_time() - MAX_NMT_DELAY;
+
 	////////////////////////
 	// Initialise profiles
 
@@ -209,7 +235,9 @@ sled_t *sled_create(event_base *ev_base)
 	watchdog_timeout.tv_sec = 3;
 	watchdog_timeout.tv_usec = 0;
 
-	sled->watchdog = event_new(ev_base, -1, EV_PERSIST, nmt_watchdog, (void *) sled);
+	sled->watchdog = 
+		event_new(ev_base, -1, EV_PERSIST, nmt_watchdog, (void *) sled);
+	event_priority_set(sled->watchdog, 0);	/* Important */
 	event_add(sled->watchdog, &watchdog_timeout);
 
 	// Open interface
@@ -243,6 +271,23 @@ int sled_rt_new_setpoint(sled_t *handle, double position)
 {
 	// No can do
 	return -1;
+}
+
+
+/**
+ * Returns current sled position and time it was received.
+ */
+int sled_rt_get_position_and_time(sled_t *handle, double &position, double &time)
+{
+	assert(handle);
+
+	if(mch_net_active_state(handle->mch_net) != ST_NET_OPERATIONAL)
+		return -1;
+
+	time = handle->last_time;
+	position = handle->last_position;
+
+	return 0;
 }
 
 
