@@ -1,6 +1,7 @@
 #include "server.h"
 #include "parser.h"
 
+#include <math.h>
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <time.h>
@@ -8,12 +9,17 @@
 #include <event2/event.h>
 
 
+// Interval at which new samples are sent in us
+#define SAMPLE_INTERVAL 1000
+#define MAX_SAMPLE_INTERVAL 2000
+
+
 /**
  * Returns current time in seconds.
  *
  * @return Current time in seconds.
  */
-double get_time()
+static double get_time()
 {
 	timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -222,18 +228,20 @@ void on_timeout(evutil_socket_t sock, short events, void *arg)
 	double tcurrent = get_time();
 
 	// Verify that timer is accurate enough
-	static double tlast = 0;
-	double delta = (tcurrent - tlast) * 1000;
+	static double tlast = tcurrent;
+	double delta = (tcurrent - tlast) * 1000 * 1000;
 	tlast = tcurrent;
 
-	if(delta > 11) {
-		//printf("Periodic timer miss: %.2f\t%.2f ms\n", delta - 10, delta);
+	if(delta > MAX_SAMPLE_INTERVAL) {
+		syslog(LOG_NOTICE, "%s() timer missed by %.2f ms\n", 
+			__FUNCTION__, (delta - SAMPLE_INTERVAL) / 1000.0);
 	}
 
 	// Get position
 	double position, time;
-	if(sled_rt_get_position_and_time(ctx->sled, position, time) == -1)
-		return;
+	if(sled_rt_get_position_and_time(ctx->sled, position, time) == -1) {
+		position = NAN;
+	}
 
 	// Send position to all clients
 	static int frame = 0;
@@ -284,7 +292,7 @@ sled_server_ctx_t *setup_sled_server_context(event_base *ev_base)
 	// Start periodic event
 	timeval timeout;
 	timeout.tv_sec = 0;
-	timeout.tv_usec = 1000;
+	timeout.tv_usec = SAMPLE_INTERVAL;
 
 	event *periodic = event_new(ev_base, fileno(stdout), EV_READ | EV_PERSIST, on_timeout, (void *) ctx);
 	event_add(periodic, &timeout);
