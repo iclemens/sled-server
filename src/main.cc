@@ -266,7 +266,9 @@ int main(int argc, char **argv)
 	/* Setup libevent */
 	event_config *cfg = event_config_new();
 	event_config_require_features(cfg, EV_FEATURE_FDS);
+	#ifdef EVENT_BASE_FLAG_PRECISE_TIMER
 	event_config_set_flag(cfg, EVENT_BASE_FLAG_PRECISE_TIMER);
+	#endif
 	event_config_set_flag(cfg, EVENT_BASE_FLAG_NOLOCK);
 	event_config_set_flag(cfg, EVENT_BASE_FLAG_NO_CACHE_TIME);
 

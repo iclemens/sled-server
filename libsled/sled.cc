@@ -117,15 +117,26 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 
 void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
 {
+	static bool message_written = false;
+
 	sled_t *sled = (sled_t *) param;
 	double delta = get_time() - sled->time_last_nmt_msg;
 
 	// More than two seconds ago...
 	if(delta > MAX_NMT_DELAY) {
-		syslog(LOG_ERR, "%s() last NMT message was received "
-			"%.2f seconds ago where only %.2f seconds are allowed",
-			__FUNCTION__, delta, MAX_NMT_DELAY);
+		if(!message_written) {
+			syslog(LOG_ERR, "%s() last NMT message was received "
+				"%.2f seconds ago where only %.2f seconds are allowed",
+				__FUNCTION__, delta, MAX_NMT_DELAY);
+			message_written = true;
+		}
 		mch_net_handle_event(sled->mch_net, EV_NET_WATCHDOG_FAILED);
+	} else {
+		if(message_written) {
+			syslog(LOG_NOTICE, "%s() NMT message received",
+				__FUNCTION__);
+			message_written = false;
+		}
 	}
 }
 
