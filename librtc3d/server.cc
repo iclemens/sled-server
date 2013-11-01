@@ -297,7 +297,6 @@ int write_single_fragment(net_connection_t *conn)
 	size_t size = frag->size - frag->offset;
 
 	int retval = send(conn->fd, buf, size, 0);
-	//printf("Wrote %d of %d bytes to %d\n", retval, size, conn->fd);
 
 	if(retval >= 0) {
 		conn->bytes_remaining -= retval;
