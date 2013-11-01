@@ -561,8 +561,8 @@ int accept_client(int sock)
 
 	// Disable blocking
 	#ifndef WIN32
-	int flags = fcntl(sock, F_GETFL, 0);
-	fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+	int flags = fcntl(client, F_GETFL, 0);
+	fcntl(client, F_SETFL, flags | O_NONBLOCK);
 	#endif
 
 	// Disable nagling
