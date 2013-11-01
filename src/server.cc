@@ -11,7 +11,12 @@
 
 // Interval at which new samples are sent in us
 #define SAMPLE_INTERVAL 1000
+
+// Interval after which samples are counted as invalid
 #define MAX_SAMPLE_INTERVAL 2000
+
+// Output summary statistics every 5 minutes
+#define REPORT_EVERY_X_SAMPLES int(300 * (1e6/SAMPLE_INTERVAL))
 
 
 /**
@@ -218,6 +223,40 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 }
 
 
+void update_timeout_stats(double time_actual)
+{
+	static double time_previous = time_actual;
+
+	static double sum_delay = 0;
+	static double max_delay = 0;
+
+	static int num_samples = 0;
+	static int num_unacceptable = 0;
+
+	// Time since previous invocation
+	double delay = time_actual - time_previous;
+	time_previous = time_actual;
+
+	// Update statistics
+	if(delay > max_delay) max_delay = delay;
+	if(delay > MAX_SAMPLE_INTERVAL/1e6) num_unacceptable++;
+
+	sum_delay += delay;
+	num_samples++;
+
+	// Output summary statistics every X samples
+	if(num_samples >= REPORT_EVERY_X_SAMPLES) {
+		syslog(LOG_DEBUG, "%s() %d of %d timeouts missed; mean %.0f us; max %.0f us\n",
+			__FUNCTION__, num_unacceptable, num_samples,
+			(sum_delay/num_samples)*1e6,
+			(max_delay * 1e6));
+
+		sum_delay = max_delay = 0;
+		num_samples = num_unacceptable = 0;
+	}
+}
+
+
 void on_timeout(evutil_socket_t sock, short events, void *arg)
 {
 	sled_server_ctx_t *ctx = (sled_server_ctx_t *) arg;
@@ -226,16 +265,7 @@ void on_timeout(evutil_socket_t sock, short events, void *arg)
 		return;
 
 	double tcurrent = get_time();
-
-	// Verify that timer is accurate enough
-	static double tlast = tcurrent;
-	double delta = (tcurrent - tlast) * 1000 * 1000;
-	tlast = tcurrent;
-
-	if(delta > MAX_SAMPLE_INTERVAL) {
-		syslog(LOG_NOTICE, "%s() timer missed by %.2f ms\n", 
-			__FUNCTION__, (delta - SAMPLE_INTERVAL) / 1000.0);
-	}
+	update_timeout_stats(tcurrent);
 
 	// Get position
 	double position, time;

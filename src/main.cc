@@ -266,6 +266,10 @@ int main(int argc, char **argv)
 	/* Setup libevent */
 	event_config *cfg = event_config_new();
 	event_config_require_features(cfg, EV_FEATURE_FDS);
+	event_config_set_flag(cfg, EVENT_BASE_FLAG_PRECISE_TIMER);
+	event_config_set_flag(cfg, EVENT_BASE_FLAG_NOLOCK);
+	event_config_set_flag(cfg, EVENT_BASE_FLAG_NO_CACHE_TIME);
+
 	event_base *ev_base = event_base_new_with_config(cfg);
 	event_base_priority_init(ev_base, 2);
 
