@@ -14,3 +14,7 @@ sled_server
 *.lai
 *.la
 *.a
+
+*.cc_test
+
+*.h_test
