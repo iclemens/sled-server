@@ -1,22 +1,31 @@
-<scxml>
-  <script><![CDATA[
-    void mch_ds_send_control_word(mch_ds_t *machine, uint16_t control_word)
-    {
-	    mch_sdo_queue_write(machine->mch_sdo, OB_CONTROL_WORD, 0x00, control_word, 0x02);
-    }    
-  ]]></script>
+<icsxml>
+  <header><![CDATA[
+struct mch_sdo_t;
+struct intf_t;
+  ]]></header>
   
-  <fields>
-    <field type="intf_t *" name="interface">
-    <field type="mch_sdo_t *" name="mch_sdo">
-  </fields>
+  <source><![CDATA[
+  #define OB_CONTROL_WORD 0x0000
+void mch_sdo_queue_write(mch_sdo_t *sdo, uint16_t index, uint8_t subindex, uint8_t length, uint32_t value);
+void mch_sdo_queue_read(mch_sdo_t *sdo, uint16_t index, uint8_t subindex);
+
+void mch_ds_send_control_word(mch_ds_t *machine, uint16_t control_word)
+{
+  mch_sdo_queue_write(machine->mch_sdo, OB_CONTROL_WORD, 0x00, control_word, 0x02);
+}    
+  ]]></source>
+  
+  <datamodel>
+    <data id="interface" type="intf_t *" />
+    <data id="mch_sdo" type="mch_sdo_t *" />
+  </datamodel>
 
   <callbacks>
-    <callback>operation_enabled</callback>
-    <callback>operation_disabled</callback>
+    <callback id="operation_enabled" />
+    <callback id="operation_disabled" />
   </callbacks>
     
-  <state id="ST_DS" initial="Disabled">  
+  <state id="DS" initial="Disabled">  
     <state id="Disabled">
         <transition event="EV_DS_NET_OPERATIONAL" target="Enabled" type="internal" />      
     </state>
@@ -85,15 +94,9 @@
 
       <state id="Operation_enabled">
         <transition event="EV_DS_VOLTAGE_DISABLED" target="Disable_operation" type="internal" />
-        <onentry><![CDATA[
-          if(machine->operation_enabled_handler)
-            machine->operation_enabled_handler(machine, machine->payload);
-        ]]></onentry>
-        <onexit><![CDATA[
-          if(machine->operation_disabled_handler)
-            machine->operation_disabled_handler(machine, machine->payload);
-        ]]></onexit>
+        <onentry><![CDATA[if(machine->operation_enabled_handler) machine->operation_enabled_handler(machine, machine->payload);]]></onentry>
+        <onexit><![CDATA[if(machine->operation_disabled_handler) machine->operation_disabled_handler(machine, machine->payload);]]></onexit>
       </state>
     </state>
   </state>
-</scxml>
+</icsxml>
