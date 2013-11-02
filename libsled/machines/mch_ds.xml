@@ -1,0 +1,133 @@
+<scxml>
+  <script><![CDATA[
+void mch_ds_send_control_word(mch_ds_t *machine, uint16_t control_word)
+{
+	mch_sdo_queue_write(machine->mch_sdo, OB_CONTROL_WORD, 0x00, control_word, 0x02);
+}    
+   ]]></script>
+   
+  <state id="ds" initial="ST_DS_DISABLED">
+  
+    <!-- if(!machine->state == ST_DS_DISABLED && event == EV_DS_NET_INOPERATIONAL) -->
+    <transition event="EV_DS_NET_INOPERATIONAL" target="ds" type="internal" />
+
+    <!-- if(!machine->state == ST_DS_DISABLED) { -->
+    <transition event="EV_DS_FAULT" target="ST_CLEARING_FAULT" type="internal" />
+    <transition event="EV_DS_FAULT_REACTION_ACTIVE" target="ST_DS_FAULT" type="internal" />
+    
+    <state id="ST_DS_DISABLED">
+      <transition event="EV_DS_NET_OPERATIONAL" target="ST_DS_UNKNOWN" />
+    </state>
+    
+    <state id="ST_DS_FAULT">
+      <transition event="EV_DS_FAULT" target="ST_DS_CLEARING_FAULT" />
+    </state>
+    
+    <state id="ST_DS_CLEARING_FAULT">
+      <transition event="EV_DS_NOT_READY_TO_SWITCH_ON" target="ST_DS_SWITCH_ON_DISABLED" />
+      <transition event="EV_DS_READY_TO_SWITCH_ON" target="ST_DS_READY_TO_SWITCH_ON" />
+      <transition event="EV_DS_SWITCHED_ON" target="ST_DS_SWITCHED_ON" />
+    </state>
+    
+    <state id="ST_DS_UNKNOWN">
+      <transition event="EV_DS_NOT_READY_TO_SWITCH_ON" target="ST_DS_SWITCH_ON_DISABLED" />
+      <transition event="EV_DS_READY_TO_SWITCH_ON" target="ST_DS_READY_TO_SWITCH_ON" />
+    </state>
+
+    <state id="ST_DS_SWITCH_ON_DISABLED">
+      <transition event="EV_DS_VOLTAGE_ENABLED" target="ST_DS_PREPARE_SWITCH_ON" />
+    </state>
+    
+    <state id="ST_DS_PREPARE_SWITCH_ON">
+      <transition event="EV_DS_READY_TO_SWITCH_ON" target="ST_DS_READY_TO_SWITCH_ON" />
+    </state>
+    
+    <state id="ST_DS_READY_TO_SWITCH_ON">
+      <transition event="EV_DS_VOLTAGE_ENABLED" target="ST_DS_SWITCH_ON" />
+    </state>
+
+    <state id="ST_DS_SWITCH_ON">
+      <transition event="EV_DS_SWITCHED_ON" target="ST_DS_SWITCHED_ON" />
+      <transition event="EV_DS_VOLTAGE_DISABLED" target="ST_DS_SHUTDOWN" />
+    </state>
+
+    <state id="ST_DS_SHUTDOWN">
+      <transition event="EV_DS_NOT_READY_TO_SWITCH_ON" target="ST_DS_SWITCH_ON_DISABLED" />
+      <transition event="EV_DS_READY_TO_SWITCH_ON" target="ST_DS_READY_TO_SWITCH_ON" />
+    </state>
+
+    <state id="ST_DS_SWITCHED_ON">
+      <transition event="EV_DS_VOLTAGE_ENABLED" target="ST_DS_ENABLE_OPERATION" />
+      <transition event="EV_DS_VOLTAGE_DISABLED" target="ST_DS_SHUTDOWN" />
+    </state>
+
+    <state id="ST_DS_DISABLE_OPERATION">
+      <transition event="EV_DS_SWITCHED_ON" target="ST_DS_SWITCHED_ON" />
+    </state>
+
+    <state id="ST_DS_ENABLE_OPERATION">
+      <transition event="EV_DS_OPERATION_ENABLED" target="ST_DS_OPERATION_ENABLED" />
+    </state>
+
+    <state id="ST_DS_OPERATION_ENABLED">
+      <transition event="EV_DS_VOLTAGE_DISABLED" target="ST_DS_DISABLE_OPERATION" />
+    </state>
+
+  </state>
+   
+</scxml>
+
+
+
+
+void mch_ds_on_enter(mch_ds_t *machine)
+{
+	switch(machine->state) {
+		case ST_DS_DISABLED:
+			break;
+
+		case ST_DS_UNKNOWN:
+			mch_ds_send_control_word(machine, 0x06); // Shutdown
+			break;
+
+		case ST_DS_PREPARE_SWITCH_ON:
+			mch_ds_send_control_word(machine, 0x06); // Shutdown
+			break;
+
+		case ST_DS_SWITCH_ON:
+			mch_ds_send_control_word(machine, 0x07); // Switch on
+			break;
+
+		case ST_DS_SHUTDOWN:
+			mch_ds_send_control_word(machine, 0x06); // Shutdown
+			break;
+
+		case ST_DS_ENABLE_OPERATION:
+			mch_ds_send_control_word(machine, 0x0F); // Enable operation
+			break;
+
+		case ST_DS_DISABLE_OPERATION:
+			mch_ds_send_control_word(machine, 0x07); // Disable operation
+			break;
+
+		case ST_DS_OPERATION_ENABLED:
+			if(machine->operation_enabled_handler)
+				machine->operation_enabled_handler(machine, machine->payload);
+			break;
+
+		case ST_DS_CLEARING_FAULT:
+			mch_sdo_queue_read(machine->mch_sdo, 0x3518, 0x01);
+			break;
+	}
+}
+
+
+void mch_ds_on_exit(mch_ds_t *machine)
+{
+	switch(machine->state) {
+		case ST_DS_OPERATION_ENABLED:
+			if(machine->operation_disabled_handler)
+				machine->operation_disabled_handler(machine, machine->payload);
+			break;
+	}
+}
