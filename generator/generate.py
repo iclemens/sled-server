@@ -336,7 +336,7 @@ def generate(input_filename):
   machine = parse_icsxml(input_filename)
 
   pp = pprint.PrettyPrinter(indent = 1)
-  pp.pprint(machine['states'])
+  pp.pprint(machine)
 
   return
   names = dict()

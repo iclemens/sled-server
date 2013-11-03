@@ -1,4 +1,4 @@
-<icsxml>
+<icsxml version="1.0">
   <header><![CDATA[struct mch_sdo_t;
 struct intf_t;]]></header>
   
