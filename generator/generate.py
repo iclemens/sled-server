@@ -4,76 +4,81 @@ import string
 
 from icsxml_parse import parse_icsxml
 
-def generate_header(names, machine):
-  prefix = 'mch_{}'.format(machine['name'])
 
-  machine_type = '{}_t'.format(prefix)
-  state_type = '{}_state_t'.format(prefix)
-  event_type = '{}_event_t'.format(prefix)
-  
+###################
+# Generate header #
+###################
+
+
+def generate_header(names, machine):
   fields = list()
   for field in machine['fields']:
     fields.append(field[0] + ' ' + field[1])
   argument_list = string.join(fields, ', ')
 
   header = \
-"""#ifndef __MACHINE_{0}_H__
+"""#ifndef __MACHINE_{1}_H__
 
 /* This file was automatically generated. Do not modify. */
 
-{8}
+{5}
 
-struct {2};
+struct {0[machine_type]};
 
-enum {3} {{
-  {6}
+enum {0[state_type]} {{
+  {3}
 }};
 
-enum {4} {{
-  {7}
+enum {0[event_type]} {{
+  {4}
 }};
 
-{2} *{1}_create({5});
-void {1}_destroy({2} **machine);
+{0[machine_type]} *{0[prefix]}_create({2});
+void {0[prefix]}_destroy({0[machine_type]} **machine);
 
-void {1}_on_entry({2} *machine);
-void {1}_on_exit({2} *machine);
+void {0[prefix]}_on_entry({0[machine_type]} *machine);
+void {0[prefix]}_on_exit({0[machine_type]} *machine);
 
-void {1}_handle_event({2} *machine, {4} event);
-{3} {1}_next_state_given_event({2} *machine, {4} event);
-{3} {1}_active_state({2} *machine);
+void {0[prefix]}_handle_event({0[machine_type]} *machine, {0[event_type]} event);
+{0[state_type]} {0[prefix]}_next_state_given_event({0[machine_type]} *machine, {0[event_type]} event);
+{0[state_type]} {0[prefix]}_active_state({0[machine_type]} *machine);
 
-void {1}_set_callback_payload({2} *machine, {4} event);""" \
+void {0[prefix]}_set_callback_payload({0[machine_type]} *machine, {0[event_type]} event);""" \
     .format(
-      machine['name'].upper(),  #0
-      prefix,                   #1
-      machine_type,             #2
-      state_type,               #3
-      event_type,               #4
-      argument_list,            #5
-      string.join(names['states'], ',\n\t'),#6
-      string.join(names['events'], ',\n\t'),#7
+      names, 
+      machine['name'].upper(),  #1
+      argument_list,            #2
+      string.join(names['states'], ',\n\t'), #3
+      string.join(names['events'], ',\n\t'), #4
       machine['header']
       )
 
   for callback in machine['callbacks']:
-    header += "typedef void(*{}_{}_t)({} *machine, void *payload);\n".format(
-      prefix, callback, machine_type)
+    header += "typedef void(*{0[prefix]}_{1}_t)({0[machine_type]} *machine, void *payload);\n".format(
+      names, callback)
   header += "\n"
 
   for callback in machine['callbacks']:
-    header += "void {0}_set_{1}({2} *machine, {0}_{1}_t handler);\n".format(
-      prefix, callback, machine_type)
+    header += "void {0[prefix]}_set_{1}({0[machine_type]} *machine, {0[prefix]}_{1}_t handler);\n".format(
+      names, callback)
 
   header += "\n#endif\n"
   
   return header
 
 
-def generate_struct_def(names, machine):
-  struct = "struct {0[machine_type]} {{\n" \
-    "\t{0[state_type]} state;\n" \
-    "\tvoid *payload;\n\n".format(names)
+###################
+# Generate source #
+###################
+
+
+def machine_structure(names, machine):
+  struct = \
+"""struct {0[machine_type]} {{
+  {0[state_type]} state;
+  void *payload;
+
+""".format(names)
 
   for field in machine['fields']:
     struct += "\t{0[0]} {0[1]};\n".format(field)
@@ -85,6 +90,61 @@ def generate_struct_def(names, machine):
   struct += "};\n"
   
   return struct
+
+
+#
+# Function used to setup state machine structure.
+#
+def function_create_machine(names, machine):
+  fields = list()
+  for field in machine['fields']:
+    fields.append(field[0] + ' ' + field[1])
+  argument_list = string.join(fields, ', ')
+
+  func = \
+"""/**
+ * Setup state machine structure.
+ */
+{0[machine_type]} *{0[prefix]}_create({1})
+{{
+  {0[machine_type]} *machine = new {0[machine_type]};
+  
+  machine->state = {2};
+  machine->payload = NULL;
+
+""".format(names, argument_list, machine['initial'])
+
+  for field in machine['fields']:
+    func += "\tmachine->{0} = {0};\n".format(field[1])
+  func += "\n"
+  
+  for callback in machine['callbacks']:
+    func += "\tmachine->{0}_handler = NULL;\n".format(callback)
+  func += "\n"
+
+  func += """
+  assert(machine);
+  return machine;
+}
+"""
+
+  return func
+  
+
+#
+# Function used to free state machine structure.
+#
+def function_destroy_machine(names, machine):
+  return \
+"""/**
+ * Free state machine structure.
+ */
+void {0[prefix]}_destroy({0[machine_type]} **machine)
+{{
+  free(*machine);
+  *machine = NULL;
+}}
+""".format(names)
 
 
 def generate_func_set_callback_payload(names, machine):
@@ -153,62 +213,6 @@ void {0[prefix]}_handle_event({0[machine_type]} *machine, {0[event_type]} event)
   }}
 }}
 """.format(names)
-  
-
-#
-# Function used to setup state machine structure.
-#
-def function_create_machine(names, machine):
-  fields = list()
-  for field in machine['fields']:
-    fields.append(field[0] + ' ' + field[1])
-  argument_list = string.join(fields, ', ')
-
-  func = \
-"""/**
- * Setup state machine structure.
- */
-{0[machine_type]} *{0[prefix]}_create({1})
-{{
-  {0[machine_type]} *machine = new {0[machine_type]};
-  
-  machine->state = {2};
-  machine->payload = NULL;
-
-""".format(names, argument_list, machine['initial'])
-
-  for field in machine['fields']:
-    func += "\tmachine->{0} = {0};\n".format(field[1])
-  func += "\n"
-  
-  for callback in machine['callbacks']:
-    func += "\tmachine->{0}_handler = NULL;\n".format(callback)
-  func += "\n"
-
-  func += """
-  assert(machine);
-  return machine;
-}
-"""
-
-  return func
-  
-
-#
-# Function used to free state machine structure.
-#
-def function_destroy_machine(names, machine):
-  return \
-"""/**
- * Free state machine structure.
- */
-void {0[prefix]}_destroy({0[machine_type]} **machine)
-{{
-  free(*machine);
-  *machine = NULL;
-}}
-""".format(names)
-
 
 
 def generate_func_on_entry(names, machine):
@@ -244,29 +248,24 @@ def generate_func_on_exit(names, machine):
 
   
 def generate_func_active_state(names, machines):
-  func = "{0[state_type]} {0[prefix]}_active_state({0[machine_type]} *machine)\n" \
-         "{{\n" \
-         "\tassert(machine);\n" \
-         "\treturn machine->state;\n" \
-         "}}\n".format(names)  
-  return func
+  return \
+"""{0[state_type]} {0[prefix]}_active_state({0[machine_type]} *machine)
+{{
+  assert(machine);
+  return machine->state;
+}}
+""".format(names)  
 
 
 def generate_body(names, machine):
   body = \
     "#include <assert.h>\n" \
     "#include <syslog.h>\n" \
-    "#include \"{1}_test.h\"\n\n" \
-    .format(
-      machine['name'].upper(),  #0
-      names['prefix'],          #1
-      names['machine_type'],    #2
-      names['state_type'],      #3
-      names['event_type']       #4
-      )
+    "#include \"{0[prefix]}_test.h\"\n\n" \
+    .format(names)
 
-  body += generate_struct_def(names, machine) + "\n"
-  body += machine['source'] + "\n"
+  body += machine_structure(names, machine) + "\n"
+  body += machine['source'] + "\n\n"
   
   body += function_create_machine(names, machine) + "\n"  
   body += function_destroy_machine(names, machine) + "\n"  
