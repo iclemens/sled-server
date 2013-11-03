@@ -166,6 +166,16 @@ def generate_func_callback_setter(names, machine, callback):
          "}}\n".format(names, callback)
 
 
+def generate_func_active_state(names, machines):
+  return \
+"""{0[state_type]} {0[prefix]}_active_state({0[machine_type]} *machine)
+{{
+  assert(machine);
+  return machine->state;
+}}
+""".format(names)  
+
+
 def generate_func_statename(names, machine):
   func = "const char *{0[prefix]}_statename({0[state_type]} state)\n" \
          "{{\n" \
@@ -239,7 +249,6 @@ def generate_func_on_entry(names, machine):
   }
 }
 """
-  
   return func
 
 
@@ -260,19 +269,20 @@ def generate_func_on_exit(names, machine):
       return;
   }
 }
-"""
-  
+"""  
   return func
 
-  
-def generate_func_active_state(names, machines):
-  return \
-"""{0[state_type]} {0[prefix]}_active_state({0[machine_type]} *machine)
+
+def function_next_state_given_event(names, machine):
+  func = """/*
+ * Returns whether an event should cause a state transition.
+ */
+{0[state_type]} {0[prefix]}_next_state_given_event({0[machine_type]} *machine, {0[event_type]} event)
 {{
-  assert(machine);
-  return machine->state;
+  return {0[prefix]}_active_state(machine);
 }}
-""".format(names)  
+""".format(names)
+  return func
 
 
 def generate_body(names, machine):
@@ -293,15 +303,16 @@ def generate_body(names, machine):
   for callback in machine['callbacks']:
     body += generate_func_callback_setter(names, machine, callback) + "\n"
 
+  body += generate_func_active_state(names, machine) + "\n"
   body += generate_func_statename(names, machine) + "\n"
   body += generate_func_eventname(names, machine) + "\n"  
 
+  body += function_handle_event(names, machine) + "\n"
+
   body += generate_func_on_entry(names, machine) + "\n"
   body += generate_func_on_exit(names, machine) + "\n"
-
-  body += function_handle_event(names, machine) + "\n"
+  body += function_next_state_given_event(names, machine) + "\n"
   
-  body += generate_func_active_state(names, machine) + "\n"
 
   
   return body
