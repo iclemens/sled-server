@@ -18,3 +18,9 @@ sled_server
 *.cc_test
 
 *.h_test
+
+*.pyc
+
+generator/mch_ds_test.cc
+
+generator/mch_ds_test.h

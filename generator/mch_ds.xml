@@ -1,19 +1,15 @@
 <icsxml>
-  <header><![CDATA[
-struct mch_sdo_t;
-struct intf_t;
-  ]]></header>
+  <header><![CDATA[struct mch_sdo_t;
+struct intf_t;]]></header>
   
-  <source><![CDATA[
-  #define OB_CONTROL_WORD 0x0000
+  <source><![CDATA[#define OB_CONTROL_WORD 0x0000
 void mch_sdo_queue_write(mch_sdo_t *sdo, uint16_t index, uint8_t subindex, uint8_t length, uint32_t value);
 void mch_sdo_queue_read(mch_sdo_t *sdo, uint16_t index, uint8_t subindex);
 
 void mch_ds_send_control_word(mch_ds_t *machine, uint16_t control_word)
 {
   mch_sdo_queue_write(machine->mch_sdo, OB_CONTROL_WORD, 0x00, control_word, 0x02);
-}    
-  ]]></source>
+}]]></source>
   
   <datamodel>
     <data id="interface" type="intf_t *" />

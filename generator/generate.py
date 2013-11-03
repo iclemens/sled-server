@@ -4,7 +4,6 @@ import string
 
 from icsxml_parse import parse_icsxml
 
-
 def generate_header(names, machine):
   prefix = 'mch_{}'.format(machine['name'])
 
