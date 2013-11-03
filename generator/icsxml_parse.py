@@ -1,3 +1,5 @@
+/** Whaa... instead I could try use the element tree directly? **/
+
 import xml.etree.ElementTree as ET
 
 def parse_onentry(onentry):
@@ -5,6 +7,7 @@ def parse_onentry(onentry):
 
 def parse_onexit(onexit):
   return None
+
 
 def parse_transition(transition):
   transition_dct = dict()  
