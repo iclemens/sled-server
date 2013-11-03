@@ -328,15 +328,17 @@ def generate_body(names, machine):
   body += generate_func_on_entry(names, machine) + "\n"
   body += generate_func_on_exit(names, machine) + "\n"
   body += function_next_state_given_event(names, machine) + "\n"
-  
 
-  
   return body
 
 
 def generate(input_filename):
   machine = parse_icsxml(input_filename)
 
+  pp = pprint.PrettyPrinter(indent = 1)
+  pp.pprint(machine['states'])
+
+  return
   names = dict()
   names['prefix'] = prefix = 'mch_{}'.format(machine['name'])
   names['machine_type'] = '{}_t'.format(names['prefix'])
