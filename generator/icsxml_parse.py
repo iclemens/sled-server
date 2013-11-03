@@ -18,7 +18,7 @@ def parse_states(state, prefix):
       cur_state['onexit'] = child.text
     elif child.tag == 'transition':
       cur_state['transitions'].append(
-        (child.attrib['event'], child.attrib['target'])
+        (child.attrib['event'], prefix + '_' + child.attrib['target'])
         )
     elif child.tag == 'state':
       states.extend(parse_states(child, prefix))

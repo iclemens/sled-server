@@ -289,7 +289,7 @@ def function_next_state_given_event(names, machine):
   for state in machine['states']:
     func += '    case {0}:\n'.format(state['name'])
     for transition in state['transitions']:
-      func += '      if(event == {0})\n        return ST_{1};\n'.format(transition[0], transition[1])
+      func += '      if(event == {0})\n        return {1};\n'.format(transition[0], transition[1])
     func += '      return current_state;\n\n'
 
   func += \
