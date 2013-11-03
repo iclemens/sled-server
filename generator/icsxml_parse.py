@@ -1,9 +1,5 @@
 import xml.etree.ElementTree as ET
 
-#      machine['initial'] = 'ST_' + child.attrib['initial']
-#      machine['name'] = child.attrib['id'].lower()
-#      machine['states'] = parse_states(child, 'ST');
-
 
 def parse_state(state):
   state_dct = dict()  
@@ -40,45 +36,6 @@ def parse_state(state):
       state_dct['onexit'] = child.text
       
   return state_dct
-
-
-def parse_states(state, prefix):
-  if prefix == '':
-    prefix = state.attrib['id']
-    name = prefix
-  else:
-    name = prefix + '_' + state.attrib['id']
-
-  states = list()  
-  cur_state = {'name': name, 'transitions': list()};
-  
-  if 'initial' in state.attrib:
-    cur_state['initial'] = state.attrib['initial']
-  else:
-    cur_state['initial'] = None
-  
-  for child in state:
-    if child.tag == 'onentry':
-      cur_state['onentry'] = child.text
-    elif child.tag == 'onexit':
-      cur_state['onexit'] = child.text
-    elif child.tag == 'transition':
-      cur_state['transitions'].append(
-        (child.attrib['event'], prefix + '_' + child.attrib['target'])
-        )
-    elif child.tag == 'state':
-      states.extend(parse_states(child, prefix))
-
-  if len(states) == 0:
-    states.append(cur_state)
-  else:
-    # Set onentry and onexit event to all child states
-    # Add transitions to all child states
-    states.append({'name': name, 'link': cur_state['initial']})
-    # Make this state a synonym of the initial state
-    pass
-
-  return states
 
 
 def parse_icsxml(filename):
