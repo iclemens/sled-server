@@ -24,3 +24,5 @@ sled_server
 generator/mch_ds_test.cc
 
 generator/mch_ds_test.h
+
+*.swp

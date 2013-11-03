@@ -279,7 +279,23 @@ def function_next_state_given_event(names, machine):
  */
 {0[state_type]} {0[prefix]}_next_state_given_event({0[machine_type]} *machine, {0[event_type]} event)
 {{
-  return {0[prefix]}_active_state(machine);
+  {0[state_type]} current_state = {0[prefix]}_active_state(machine);
+
+  switch(current_state)
+  {{
+""".format(names)
+
+
+  for state in machine['states']:
+    func += '    case {0}:\n'.format(state['name'])
+    for transition in state['transitions']:
+      func += '      if(event == {0})\n        return ST_{1};\n'.format(transition[0], transition[1])
+    func += '      return current_state;\n\n'
+
+  func += \
+"""    default:
+      return current_state;
+  }}
 }}
 """.format(names)
   return func
