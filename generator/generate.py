@@ -148,9 +148,15 @@ void {0[prefix]}_destroy({0[machine_type]} **machine)
 
 
 def generate_func_set_callback_payload(names, machine):
-  return "void {0[prefix]}_set_callback_payload({0[machine_type]} *machine, void *payload)\n{{\n" \
-         "\tmachine->payload = payload;\n" \
-         "}}\n".format(names)
+  return \
+"""/**
+ * Sets a pointer that will be passed as an argument to all callback functions.
+ */
+void {0[prefix]}_set_callback_payload({0[machine_type]} *machine, void *payload)
+{{
+  machine->payload = payload;
+}}
+""".format(names)
 
 
 def generate_func_callback_setter(names, machine, callback):
@@ -216,33 +222,45 @@ void {0[prefix]}_handle_event({0[machine_type]} *machine, {0[event_type]} event)
 
 
 def generate_func_on_entry(names, machine):
-  func = "void {0[prefix]}_on_entry({0[machine_type]} *machine)\n" \
-         "{{\n" \
-         "\tswitch(machine->state)\n" \
-         "\t{{\n".format(names)
+  func = \
+"""void {0[prefix]}_on_entry({0[machine_type]} *machine)
+{{
+  switch(machine->state)
+  {{
+""".format(names)
   
   for state in machine['states']:
     if 'onentry' in state:
-      func += "\t\t{0}:\n\t\t\t{1}\n\t\t\tbreak;\n".format(state['name'], state['onentry'])
+      func += "    {0}:\n      {1}\n      break;\n".format(state['name'], state['onentry'])
 
-  func += "\t\tdefault:\n\t\t\treturn;\n"
-  func += "\t}\n}\n"
+  func += \
+"""    default:
+      return;
+  }
+}
+"""
   
   return func
 
 
 def generate_func_on_exit(names, machine):
-  func = "void {0[prefix]}_on_exit({0[machine_type]} *machine)\n" \
-         "{{\n" \
-         "\tswitch(machine->state)\n" \
-         "\t{{\n".format(names)
+  func = \
+"""void {0[prefix]}_on_exit({0[machine_type]} *machine)
+{{
+  switch(machine->state)
+  {{
+""".format(names)
   
   for state in machine['states']:
     if 'onexit' in state:
       func += "\t\t{0}:\n\t\t\t{1}\n\t\t\tbreak;\n".format(state['name'], state['onexit'])
 
-  func += "\t\tdefault:\n\t\t\treturn;\n"
-  func += "\t}\n}\n"
+  func += \
+"""    default:
+      return;
+  }
+}
+"""
   
   return func
 
