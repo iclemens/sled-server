@@ -7,6 +7,10 @@
 #include <syslog.h>
 #include <time.h>
 
+#ifdef __MACH__
+#include <mach/mach_time.h>
+#endif
+
 
 /* Maximum amount of seconds between NMT messages */
 #define MAX_NMT_DELAY 2.0
@@ -15,8 +19,23 @@
 static double get_time()
 {
 	timespec ts;
+
+	#ifdef __MACH__
+	static double ticks_to_ns = 0.0;
+
+	if(ticks_to_ns == 0.0) {
+		mach_timebase_info_data_t timebase;
+		mach_timebase_info(&timebase);
+		ticks_to_ns = (double) timebase.numer / timebase.denom;
+	}
+
+	uint64_t current_time = mach_absolute_time();
+
+	return (double) current_time * ticks_to_ns;
+	#else
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return double(ts.tv_sec) + double(ts.tv_nsec) / 1000.0 / 1000.0 / 1000.0;
+	#endif
 }
 
 
