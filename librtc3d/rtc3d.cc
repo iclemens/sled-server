@@ -386,6 +386,11 @@ void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, char *command)
   int cmd_size = strlen(command);
   char *buffer = (char *) malloc(8 + cmd_size);
 
+  if(buffer == NULL) {
+    perror("malloc()");
+    return;
+  }
+
   int *size = (int *) &(buffer[0]);
   int *type = (int *) &(buffer[4]);
 
@@ -393,7 +398,8 @@ void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, char *command)
   *type = htonl(PTYPE_COMMAND);
   strncpy(&(buffer[8]), command, cmd_size);
 
-  net_send(rtc3d_conn->net_conn, buffer, 8 + cmd_size, F_ADOPT_BUFFER);
+  net_send(rtc3d_conn->net_conn, buffer, 8 + cmd_size);
+  free(buffer);
 }
 
 
@@ -408,6 +414,11 @@ void rtc3d_send_error(rtc3d_connection_t *rtc3d_conn, char *error)
   int err_size = strlen(error);
   char *buffer = (char *) malloc(8 + err_size);
 
+  if(buffer == NULL) {
+    perror("malloc()");
+    return;
+  }
+
   int *size = (int *) &(buffer[0]);
   int *type = (int *) &(buffer[4]);
 
@@ -415,5 +426,7 @@ void rtc3d_send_error(rtc3d_connection_t *rtc3d_conn, char *error)
   *type = htonl(PTYPE_ERROR);
   strncpy(&(buffer[8]), error, err_size);
 
-  net_send(rtc3d_conn->net_conn, buffer, 8 + err_size, F_ADOPT_BUFFER);
+  net_send(rtc3d_conn->net_conn, buffer, 8 + err_size);
+  free(buffer);
 }
+

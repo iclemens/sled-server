@@ -49,12 +49,6 @@ struct rtc3d_event_t
 struct rtc3d_dataframe_t;
 struct rtc3d_component_t;
 
-rtc3d_dataframe_t *rtc3d_df_create_frame();
-rtc3d_component_t *rtc3d_df_add_3d_component(rtc3d_dataframe_t *dataframe, uint32_t frame, uint64_t time, uint32_t num_markers, rtc3d_3d_t *data);
-rtc3d_component_t *rtc3d_df_add_6d_component(rtc3d_dataframe_t *dataframe, uint32_t frame, uint64_t time, uint32_t num_tools, rtc3d_6d_t *data);
-void rtc3d_df_send(rtc3d_connection_t *rtc3d_conn, rtc3d_dataframe_t *frame);
-
-// Deprecated
 void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t time, float point);
 
 #endif
