@@ -67,8 +67,6 @@ class SledClient:
   def connect(self, host="localhost", port=3375):
     self.host = host
     self.port = port
-    print ("opening port :{}".format(port))
-    print ("localhost : {}".format(host))
     # Create a socket (SOCK_STREAM means a TCP socket)
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # socket without nagling
