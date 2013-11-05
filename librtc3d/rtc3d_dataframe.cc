@@ -12,7 +12,7 @@
 #include "rtc3d_dataframe_internal.h"
 
 
-uint64_t htonll(uint64_t value)
+inline uint64_t htonll(uint64_t value)
 {
   int num = 1;
   if(*(char *) &num == 1)
@@ -22,7 +22,7 @@ uint64_t htonll(uint64_t value)
 }
 
 
-float htonf(float value)
+inline float htonf(float value)
 {
   uint32_t *ptr = (uint32_t *) &value;
   *ptr = htonl(*ptr);
@@ -30,7 +30,7 @@ float htonf(float value)
 }
 
 
-void rtc3d_set_packet_header(char *buffer, uint32_t size, uint32_t type)
+inline void rtc3d_set_packet_header(char *buffer, uint32_t size, uint32_t type)
 {
   uint32_t *_size = (uint32_t *) &(buffer[0]);
   uint32_t *_type = (uint32_t *) &(buffer[4]);
@@ -40,7 +40,7 @@ void rtc3d_set_packet_header(char *buffer, uint32_t size, uint32_t type)
 }
 
 
-void rtc3d_set_component_header(char *buffer, uint32_t size, uint32_t type, uint32_t frame, uint64_t time)
+inline void rtc3d_set_component_header(char *buffer, uint32_t size, uint32_t type, uint32_t frame, uint64_t time)
 {
   uint32_t *_size = (uint32_t *) &(buffer[0]);
   uint32_t *_type = (uint32_t *) &(buffer[4]);
@@ -54,7 +54,7 @@ void rtc3d_set_component_header(char *buffer, uint32_t size, uint32_t type, uint
 }
 
 
-void rtc3d_set_marker(char *buffer, float x, float y, float z, float delta)
+inline void rtc3d_set_marker(char *buffer, float x, float y, float z, float delta)
 {
   float *_x = (float *) &(buffer[0]);
   float *_y = (float *) &(buffer[4]);

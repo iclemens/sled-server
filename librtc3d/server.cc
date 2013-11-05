@@ -44,7 +44,7 @@
 /**
  * Handle client event
  */
-void net_on_client_event(struct bufferevent *bev, short events, void *server_v)
+static void net_on_client_event(struct bufferevent *bev, short events, void *server_v)
 {
   assert(bev && server_v);
   net_server_t *server = (net_server_t *) server_v;
@@ -60,7 +60,7 @@ void net_on_client_event(struct bufferevent *bev, short events, void *server_v)
 /**
  * Handles a read event.
  */
-void net_on_read(evutil_socket_t fd, short events, void *server_v)
+static void net_on_read(evutil_socket_t fd, short events, void *server_v)
 {
   assert(server_v);
 	net_server_t *server = (net_server_t *) server_v;
@@ -97,7 +97,7 @@ void net_on_read(evutil_socket_t fd, short events, void *server_v)
  * Called when a new connection is pending. Accepts the connection and starts
  * listening to incoming data.
  */
-void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
+static void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
 {
 	net_server_t *server = (net_server_t *) server_v;
 
@@ -354,7 +354,7 @@ void *net_get_local_data(net_connection_t *conn)
  * @param port  Port the server will listen on
  * @return  File descriptor
  */
-int setup_server_socket(int port)
+static int setup_server_socket(int port)
 {
 	int sock;
 	int optval;
@@ -407,7 +407,7 @@ int setup_server_socket(int port)
  *
  * @return File descriptor of accepted client, or -1 on failure.
  */
-int accept_client(int sock)
+static int accept_client(int sock)
 {
 	int client;
 	int optval;

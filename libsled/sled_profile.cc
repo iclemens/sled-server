@@ -9,7 +9,7 @@
 /**
  * Compute control word for a profile.
  */
-int sled_profile_get_controlword(sled_profile_t *profile)
+static int sled_profile_get_controlword(sled_profile_t *profile)
 {
 	int control = 0;
 
@@ -45,7 +45,7 @@ int sled_profile_get_controlword(sled_profile_t *profile)
  * Marks a profile as unsaved. Changes will be written
  * to the device as soon as possible.
  */
-void sled_profile_mark_as_unsaved(sled_profile_t *profile)
+static void sled_profile_mark_as_unsaved(sled_profile_t *profile)
 {
 	assert(profile);
 
@@ -63,7 +63,7 @@ void sled_profile_mark_as_unsaved(sled_profile_t *profile)
 /**
  * Returns true when changes are pending. False if not.
  */
-bool sled_profile_has_changes_pending(sled_profile_t *profile)
+static bool sled_profile_has_changes_pending(sled_profile_t *profile)
 {
 	assert(profile);
 
@@ -83,7 +83,7 @@ bool sled_profile_has_changes_pending(sled_profile_t *profile)
 /**
  * Set state of field identified by dictionary index.
  */
-void sled_profile_set_field_state(sled_profile_t *profile, uint16_t index, field_state_t state)
+static void sled_profile_set_field_state(sled_profile_t *profile, uint16_t index, field_state_t state)
 {
 	assert(profile);
 
@@ -103,7 +103,7 @@ void sled_profile_set_field_state(sled_profile_t *profile, uint16_t index, field
 /**
  * Mark field as written.
  */
-void on_success_callback(void *data, uint16_t index, uint8_t subindex)
+static void on_success_callback(void *data, uint16_t index, uint8_t subindex)
 {
 	sled_profile_t *profile = (sled_profile_t *) data;
 	sled_profile_set_field_state(profile, index, FIELD_WRITTEN);
@@ -113,7 +113,7 @@ void on_success_callback(void *data, uint16_t index, uint8_t subindex)
 /**
  * Mark field as invalid (write failed).
  */
-void on_failure_callback(void *data, uint16_t index, uint8_t subindex, uint32_t abort)
+static void on_failure_callback(void *data, uint16_t index, uint8_t subindex, uint32_t abort)
 {
 	sled_profile_t *profile = (sled_profile_t *) data;
 	sled_profile_set_field_state(profile, index, FIELD_INVALID);
@@ -415,3 +415,4 @@ int sled_profile_execute(sled_t *sled, int profile)
 
 	return 0;
 }
+

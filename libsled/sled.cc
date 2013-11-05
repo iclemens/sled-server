@@ -28,7 +28,7 @@ static double get_time()
 /**
  * Inform interface state machine that interface has closed.
  */
-void intf_on_close(intf_t *intf, void *payload)
+static void intf_on_close(intf_t *intf, void *payload)
 {
 	sled_t *sled = (sled_t *) payload;
 	mch_intf_handle_event(sled->mch_intf, EV_INTF_CLOSE);
@@ -42,7 +42,7 @@ void intf_on_close(intf_t *intf, void *payload)
  * @param payload  Void pointer to state machine struct
  * @param state  New state
  */
-void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
+static void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 {
 	sled_t *sled = (sled_t *) payload;
 
@@ -59,7 +59,7 @@ void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 /**
  * Handle TPDO.
  */
-void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
+static void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 {
 	sled_t *sled = (sled_t *) payload;
 
@@ -115,7 +115,7 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 }
 
 
-void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
+static void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
 {
 	static bool message_written = false;
 
@@ -167,7 +167,7 @@ CALLBACK_FUNCTION_EVENT(ds, on_operation_disabled, mp, EV_MP_DS_INOPERATIONAL);
 /**
  * Setup state machines
  */
-void setup_state_machines(sled_t *sled)
+static void setup_state_machines(sled_t *sled)
 {
 	// Setup state machines
 	sled->mch_intf = mch_intf_create(sled->interface);
@@ -379,3 +379,4 @@ int sled_light_set_state(sled_t *handle, bool state)
 
 	return 0;
 }
+
