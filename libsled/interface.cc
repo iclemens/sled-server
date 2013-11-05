@@ -22,8 +22,10 @@
  * @param function  Function where the status message was received.
  * @param status  Status message received.
  */
-void intf_log_status(const char *function, int status)
+static void intf_log_status(const char *function, int status)
 {
+  assert(function);
+
 	if(status & 0x01)
 		syslog(LOG_ALERT, "%s() chip-send-buffer full.", function);
 
@@ -50,8 +52,10 @@ void intf_log_status(const char *function, int status)
 }
 
 
-void intf_clear_sdo_callbacks(intf_t *intf)
+static void intf_clear_sdo_callbacks(intf_t *intf)
 {
+  assert(intf);
+
 	intf->sdo_callback_data = NULL;
 	intf->read_callback = NULL;
 	intf->write_callback = NULL;
@@ -323,13 +327,13 @@ int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t
 /**
  * Parses CAN message and invokes callbacks.
  */
-void intf_dispatch_msg(intf_t *intf, can_message_t msg)
+static void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 {
 	assert(intf);
 	int function = msg.id >> 7;
 
+  // Emergency messages are only logged (not handled)
 	if(function == 0x01) {
-		// Emergency messages are only logged (not handled)
 		syslog(LOG_ALERT, "%s() received an emergency message.", __FUNCTION__);
 	}
 
@@ -394,10 +398,9 @@ void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 /**
  * Called when data is pending
  */
-void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
+static void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 {
-	#ifdef WIN32
-	#else
+	#ifndef WIN32
 	intf_t *intf = (intf_t *) intf_v;
 
 	// We've been closed down, stop.
@@ -459,7 +462,7 @@ void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 	intf_dispatch_msg(intf, msg);
 
 	return;
-	#endif
+  #endif
 }
 
 
@@ -485,3 +488,4 @@ void intf_set_close_handler(intf_t *intf, intf_close_handler_t handler)
 {
   intf->close_handler = handler;
 }
+

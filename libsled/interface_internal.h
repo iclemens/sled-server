@@ -56,6 +56,6 @@ struct intf_t
 	intf_abort_callback_t abort_callback;
 };
 
-void intf_on_read(evutil_socket_t fd, short events, void *intf_v);
+static void intf_on_read(evutil_socket_t fd, short events, void *intf_v);
 
 #endif

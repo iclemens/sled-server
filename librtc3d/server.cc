@@ -5,7 +5,9 @@
 #include "server_internal.h"
 
 #include <event2/event.h>
+#include <event2/bufferevent.h>
 #include <errno.h>
+#include <assert.h>
 #include <sys/types.h>
 
 #ifndef WIN32
@@ -40,10 +42,27 @@
 
 
 /**
+ * Handle client event
+ */
+static void net_on_client_event(struct bufferevent *bev, short events, void *server_v)
+{
+  assert(bev && server_v);
+  net_server_t *server = (net_server_t *) server_v;
+
+  if(events & (BEV_EVENT_ERROR | BEV_EVENT_EOF)) {
+    fprintf(stderr, "BufferEvent raised on error.\n");
+    evutil_socket_t fd = bufferevent_getfd(bev);
+    net_disconnect(server->connection_data[fd]);
+  }
+}
+
+
+/**
  * Handles a read event.
  */
-void net_on_read(evutil_socket_t fd, short events, void *server_v)
+static void net_on_read(evutil_socket_t fd, short events, void *server_v)
 {
+  assert(server_v);
 	net_server_t *server = (net_server_t *) server_v;
 
 	// Add one to allow for (possible) zero-termination.
@@ -78,7 +97,7 @@ void net_on_read(evutil_socket_t fd, short events, void *server_v)
  * Called when a new connection is pending. Accepts the connection and starts
  * listening to incoming data.
  */
-void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
+static void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
 {
 	net_server_t *server = (net_server_t *) server_v;
 
@@ -87,64 +106,43 @@ void net_on_new_connection(evutil_socket_t fd, short events, void *server_v)
 
 	int client = accept_client(server->sock);
 
-    // Register handle
-	event *event = event_new(server->ev_base, client, EV_READ | EV_ET | EV_PERSIST, net_on_read, (void *) server);
-	int result = event_add(event, NULL);
+  /* Create read event */
+  event *read_event = event_new(server->ev_base, client, EV_READ | EV_ET | EV_PERSIST, net_on_read, (void *) server);
+  if(read_event == NULL) {
+    perror("event_new()");
+    close(client);
+    return;
+  }
 
-	if(result == -1) {
-		perror("event_add()");
-		event_free(event);
-		close(client);
-	}
-    
-    net_connection_t *conn = new net_connection_t();
+  int result = event_add(read_event, NULL);
+  if(result == -1) {
+    perror("event_add()");
+    event_free(read_event);
+    close(client);
+    return;
+  }
+
+  /* Create write buffer */
+  bufferevent *buffer_event = bufferevent_socket_new(server->ev_base, client, 0);
+  if(buffer_event == NULL) {
+    fprintf(stderr, "bufferevent_socket_new() failed.\n");
+    return;
+  }
+
+  net_connection_t *conn = new net_connection_t();
 	conn->fd = client;
 	conn->server = server;
-	conn->read_event = event;
-	conn->write_event = NULL;
+  conn->read_event = read_event;
+  conn->buffer_event = buffer_event;
 	conn->local = NULL;
-	conn->frags_head = NULL;
-	conn->frags_tail = NULL;
-	conn->bytes_remaining = 0;
 
 	if(server->connect_handler)
 		conn->local = server->connect_handler(conn);
 
-	server->connection_data[client] = conn;        
-}
+	server->connection_data[client] = conn;
 
-
-/**
- * Attempts to write data to the socket.
- */
-void net_on_write(evutil_socket_t fd, short events, void *server_v)
-{
-	net_server_t *server = (net_server_t *) server_v;
-	net_connection_t *conn = server->connection_data[fd];
-
-	if(!conn)
-		return;
-
-	while(conn->frags_head) {
-		int retval = write_single_fragment(conn);
-
-		if(retval == 0)
-			break;
-
-		if(retval == -1)
-			break;
-	}
-
-	// If buffer empty, remove flag
-	if(conn->frags_head == NULL) {
-		if(conn->write_event) {
-			event_del(conn->write_event);
-			event_free(conn->write_event);
-			conn->write_event = NULL;
-		}
-	}
-
-	return;
+  bufferevent_setcb(conn->buffer_event, NULL, NULL, net_on_client_event, (void *) server);
+  bufferevent_enable(conn->buffer_event, EV_WRITE);
 }
 
 
@@ -280,131 +278,13 @@ void net_set_read_handler(net_server_t *server, read_handler_t handler)
 
 
 /**
- * Attempts to write a single fragment from the buffer.
- *
- * @param conn  Connection to write fragment for.
- *
- * @return
- *    -1 - Error sending fragment
- *     0 - Partial fragment has been sent (terminate)
- *     1 - Entire fragment has been sent (possibly ready for more)
- */
-int write_single_fragment(net_connection_t *conn)
-{
-	fragment_t *frag = conn->frags_head;
-
-	char *buf = &(frag->data[frag->offset]);
-	size_t size = frag->size - frag->offset;
-
-	int retval = send(conn->fd, buf, size, 0);
-
-	if(retval >= 0) {
-		conn->bytes_remaining -= retval;
-		frag->offset += retval;
-
-		if(frag->offset < frag->size)
-			return 0;
-
-		conn->frags_head = frag->next;
-
-		if(conn->frags_head == NULL)
-			conn->frags_tail = NULL;
-
-		free(frag->data);
-		free(frag);
-
-		return 1;
-	}
-
-	// Processing failed...
-	if(retval == -1) {
-		// Socket was not ready, try again later
-		if(errno == EAGAIN || errno == EWOULDBLOCK)
-			return 0;
-
-		// Other error, disconnect
-		perror("send()");
-		net_disconnect(conn);
-		return -1;
-	}
-
-	return 0;
-}
-
-
-/**
  * Sends data to the connection specified
  */
-int net_send(net_connection_t *conn, char *buf, size_t size, int flags)
+int net_send(net_connection_t *conn, char *buf, size_t size)
 {
-	if((conn == NULL) && (flags & F_ADOPT_BUFFER)) {
-		free(buf);
-		return -1;
-	}
-
-	if(conn->server == NULL) {
-		fprintf(stderr, "Server not set in connection structure\n"); 
-		if(flags & F_ADOPT_BUFFER)
-			free(buf);
-		return -1;
-	}
-
-	// Setup fragment
-	fragment_t *frag = (fragment_t *) malloc(sizeof(fragment_t));
-	if(frag == NULL) {
-		perror("net_send():malloc()");
-		if(flags & F_ADOPT_BUFFER)
-			free(buf);
-		return -1;
-	}
-
-	if(flags & F_ADOPT_BUFFER) {
-		frag->data = buf;
-	} else {
-		frag->data = (char *) malloc(size + 1);
-		if(frag->data == NULL) {
-			perror("net_send():malloc()");
-			free(frag);
-			return -1;
-		}
-		frag->data[size] = 0;
-		memcpy(frag->data, buf, size);
-
-		#ifdef DEBUG
-		printf("Writing: %s (%d)\n", buf, size);
-		#endif
-	}
-
-	frag->offset = 0;
-	frag->size = size;
-	frag->next = NULL;
-
-	// Add fragment to list
-	if(conn->frags_head == NULL) {
-		conn->frags_head = frag;
-		conn->frags_tail = frag;
-	} else {   
-		conn->frags_tail->next = frag;
-		conn->frags_tail = frag;
-	}
-
-	conn->bytes_remaining += size;
-
-	// If buffer not empty, add flag
-	if(conn->frags_head != NULL) {
-		// Already added
-		if(conn->write_event != NULL) 
-			return 0;
-
-		conn->write_event = event_new(conn->server->ev_base, conn->fd, EV_WRITE | EV_ET | EV_PERSIST, net_on_write, (void *) conn->server);
-		int result = event_add(conn->write_event, NULL);
-
-		if(result == -1) {
-			perror("net_send():event_add()");
-			return 0;
-		}
-	}
-
+  if(conn == NULL)
+    return -1;
+  bufferevent_write(conn->buffer_event, buf, size);
 	return 0;
 }
 
@@ -427,30 +307,16 @@ int net_disconnect(net_connection_t *conn)
 		server->disconnect_handler(conn, &(conn->local));
 	server->connection_data.erase(conn->fd);
 
-	// Cancel monitoring of read events
-	if(conn->read_event) {
-		event_del(conn->read_event);
-		event_free(conn->read_event);
-		conn->read_event = NULL;
-	}
+  if(conn->read_event) {
+    event_del(conn->read_event);
+    event_free(conn->read_event);
+    conn->read_event = NULL;
+  }
 
-	// Cancel monitoring of write events
-	if(conn->write_event) {
-		event_del(conn->write_event);
-		event_free(conn->write_event);
-		conn->write_event = NULL;
-	}
-
-	/* Free buffer */
-	fragment_t *frag = conn->frags_head;
-
-	while(frag) {
-		free(frag);
-		frag = frag->next;
-	}
-
-	conn->frags_head = NULL;
-	conn->frags_tail = NULL;
+  if(conn->buffer_event) {
+    bufferevent_free(conn->buffer_event);
+    conn->buffer_event = NULL;
+  }
 
 	close(conn->fd);
 	delete conn;
@@ -488,7 +354,7 @@ void *net_get_local_data(net_connection_t *conn)
  * @param port  Port the server will listen on
  * @return  File descriptor
  */
-int setup_server_socket(int port)
+static int setup_server_socket(int port)
 {
 	int sock;
 	int optval;
@@ -541,7 +407,7 @@ int setup_server_socket(int port)
  *
  * @return File descriptor of accepted client, or -1 on failure.
  */
-int accept_client(int sock)
+static int accept_client(int sock)
 {
 	int client;
 	int optval;
@@ -570,3 +436,4 @@ int accept_client(int sock)
 
 	return client;
 }
+

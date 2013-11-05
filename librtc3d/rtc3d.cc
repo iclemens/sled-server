@@ -37,7 +37,7 @@
  * @param net_conn Network connection that just connected.
  * @return RTC3D client context structure.
  */
-void *connect_handler(net_connection_t *net_conn)
+static void *connect_handler(net_connection_t *net_conn)
 {
 	rtc3d_server_t *rtc3d_server = (rtc3d_server_t *) net_get_global_data(net_conn);
 	rtc3d_connection_t *rtc3d_conn = NULL;
@@ -74,7 +74,7 @@ void *connect_handler(net_connection_t *net_conn)
  * @param net_conn Network connection that just disconnected.
  * @param rtc3d_conn_v RTC3D context to free.
  */
-void disconnect_handler(net_connection_t *net_conn, void **rtc3d_conn_v) {
+static void disconnect_handler(net_connection_t *net_conn, void **rtc3d_conn_v) {
   if(!rtc3d_conn_v)
     return;
 
@@ -97,7 +97,7 @@ void disconnect_handler(net_connection_t *net_conn, void **rtc3d_conn_v) {
  *
  * @return 32-bit unsigned integer located at specified offset.
  */
-uint32_t get_uint32(rtc3d_connection_t *rtc3d_conn, int offset)
+static uint32_t get_uint32(rtc3d_connection_t *rtc3d_conn, int offset)
 {
   int *tmp = (int *) &(rtc3d_conn->data[offset]);
   return ntohl(*tmp);
@@ -109,7 +109,7 @@ uint32_t get_uint32(rtc3d_connection_t *rtc3d_conn, int offset)
  *
  * @param rtc3d_conn Connection to read the data from.
  */
-void packet_handler(rtc3d_connection_t *rtc3d_conn) {
+static void packet_handler(rtc3d_connection_t *rtc3d_conn) {
   rtc3d_server_t *rtc3d_server = (rtc3d_server_t *) net_get_global_data(rtc3d_conn->net_conn);
   int type = get_uint32(rtc3d_conn, 0);
 
@@ -154,7 +154,7 @@ void packet_handler(rtc3d_connection_t *rtc3d_conn) {
  * @param buf  Data that we received.
  * @param size  Number of bytes received.
  */
-void read_handler(net_connection_t *net_conn, char *buf, int size) {
+static void read_handler(net_connection_t *net_conn, char *buf, int size) {
   rtc3d_connection_t *rtc3d_conn = (rtc3d_connection_t *) net_get_local_data(net_conn);
 
   for(int i = 0; i < size; i++) {
@@ -386,14 +386,20 @@ void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, char *command)
   int cmd_size = strlen(command);
   char *buffer = (char *) malloc(8 + cmd_size);
 
+  if(buffer == NULL) {
+    perror("malloc()");
+    return;
+  }
+
   int *size = (int *) &(buffer[0]);
   int *type = (int *) &(buffer[4]);
 
   *size = htonl(8 + cmd_size);
   *type = htonl(PTYPE_COMMAND);
-  strncpy(&(buffer[8]), command, cmd_size);
+  memcpy(&(buffer[8]), command, cmd_size);
 
-  net_send(rtc3d_conn->net_conn, buffer, 8 + cmd_size, F_ADOPT_BUFFER);
+  net_send(rtc3d_conn->net_conn, buffer, 8 + cmd_size);
+  free(buffer);
 }
 
 
@@ -408,12 +414,19 @@ void rtc3d_send_error(rtc3d_connection_t *rtc3d_conn, char *error)
   int err_size = strlen(error);
   char *buffer = (char *) malloc(8 + err_size);
 
+  if(buffer == NULL) {
+    perror("malloc()");
+    return;
+  }
+
   int *size = (int *) &(buffer[0]);
   int *type = (int *) &(buffer[4]);
 
   *size = htonl(8 + err_size);
   *type = htonl(PTYPE_ERROR);
-  strncpy(&(buffer[8]), error, err_size);
+  memcpy(&(buffer[8]), error, err_size);
 
-  net_send(rtc3d_conn->net_conn, buffer, 8 + err_size, F_ADOPT_BUFFER);
+  net_send(rtc3d_conn->net_conn, buffer, 8 + err_size);
+  free(buffer);
 }
+

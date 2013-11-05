@@ -1,9 +1,10 @@
 #include "sled_internal.h"
 
-#include <event2/event.h>
 #include <assert.h>
-#include <stdlib.h>
+#include <event2/event.h>
+#include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <syslog.h>
 #include <time.h>
 
@@ -28,7 +29,7 @@ static double get_time()
 /**
  * Inform interface state machine that interface has closed.
  */
-void intf_on_close(intf_t *intf, void *payload)
+static void intf_on_close(intf_t *intf, void *payload)
 {
 	sled_t *sled = (sled_t *) payload;
 	mch_intf_handle_event(sled->mch_intf, EV_INTF_CLOSE);
@@ -42,7 +43,7 @@ void intf_on_close(intf_t *intf, void *payload)
  * @param payload  Void pointer to state machine struct
  * @param state  New state
  */
-void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
+static void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 {
 	sled_t *sled = (sled_t *) payload;
 
@@ -59,7 +60,7 @@ void intf_on_nmt(intf_t *intf, void *payload, uint8_t state)
 /**
  * Handle TPDO.
  */
-void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
+static void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 {
 	sled_t *sled = (sled_t *) payload;
 
@@ -115,7 +116,7 @@ void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 }
 
 
-void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
+static void nmt_watchdog(evutil_socket_t fd, short flags, void *param)
 {
 	static bool message_written = false;
 
@@ -167,7 +168,7 @@ CALLBACK_FUNCTION_EVENT(ds, on_operation_disabled, mp, EV_MP_DS_INOPERATIONAL);
 /**
  * Setup state machines
  */
-void setup_state_machines(sled_t *sled)
+static void setup_state_machines(sled_t *sled)
 {
 	// Setup state machines
 	sled->mch_intf = mch_intf_create(sled->interface);
@@ -287,13 +288,20 @@ int sled_rt_new_setpoint(sled_t *handle, double position)
 
 /**
  * Returns current sled position and time it was received.
+ *
+ * If not current position is available, the position field
+ * is set to NAN, time will be set to the current time and
+ * the function will return -1.
  */
 int sled_rt_get_position_and_time(sled_t *handle, double &position, double &time)
 {
 	assert(handle);
 
-	if(mch_net_active_state(handle->mch_net) != ST_NET_OPERATIONAL)
+	if(mch_net_active_state(handle->mch_net) != ST_NET_OPERATIONAL) {
+    time = get_time();
+    position = NAN;
 		return -1;
+  }
 
 	time = handle->last_time;
 	position = handle->last_position;
@@ -379,3 +387,4 @@ int sled_light_set_state(sled_t *handle, bool state)
 
 	return 0;
 }
+
