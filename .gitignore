@@ -1,6 +1,9 @@
 src/.gen
 sled_server
 
+# Python
+*.pyc
+
 # Compiled Object files
 *.slo
 *.lo
