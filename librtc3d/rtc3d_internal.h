@@ -1,8 +1,8 @@
 #ifndef __NDI_INTERNAL_H__
 #define __NDI_INTERNAL_H__
 
-#include "server.h"
 #include "rtc3d.h"
+#include "server.h"
 
 // Packet types
 #define PTYPE_ERROR 0

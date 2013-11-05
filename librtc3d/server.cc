@@ -2,6 +2,7 @@
  * Implements a simple single-threaded TCP/IP server.
  */
 
+#include "server.h"
 #include "server_internal.h"
 
 #include <event2/event.h>

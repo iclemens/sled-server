@@ -1,3 +1,4 @@
+#include "rtc3d_dataframe.h"
 
 #ifdef WIN32
 #include <winsock.h>
@@ -8,7 +9,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "rtc3d_internal.h"
-#include "rtc3d_dataframe.h"
 
 
 static uint64_t htonll(uint64_t value)

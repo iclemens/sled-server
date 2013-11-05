@@ -1,6 +1,7 @@
 /*
  * Implements a simple single-threaded realtime C3D server.
  */
+#include "rtc3d.h"
 
 #include <exception>
 #include <map>
