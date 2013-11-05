@@ -1,9 +1,10 @@
 #include "sled_internal.h"
 
-#include <event2/event.h>
 #include <assert.h>
-#include <stdlib.h>
+#include <event2/event.h>
+#include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <syslog.h>
 #include <time.h>
 
@@ -287,13 +288,20 @@ int sled_rt_new_setpoint(sled_t *handle, double position)
 
 /**
  * Returns current sled position and time it was received.
+ *
+ * If not current position is available, the position field
+ * is set to NAN, time will be set to the current time and
+ * the function will return -1.
  */
 int sled_rt_get_position_and_time(sled_t *handle, double &position, double &time)
 {
 	assert(handle);
 
-	if(mch_net_active_state(handle->mch_net) != ST_NET_OPERATIONAL)
+	if(mch_net_active_state(handle->mch_net) != ST_NET_OPERATIONAL) {
+    time = get_time();
+    position = NAN;
 		return -1;
+  }
 
 	time = handle->last_time;
 	position = handle->last_position;

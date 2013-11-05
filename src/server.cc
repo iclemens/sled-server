@@ -269,9 +269,7 @@ static void on_timeout(evutil_socket_t sock, short events, void *arg)
 
 	// Get position
 	double position, time;
-	if(sled_rt_get_position_and_time(ctx->sled, position, time) == -1) {
-		position = NAN;
-	}
+	sled_rt_get_position_and_time(ctx->sled, position, time);
 
 	// Send position to all clients
 	static int frame = 0;
