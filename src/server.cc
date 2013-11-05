@@ -39,7 +39,7 @@ static double get_time()
  * @param profile  Profile ID received from network.
  * @return Internal ID
  */
-int tlate_profile_id(sled_server_ctx_t* ctx, int profile)
+static int tlate_profile_id(sled_server_ctx_t* ctx, int profile)
 {
 	if(ctx->profile_tlate.count(profile) == 1) {
 		return ctx->profile_tlate[profile];
@@ -56,7 +56,7 @@ int tlate_profile_id(sled_server_ctx_t* ctx, int profile)
  * Called on client disconnect, makes sure that the client
  * is no longer on the stream-frames-list.
  */
-void rtc3d_disconnect_handler(rtc3d_connection_t *rtc3d_conn, void **ptr)
+static void rtc3d_disconnect_handler(rtc3d_connection_t *rtc3d_conn, void **ptr)
 {
 	sled_server_ctx_t *ctx = (sled_server_ctx_t *) rtc3d_get_global_data(rtc3d_conn);
 	ctx->stream_clients.remove(rtc3d_conn);
@@ -68,7 +68,7 @@ void rtc3d_disconnect_handler(rtc3d_connection_t *rtc3d_conn, void **ptr)
  * Executes a (string) command by invoking either
  * the network or sled subsystem.
  */
-void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
+static void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 {
 	sled_server_ctx_t *ctx = (sled_server_ctx_t *) rtc3d_get_global_data(rtc3d_conn);
 	command_t command;
@@ -223,7 +223,7 @@ void rtc3d_command_handler(rtc3d_connection_t *rtc3d_conn, char *cmd)
 }
 
 
-void update_timeout_stats(double time_actual)
+static void update_timeout_stats(double time_actual)
 {
 	static double time_previous = time_actual;
 
@@ -257,7 +257,7 @@ void update_timeout_stats(double time_actual)
 }
 
 
-void on_timeout(evutil_socket_t sock, short events, void *arg)
+static void on_timeout(evutil_socket_t sock, short events, void *arg)
 {
 	sled_server_ctx_t *ctx = (sled_server_ctx_t *) arg;
 

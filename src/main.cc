@@ -30,7 +30,7 @@
 /**
  * Prints a backtrace on segmentation faults.
  */
-void signal_handler(int sig)
+static void signal_handler(int sig)
 {
   syslog(LOG_NOTICE, "%s() received signal %d (%s).",
     __FUNCTION__, sig, strsignal(sig));
@@ -57,7 +57,7 @@ void signal_handler(int sig)
  *
  * See https://rt.wiki.kernel.org/index.php/RT_PREEMPT_HOWTO
  */
-int setup_realtime()
+static int setup_realtime()
 {
 	/* Declare ourself as a realtime task */
 	sched_param param;
@@ -109,7 +109,7 @@ static cookie_io_functions_t log_functions = {
 };
 
 
-void to_syslog(FILE **file)
+static void to_syslog(FILE **file)
 {
 	*file = fopencookie(NULL, "w", log_functions);
 	setvbuf(*file, NULL, _IOLBF, 0);
@@ -119,7 +119,7 @@ void to_syslog(FILE **file)
 /**
  * Fork-off current process and initialize the new fork.
  */
-void daemonize()
+static void daemonize()
 {
 	/* Create fork */
 	pid_t pid = fork();
@@ -159,7 +159,7 @@ void daemonize()
 /**
  * Returns user-id given a name.
  */
-uid_t get_uid_by_name(const char *name)
+static uid_t get_uid_by_name(const char *name)
 {
 	if(name == NULL)
 		return -1;
@@ -178,7 +178,7 @@ uid_t get_uid_by_name(const char *name)
 #define STRR(x) #x
 #define STR(x) STRR(x)
 
-void print_help()
+static void print_help()
 {
   printf("Sled control server " 
 	STR(VERSION_MAJOR) "." STR(VERSION_MINOR) " \n\n");
