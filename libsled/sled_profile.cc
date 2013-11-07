@@ -9,7 +9,7 @@
 /**
  * Compute control word for a profile.
  */
-static int sled_profile_get_controlword(sled_profile_t *profile)
+static int sled_profile_get_controlword(const sled_profile_t *profile)
 {
 	int control = 0;
 
@@ -63,7 +63,7 @@ static void sled_profile_mark_as_unsaved(sled_profile_t *profile)
 /**
  * Returns true when changes are pending. False if not.
  */
-static bool sled_profile_has_changes_pending(sled_profile_t *profile)
+static bool sled_profile_has_changes_pending(const sled_profile_t *profile)
 {
 	assert(profile);
 
