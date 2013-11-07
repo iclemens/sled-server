@@ -50,4 +50,26 @@ struct rtc3d_server_t {
   rtc3d_data_handler_t data_handler;
 };
 
+struct packet_header_t
+{
+  uint32_t size;
+  uint32_t type;
+} __attribute__((packed));
+
+struct component_header_t
+{
+  uint32_t size;
+  uint32_t type;
+  uint32_t frame;
+  uint64_t time;
+} __attribute__((packed));
+
+struct frame_3d_t
+{
+  float x;
+  float y;
+  float z;
+  float reliability;
+} __attribute__((packed));
+
 #endif

@@ -1,4 +1,5 @@
 #include "rtc3d_dataframe.h"
+#include "rtc3d_internal.h"
 
 #ifdef WIN32
 #include <winsock.h>
@@ -8,7 +9,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "rtc3d_internal.h"
 
 
 static uint64_t htonll(uint64_t value)
@@ -31,39 +31,29 @@ static float htonf(float value)
 
 static void rtc3d_set_packet_header(char *buffer, uint32_t size, uint32_t type)
 {
-  uint32_t * const _size = (uint32_t *) &(buffer[0]);
-  uint32_t * const _type = (uint32_t *) &(buffer[4]);
-
-  *_size = htonl(size);
-  *_type = htonl(type);
+  packet_header_t *header = (packet_header_t *) buffer;  
+  header->size = htonl(size);
+  header->type = htonl(type);
 }
 
 
 static void rtc3d_set_component_header(char *buffer, uint32_t size, uint32_t type, uint32_t frame, uint64_t time)
 {
-  uint32_t * const _size = (uint32_t *) &(buffer[0]);
-  uint32_t * const _type = (uint32_t *) &(buffer[4]);
-  uint32_t * const _frame = (uint32_t *) &(buffer[8]);
-  uint64_t * const _time = (uint64_t *) &(buffer[12]);
-
-  *_size = htonl(size);
-  *_type = htonl(type);
-  *_frame = htonl(frame);
-  *_time = htonll(time);
+  component_header_t *header = (component_header_t *) buffer;
+  header->size = htonl(size);
+  header->type = htonl(type);
+  header->frame = htonl(frame);
+  header->time = htonll(time);  
 }
 
 
 static void rtc3d_set_marker(char *buffer, float x, float y, float z, float delta)
 {
-  float * const _x = (float *) &(buffer[0]);
-  float * const _y = (float *) &(buffer[4]);
-  float * const _z = (float *) &(buffer[8]);
-  float * const _d = (float *) &(buffer[12]);
-
-  *_x = htonf(x);
-  *_y = htonf(y);
-  *_z = htonf(z);
-  *_d = htonf(delta);  
+  frame_3d_t *frame = (frame_3d_t *) buffer;
+  frame->x = htonf(x);
+  frame->y = htonf(y);
+  frame->z = htonf(z);
+  frame->reliability = htonf(delta);
 }
 
 
@@ -89,4 +79,3 @@ void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t ti
 
   net_send(rtc3d_conn->net_conn, buffer, 8 + 4 + 20 + 4 + 16);
 }
-
