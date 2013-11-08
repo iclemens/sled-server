@@ -308,16 +308,16 @@ int net_disconnect(net_connection_t *conn)
 		server->disconnect_handler(conn, &(conn->local));
 	server->connection_data.erase(conn->fd);
 
-  if(conn->read_event) {
-    event_del(conn->read_event);
-    event_free(conn->read_event);
-    conn->read_event = NULL;
-  }
+	if(conn->read_event) {
+		event_del(conn->read_event);
+		event_free(conn->read_event);
+		conn->read_event = NULL;
+	}
 
-  if(conn->buffer_event) {
-    bufferevent_free(conn->buffer_event);
-    conn->buffer_event = NULL;
-  }
+	if(conn->buffer_event) {
+		bufferevent_free(conn->buffer_event);
+		conn->buffer_event = NULL;
+	}
 
 	close(conn->fd);
 	delete conn;
