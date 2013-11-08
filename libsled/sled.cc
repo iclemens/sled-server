@@ -374,7 +374,7 @@ int sled_sinusoid_stop(sled_t *handle)
  *
  * @return 0 on success, -1 on failure.
  */
-int sled_light_set_state(sled_t *handle, bool state)
+int sled_light_set_state(const sled_t *handle, bool state)
 {
 	assert(handle);
 	syslog(LOG_DEBUG, "%s(%s)", __FUNCTION__, state?"on":"off");

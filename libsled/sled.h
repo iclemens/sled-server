@@ -20,7 +20,7 @@ int sled_sinusoid_start(sled_t *sled, double amplitude, double period);
 int sled_sinusoid_stop(sled_t *sled);
 
 // Light
-int sled_light_set_state(sled_t *sled, bool state);
+int sled_light_set_state(const sled_t *sled, bool state);
 
 }
 
