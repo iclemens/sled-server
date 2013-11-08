@@ -329,7 +329,7 @@ int net_disconnect(net_connection_t *conn)
 /**
  * Returns global (server-wide) context for a given connection.
  */
-void *net_get_global_data(net_connection_t *conn)
+void *net_get_global_data(const net_connection_t *conn)
 {
 	return conn->server->context;
 }
@@ -338,7 +338,7 @@ void *net_get_global_data(net_connection_t *conn)
 /**
  * Returns local (connection-only) context.
  */
-void *net_get_local_data(net_connection_t *conn)
+void *net_get_local_data(const net_connection_t *conn)
 {
 	return conn->local;
 }

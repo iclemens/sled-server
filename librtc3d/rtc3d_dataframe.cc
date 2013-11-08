@@ -71,7 +71,7 @@ static char *rtc3d_add_count(char *buffer, uint32_t count)
 /**
  * Sends a single position.
  */
-void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t time, float point)
+void rtc3d_send_data(const rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t time, float point)
 {
   char buffer[52];
   char *ptr = buffer;

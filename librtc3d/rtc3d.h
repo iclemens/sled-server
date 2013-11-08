@@ -51,7 +51,6 @@ APIFUNC void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, const char *erro
 APIFUNC void *rtc3d_get_global_data(rtc3d_connection_t *rtc3d_conn);
 APIFUNC void *rtc3d_get_local_data(rtc3d_connection_t *rtc3d_conn);
 
-// Send data frame (deprecated function, use rtc3d_dataframe instead)
-APIFUNC void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t time, float point);
+void rtc3d_send_data(const rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t time, float point);
 
 #endif

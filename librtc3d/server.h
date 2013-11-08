@@ -28,8 +28,8 @@ APIFUNC void net_set_disconnect_handler(net_server_t *server, disconnect_handler
 APIFUNC void net_set_read_handler(net_server_t *server, read_handler_t handler);
 
 // Functions to be used in callbacks
-APIFUNC void *net_get_global_data(net_connection_t *conn);
-APIFUNC void *net_get_local_data(net_connection_t *conn);
+APIFUNC void *net_get_global_data(const net_connection_t *conn);
+APIFUNC void *net_get_local_data(const net_connection_t *conn);
 APIFUNC int net_disconnect(net_connection_t *conn);
 APIFUNC int net_send(const net_connection_t *conn, const char *buf, size_t size);
 
