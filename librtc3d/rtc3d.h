@@ -45,8 +45,8 @@ APIFUNC void rtc3d_set_data_handler(rtc3d_server_t *rtc3d_server, rtc3d_data_han
 // Connection manipulation
 APIFUNC int rtc3d_disconnect(rtc3d_connection_t *rtc3d_conn);
 APIFUNC int rtc3d_set_byte_order(rtc3d_connection_t *rtc3d_conn, byte_order_t byte_order);
-APIFUNC void rtc3d_send_error(rtc3d_connection_t *rtc3d_conn, char *error);
-APIFUNC void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, char *error);
+APIFUNC void rtc3d_send_error(rtc3d_connection_t *rtc3d_conn, const char *error);
+APIFUNC void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, const char *error);
 
 APIFUNC void *rtc3d_get_global_data(rtc3d_connection_t *rtc3d_conn);
 APIFUNC void *rtc3d_get_local_data(rtc3d_connection_t *rtc3d_conn);

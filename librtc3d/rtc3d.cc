@@ -370,7 +370,7 @@ void *rtc3d_get_local_data(rtc3d_connection_t *rtc3d_conn)
 }
 
 
-int rtc3d_disconnect(const rtc3d_connection_t *rtc3d_conn)
+int rtc3d_disconnect(rtc3d_connection_t *rtc3d_conn)
 {
   return net_disconnect(rtc3d_conn->net_conn);
 }
