@@ -1,5 +1,7 @@
+cmake_minimum_required(VERSION 2.6)
 
 include(../Version.cmake)
+include(../Common.cmake)
 
 # Sources
 set(Source_Files server.cc rtc3d.cc rtc3d_dataframe.cc)
@@ -16,6 +18,9 @@ set(Include_Files rtc3d.h rtc3d_dataframe.h)
 # Both static and shared library
 add_library(${Name_Librtc3d} STATIC ${Source_Files})
 add_library(${Name_Librtc3d}_shared SHARED ${Source_Files})
+
+target_link_libraries(${Name_Librtc3d}_shared ${LibEvent_Library})
+include_directories(${LibEvent_Include})
 
 # Set verion and install
 set(Version ${Version_Major}.${Version_Minor}.${Version_Rel})

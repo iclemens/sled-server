@@ -12,6 +12,7 @@
 struct rtc3d_server_t;
 struct rtc3d_connection_t;
 struct event;
+struct event_base;
 
 enum byte_order_t {
 	byo_big_endian,

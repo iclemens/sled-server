@@ -293,7 +293,7 @@ int sled_rt_new_setpoint(sled_t *handle, double position)
  * is set to NAN, time will be set to the current time and
  * the function will return -1.
  */
-int sled_rt_get_position_and_time(sled_t *handle, double &position, double &time)
+int sled_rt_get_position_and_time(const sled_t *handle, double &position, double &time)
 {
 	assert(handle);
 
@@ -316,7 +316,7 @@ int sled_rt_get_position_and_time(sled_t *handle, double &position, double &time
  * @param handle  Sled handle.
  * @param position  Position (by-reference) in meters.
  */
-int sled_rt_get_position(sled_t *handle, double &position)
+int sled_rt_get_position(const sled_t *handle, double &position)
 {
 	assert(handle);
 

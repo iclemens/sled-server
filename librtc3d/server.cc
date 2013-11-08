@@ -2,6 +2,7 @@
  * Implements a simple single-threaded TCP/IP server.
  */
 
+#include "server.h"
 #include "server_internal.h"
 
 #include <event2/event.h>
@@ -280,7 +281,7 @@ void net_set_read_handler(net_server_t *server, read_handler_t handler)
 /**
  * Sends data to the connection specified
  */
-int net_send(net_connection_t *conn, char *buf, size_t size)
+int net_send(net_connection_t *conn, const char *buf, size_t size)
 {
   if(conn == NULL)
     return -1;

@@ -1,6 +1,7 @@
 /*
  * Implements a simple single-threaded realtime C3D server.
  */
+#include "rtc3d.h"
 
 #include <exception>
 #include <map>
@@ -369,7 +370,7 @@ void *rtc3d_get_local_data(rtc3d_connection_t *rtc3d_conn)
 }
 
 
-int rtc3d_disconnect(rtc3d_connection_t *rtc3d_conn)
+int rtc3d_disconnect(const rtc3d_connection_t *rtc3d_conn)
 {
   return net_disconnect(rtc3d_conn->net_conn);
 }
@@ -381,9 +382,9 @@ int rtc3d_disconnect(rtc3d_connection_t *rtc3d_conn)
  * @param rtc3d_conn  Connection to send command to.
  * @param command  Command to send (null-terminated string)
  */
-void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, char *command)
+void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, const char *command)
 {
-  int cmd_size = strlen(command);
+  const int cmd_size = strlen(command);
   char *buffer = (char *) malloc(8 + cmd_size);
 
   if(buffer == NULL) {
@@ -391,8 +392,8 @@ void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, char *command)
     return;
   }
 
-  int *size = (int *) &(buffer[0]);
-  int *type = (int *) &(buffer[4]);
+  int * const size = (int *) &(buffer[0]);
+  int * const type = (int *) &(buffer[4]);
 
   *size = htonl(8 + cmd_size);
   *type = htonl(PTYPE_COMMAND);
@@ -409,9 +410,9 @@ void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, char *command)
  * @param rtc3d_conn  Connection to send error to.
  * @param error  Error to send (null-terminated string)
  */
-void rtc3d_send_error(rtc3d_connection_t *rtc3d_conn, char *error)
+void rtc3d_send_error(rtc3d_connection_t *rtc3d_conn, const char *error)
 {
-  int err_size = strlen(error);
+  const int err_size = strlen(error);
   char *buffer = (char *) malloc(8 + err_size);
 
   if(buffer == NULL) {
@@ -419,8 +420,8 @@ void rtc3d_send_error(rtc3d_connection_t *rtc3d_conn, char *error)
     return;
   }
 
-  int *size = (int *) &(buffer[0]);
-  int *type = (int *) &(buffer[4]);
+  int * const size = (int *) &(buffer[0]);
+  int * const type = (int *) &(buffer[4]);
 
   *size = htonl(8 + err_size);
   *type = htonl(PTYPE_ERROR);

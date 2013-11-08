@@ -1,3 +1,5 @@
+#include "rtc3d_dataframe.h"
+#include "rtc3d_internal.h"
 
 #ifdef WIN32
 #include <winsock.h>
@@ -7,12 +9,9 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "rtc3d_internal.h"
-#include "rtc3d_dataframe.h"
-#include "rtc3d_dataframe_internal.h"
 
 
-inline uint64_t htonll(uint64_t value)
+static uint64_t htonll(uint64_t value)
 {
   int num = 1;
   if(*(char *) &num == 1)
@@ -22,49 +21,50 @@ inline uint64_t htonll(uint64_t value)
 }
 
 
-inline float htonf(float value)
+static float htonf(float value)
 {
-  uint32_t *ptr = (uint32_t *) &value;
+  uint32_t * const ptr = (uint32_t *) &value;
   *ptr = htonl(*ptr);
   return value;
 }
 
 
-inline void rtc3d_set_packet_header(char *buffer, uint32_t size, uint32_t type)
+static char *rtc3d_add_packet_header(char *buffer, uint32_t size, uint32_t type)
 {
-  uint32_t *_size = (uint32_t *) &(buffer[0]);
-  uint32_t *_type = (uint32_t *) &(buffer[4]);
-
-  *_size = htonl(size);
-  *_type = htonl(type);
+  packet_header_t *header = (packet_header_t *) buffer;  
+  header->size = htonl(size);
+  header->type = htonl(type);
+  return buffer + sizeof(packet_header_t);
 }
 
 
-inline void rtc3d_set_component_header(char *buffer, uint32_t size, uint32_t type, uint32_t frame, uint64_t time)
+static char *rtc3d_add_component_header(char *buffer, uint32_t size, uint32_t type, uint32_t frame, uint64_t time)
 {
-  uint32_t *_size = (uint32_t *) &(buffer[0]);
-  uint32_t *_type = (uint32_t *) &(buffer[4]);
-  uint32_t *_frame = (uint32_t *) &(buffer[8]);
-  uint64_t *_time = (uint64_t *) &(buffer[12]);
-
-  *_size = htonl(size);
-  *_type = htonl(type);
-  *_frame = htonl(frame);
-  *_time = htonll(time);
+  component_header_t *header = (component_header_t *) buffer;
+  header->size = htonl(size);
+  header->type = htonl(type);
+  header->frame = htonl(frame);
+  header->time = htonll(time);
+  return buffer + sizeof(component_header_t);
 }
 
 
-inline void rtc3d_set_marker(char *buffer, float x, float y, float z, float delta)
+static char *rtc3d_add_marker(char *buffer, float x, float y, float z, float delta)
 {
-  float *_x = (float *) &(buffer[0]);
-  float *_y = (float *) &(buffer[4]);
-  float *_z = (float *) &(buffer[8]);
-  float *_d = (float *) &(buffer[12]);
+  frame_3d_t *frame = (frame_3d_t *) buffer;
+  frame->x = htonf(x);
+  frame->y = htonf(y);
+  frame->z = htonf(z);
+  frame->reliability = htonf(delta);
+  return buffer + sizeof(frame_3d_t);
+}
 
-  *_x = htonf(x);
-  *_y = htonf(y);
-  *_z = htonf(z);
-  *_d = htonf(delta);  
+
+static char *rtc3d_add_count(char *buffer, uint32_t count)
+{
+  uint32_t *cnt = (uint32_t *) buffer;
+  *cnt = htonl(count);
+  return buffer + sizeof(uint32_t);
 }
 
 
@@ -74,20 +74,16 @@ inline void rtc3d_set_marker(char *buffer, float x, float y, float z, float delt
 void rtc3d_send_data(rtc3d_connection_t *rtc3d_conn, uint32_t frame, uint64_t time, float point)
 {
   char buffer[52];
-  rtc3d_set_packet_header(buffer, 52, PTYPE_DATAFRAME);
+  char *ptr = buffer;
+  
+  ptr = rtc3d_add_packet_header(ptr, 52, PTYPE_DATAFRAME);  
+  ptr = rtc3d_add_count(ptr, 1);  // Component count
+  
+  // Send components
+  ptr = rtc3d_add_component_header(ptr, 40, CTYPE_3D, frame, time);
+  ptr = rtc3d_add_count(ptr, 1);  // Marker count
 
-  // Component count
-  uint32_t *ccount = (uint32_t *) &(buffer[8]);
-  *ccount = htonl(1);
-
-  rtc3d_set_component_header(&(buffer[12]), 40, CTYPE_3D, frame, time);
-
-  // Marker count
-  uint32_t *mcount = (uint32_t *) &(buffer[32]);
-  *mcount = htonl(1);
-
-  rtc3d_set_marker(&(buffer[36]), point, 0, 0, 0);
+  ptr = rtc3d_add_marker(ptr, point, 0, 0, 0);
 
   net_send(rtc3d_conn->net_conn, buffer, 8 + 4 + 20 + 4 + 16);
 }
-

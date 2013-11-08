@@ -12,8 +12,8 @@ void sled_destroy(sled_t **sled);
 
 // Set-points
 int sled_rt_new_setpoint(sled_t *handle, double position);
-int sled_rt_get_position(sled_t *handle, double &position);
-int sled_rt_get_position_and_time(sled_t *handle, double &position, double &time);
+int sled_rt_get_position(const sled_t *handle, double &position);
+int sled_rt_get_position_and_time(const sled_t *handle, double &position, double &time);
 
 // Sinusoids
 int sled_sinusoid_start(sled_t *sled, double amplitude, double period);
