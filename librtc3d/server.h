@@ -16,7 +16,7 @@ struct net_connection_t;
 // Callbacks
 typedef void*(*connect_handler_t)(net_connection_t *conn);
 typedef void(*disconnect_handler_t)(net_connection_t *conn, void **ctx);
-typedef void(*read_handler_t)(net_connection_t *conn, char *buf, int size);
+typedef void(*read_handler_t)(net_connection_t *conn, const char *buf, int size);
 
 // API functions
 APIFUNC net_server_t *net_setup_server(event_base *ev_base, void *context, int port);

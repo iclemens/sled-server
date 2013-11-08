@@ -98,7 +98,7 @@ static void disconnect_handler(net_connection_t *net_conn, void **rtc3d_conn_v) 
  *
  * @return 32-bit unsigned integer located at specified offset.
  */
-static uint32_t get_uint32(rtc3d_connection_t *rtc3d_conn, int offset)
+static uint32_t get_uint32(const rtc3d_connection_t *rtc3d_conn, int offset)
 {
   int *tmp = (int *) &(rtc3d_conn->data[offset]);
   return ntohl(*tmp);
@@ -155,7 +155,7 @@ static void packet_handler(rtc3d_connection_t *rtc3d_conn) {
  * @param buf  Data that we received.
  * @param size  Number of bytes received.
  */
-static void read_handler(net_connection_t *net_conn, char *buf, int size) {
+static void read_handler(net_connection_t *net_conn, const char *buf, int size) {
   rtc3d_connection_t *rtc3d_conn = (rtc3d_connection_t *) net_get_local_data(net_conn);
 
   for(int i = 0; i < size; i++) {
@@ -350,7 +350,7 @@ int rtc3d_set_byte_order(rtc3d_connection_t *rtc3d_conn, byte_order_t byte_order
  *
  * @return Pointer to user context.
  */
-void *rtc3d_get_global_data(rtc3d_connection_t *rtc3d_conn)
+void *rtc3d_get_global_data(const rtc3d_connection_t *rtc3d_conn)
 {
   rtc3d_server_t *rtc3d_server = (rtc3d_server_t *) net_get_global_data(rtc3d_conn->net_conn);
   return rtc3d_server->user_context;
@@ -364,7 +364,7 @@ void *rtc3d_get_global_data(rtc3d_connection_t *rtc3d_conn)
  *
  * @return Pointer to the per-connection data.
  */
-void *rtc3d_get_local_data(rtc3d_connection_t *rtc3d_conn)
+void *rtc3d_get_local_data(const rtc3d_connection_t *rtc3d_conn)
 {
   return rtc3d_conn->user_context;
 }
@@ -382,7 +382,7 @@ int rtc3d_disconnect(rtc3d_connection_t *rtc3d_conn)
  * @param rtc3d_conn  Connection to send command to.
  * @param command  Command to send (null-terminated string)
  */
-void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, const char *command)
+void rtc3d_send_command(const rtc3d_connection_t *rtc3d_conn, const char *command)
 {
   const int cmd_size = strlen(command);
   char *buffer = (char *) malloc(8 + cmd_size);
@@ -410,7 +410,7 @@ void rtc3d_send_command(rtc3d_connection_t *rtc3d_conn, const char *command)
  * @param rtc3d_conn  Connection to send error to.
  * @param error  Error to send (null-terminated string)
  */
-void rtc3d_send_error(rtc3d_connection_t *rtc3d_conn, const char *error)
+void rtc3d_send_error(const rtc3d_connection_t *rtc3d_conn, const char *error)
 {
   const int err_size = strlen(error);
   char *buffer = (char *) malloc(8 + err_size);
