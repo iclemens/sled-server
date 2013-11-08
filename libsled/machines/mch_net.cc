@@ -10,14 +10,14 @@
 #include "machine_body.h"
 
 
-void mch_net_sdo_abort_callback(void *data, uint16_t index, uint8_t subindex, uint32_t abort)
+static void mch_net_sdo_abort_callback(void *data, uint16_t index, uint8_t subindex, uint32_t abort)
 {
 	fprintf(stderr, "Error while uploading configuration (SDO index %04x:%02x abort code %04x).\n", index, subindex, abort);
 	exit(1);
 }
 
 
-void mch_net_sdo_write_callback(void *data, uint16_t index, uint8_t subindex)
+static void mch_net_sdo_write_callback(void *data, uint16_t index, uint8_t subindex)
 {
 	mch_net_t *machine = (mch_net_t *) data;
 	mch_net_handle_event(machine, EV_NET_UPLOAD_COMPLETE);
@@ -34,7 +34,7 @@ void mch_net_sdo_write_callback(void *data, uint16_t index, uint8_t subindex)
  *
  * @param mch_sdo  SDO state machine that owns the queue.
  */
-void mch_net_queue_setup(mch_net_t *mch_net, mch_sdo_t *mch_sdo)
+static void mch_net_queue_setup(mch_net_t *mch_net, mch_sdo_t *mch_sdo)
 {
 	// Setup TPDO1
 	ENQUEUE(0, 0x1A00, 0x00, 0x00, 0x01);
@@ -74,7 +74,7 @@ void mch_net_queue_setup(mch_net_t *mch_net, mch_sdo_t *mch_sdo)
 }
 
 
-mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event_t event)
+static mch_net_state_t mch_net_next_state_given_event(const mch_net_t *machine, mch_net_event_t event)
 {
 	//fprintf(stderr, "Received event: %s\n", mch_net_eventname(event));
 
@@ -153,7 +153,7 @@ mch_net_state_t mch_net_next_state_given_event(mch_net_t *machine, mch_net_event
 }
 
 
-void mch_net_on_enter(mch_net_t *machine)
+static void mch_net_on_enter(mch_net_t *machine)
 {
 	switch(machine->state) {
 		case ST_NET_DISABLED:
@@ -201,7 +201,7 @@ void mch_net_on_enter(mch_net_t *machine)
 }
 
 
-void mch_net_on_exit(mch_net_t *machine)
+static void mch_net_on_exit(mch_net_t *machine)
 {
 	switch(machine->state) {
 		case ST_NET_OPERATIONAL:
