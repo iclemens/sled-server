@@ -54,7 +54,7 @@ static void intf_log_status(const char *function, int status)
 
 static void intf_clear_sdo_callbacks(intf_t *intf)
 {
-  assert(intf);
+	assert(intf);
 
 	intf->sdo_callback_data = NULL;
 	intf->read_callback = NULL;
@@ -210,7 +210,7 @@ int intf_close(intf_t *intf)
 /**
  * Writes a single message
  */
-int intf_write(intf_t *intf, can_message_t msg)
+static int intf_write(const intf_t *intf, can_message_t msg)
 {
 	assert(intf);
 
@@ -245,7 +245,7 @@ int intf_write(intf_t *intf, can_message_t msg)
 /**
  * Sends an NMT command
  */
-int intf_send_nmt_command(intf_t *intf, uint8_t command)
+int intf_send_nmt_command(const intf_t *intf, uint8_t command)
 {
 	assert(intf);
 
@@ -320,7 +320,7 @@ int intf_send_write_req(intf_t *intf, uint16_t index, uint8_t subindex, uint32_t
 	intf->abort_callback = abort_callback;
 	intf->sdo_callback_data = data;
 
-  return intf_write(intf, msg);
+	return intf_write(intf, msg);
 }
 
 

@@ -39,10 +39,7 @@ struct MACHINE_TYPE;
 	void CONCAT(PREFIX, _destroy)(MACHINE_TYPE **machine); \
 	STATE_TYPE CONCAT(PREFIX, _active_state)(MACHINE_TYPE *machine); \
 	void CONCAT(PREFIX, _handle_event)(MACHINE_TYPE *machine, EVENT_TYPE event); \
-	void CONCAT(PREFIX, _set_callback_payload)(MACHINE_TYPE *machine, void *payload); \
-	STATE_TYPE CONCAT(PREFIX, _next_state_given_event)(MACHINE_TYPE *machine, EVENT_TYPE event); \
-	void CONCAT(PREFIX, _on_enter)(MACHINE_TYPE *machine); \
-	void CONCAT(PREFIX, _on_exit)(MACHINE_TYPE *machine);
+	void CONCAT(PREFIX, _set_callback_payload)(MACHINE_TYPE *machine, void *payload);
 
 #define BEGIN_FIELDS \
 	MACHINE_TYPE *CONCAT(PREFIX, _create)(

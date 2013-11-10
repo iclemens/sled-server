@@ -43,6 +43,9 @@ struct MACHINE_TYPE {
 #define END_EVENTS } return "Invalid event"; }
 
 #define GENERATE_DEFAULT_FUNCTIONS \
+	static STATE_TYPE CONCAT(PREFIX, _next_state_given_event)(const MACHINE_TYPE *machine, EVENT_TYPE event); \
+	static void CONCAT(PREFIX, _on_enter)(MACHINE_TYPE *machine); \
+	static void CONCAT(PREFIX, _on_exit)(MACHINE_TYPE *machine); \
 	void CONCAT(PREFIX, _handle_event)(MACHINE_TYPE *machine, EVENT_TYPE event) \
 	{ \
 		assert(machine); \
