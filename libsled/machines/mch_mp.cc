@@ -94,6 +94,9 @@ void mch_mp_on_enter(mch_mp_t *machine)
 			// Setpoint has been acknowledged, reset new_setpoint.
 			mch_mp_send_control_word(machine, 0x0F | 0x20);
 			break;
+
+		default:
+			break;
 	}
 }
 
@@ -104,6 +107,9 @@ void mch_mp_on_exit(mch_mp_t *machine)
 		case ST_MP_HH_HOMING:
 			// Reset new_setpoint_bit when homing is complete.
 			mch_mp_send_control_word(machine, 0x0F | 0x20);
+			break;
+
+		default:
 			break;
 	}
 }

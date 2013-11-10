@@ -148,6 +148,9 @@ void mch_ds_on_enter(mch_ds_t *machine)
 		case ST_DS_CLEARING_FAULT:
 			mch_sdo_queue_read(machine->mch_sdo, 0x3518, 0x01);
 			break;
+
+		default:
+			break;
 	}
 }
 
@@ -158,6 +161,9 @@ void mch_ds_on_exit(mch_ds_t *machine)
 		case ST_DS_OPERATION_ENABLED:
 			if(machine->operation_disabled_handler)
 				machine->operation_disabled_handler(machine, machine->payload);
+			break;
+
+		default:
 			break;
 	}
 }

@@ -193,9 +193,10 @@ void mch_net_on_enter(mch_net_t *machine)
 		case ST_NET_PREOPERATIONAL:
 			if(machine->sdos_enabled_handler)
 				machine->sdos_enabled_handler(machine, machine->payload);
-
 			mch_net_queue_setup(machine, machine->mch_sdo);
+			break;
 
+		default:
 			break;
 	}
 }
@@ -207,6 +208,9 @@ void mch_net_on_exit(mch_net_t *machine)
 		case ST_NET_OPERATIONAL:
 			if(machine->leave_operational_handler)
 				machine->leave_operational_handler(machine, machine->payload);
+			break;
+
+		default:
 			break;
 	}
 }

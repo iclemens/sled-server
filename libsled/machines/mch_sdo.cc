@@ -192,6 +192,9 @@ void mch_sdo_on_enter(mch_sdo_t *machine)
 				mch_sdo_handle_event(machine, EV_SDO_ITEM_AVAILABLE);
 			}
 			break;
+
+		default:
+			break;
 	}
 }
 
@@ -222,6 +225,9 @@ void mch_sdo_on_exit(mch_sdo_t *machine)
 			break;
 
 		case ST_SDO_SENDING:
+			break;
+
+		default:
 			break;
 	}
 }
