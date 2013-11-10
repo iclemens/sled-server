@@ -281,12 +281,12 @@ void net_set_read_handler(net_server_t *server, read_handler_t handler)
 /**
  * Sends data to the connection specified
  */
-int net_send(net_connection_t *conn, const char *buf, size_t size)
+int net_send(const net_connection_t *conn, const char *buf, size_t size)
 {
-  if(conn == NULL)
-    return -1;
-  bufferevent_write(conn->buffer_event, buf, size);
-	return 0;
+	if(conn == NULL)
+		return -1;
+
+	return bufferevent_write(conn->buffer_event, buf, size);
 }
 
 
@@ -308,16 +308,16 @@ int net_disconnect(net_connection_t *conn)
 		server->disconnect_handler(conn, &(conn->local));
 	server->connection_data.erase(conn->fd);
 
-  if(conn->read_event) {
-    event_del(conn->read_event);
-    event_free(conn->read_event);
-    conn->read_event = NULL;
-  }
+	if(conn->read_event) {
+		event_del(conn->read_event);
+		event_free(conn->read_event);
+		conn->read_event = NULL;
+	}
 
-  if(conn->buffer_event) {
-    bufferevent_free(conn->buffer_event);
-    conn->buffer_event = NULL;
-  }
+	if(conn->buffer_event) {
+		bufferevent_free(conn->buffer_event);
+		conn->buffer_event = NULL;
+	}
 
 	close(conn->fd);
 	delete conn;
@@ -329,7 +329,7 @@ int net_disconnect(net_connection_t *conn)
 /**
  * Returns global (server-wide) context for a given connection.
  */
-void *net_get_global_data(net_connection_t *conn)
+void *net_get_global_data(const net_connection_t *conn)
 {
 	return conn->server->context;
 }
@@ -338,7 +338,7 @@ void *net_get_global_data(net_connection_t *conn)
 /**
  * Returns local (connection-only) context.
  */
-void *net_get_local_data(net_connection_t *conn)
+void *net_get_local_data(const net_connection_t *conn)
 {
 	return conn->local;
 }

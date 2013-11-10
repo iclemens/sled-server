@@ -17,3 +17,15 @@ sled_server
 *.lai
 *.la
 *.a
+
+*.cc_test
+
+*.h_test
+
+*.pyc
+
+generator/mch_ds_test.cc
+
+generator/mch_ds_test.h
+
+*.swp

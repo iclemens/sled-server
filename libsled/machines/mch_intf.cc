@@ -10,7 +10,7 @@
 #include "machine_body.h"
 
 
-mch_intf_state_t mch_intf_next_state_given_event(mch_intf_t *machine, mch_intf_event_t event)
+static mch_intf_state_t mch_intf_next_state_given_event(const mch_intf_t *machine, mch_intf_event_t event)
 {
   switch(machine->state) {
     case ST_INTF_CLOSED:      
@@ -38,20 +38,20 @@ mch_intf_state_t mch_intf_next_state_given_event(mch_intf_t *machine, mch_intf_e
 }
 
 
-void mch_intf_on_enter(mch_intf_t *machine)
+static void mch_intf_on_enter(mch_intf_t *machine)
 {
-  switch(machine->state) {
-    case ST_INTF_OPENING:
-      if(intf_open(machine->interface) != 0)
+	switch(machine->state) {
+		case ST_INTF_OPENING:
+			if(intf_open(machine->interface) != 0)
 				mch_intf_handle_event(machine, EV_INTF_CLOSED);
-      else
+			else
 				mch_intf_handle_event(machine, EV_INTF_OPENED);
-      break;
+			break;
       
-    case ST_INTF_CLOSING:
-      intf_close(machine->interface);
-      mch_intf_handle_event(machine, EV_INTF_CLOSED);
-      break;
+		case ST_INTF_CLOSING:
+			intf_close(machine->interface);
+			mch_intf_handle_event(machine, EV_INTF_CLOSED);
+			break;
 
 		case ST_INTF_OPENED:
 			if(machine->opened_handler)
@@ -66,7 +66,7 @@ void mch_intf_on_enter(mch_intf_t *machine)
 }
 
 
-void mch_intf_on_exit(mch_intf_t *machine)
+static void mch_intf_on_exit(mch_intf_t *machine)
 {
 }
 

@@ -9,19 +9,19 @@
 #include "machine_body.h"
 
 
-void mch_mp_send_mode_switch(mch_mp_t *machine, uint8_t mode)
+static void mch_mp_send_mode_switch(mch_mp_t *machine, uint8_t mode)
 {
 	mch_sdo_queue_write(machine->mch_sdo, 0x6060, 0x00, mode, 0x01);
 }
 
 
-void mch_mp_send_control_word(mch_mp_t *machine, uint16_t control_word)
+static void mch_mp_send_control_word(mch_mp_t *machine, uint16_t control_word)
 {
 	mch_sdo_queue_write(machine->mch_sdo, OB_CONTROL_WORD, 0x00, control_word, 0x02);
 }
 
 
-mch_mp_state_t mch_mp_next_state_given_event(mch_mp_t *machine, mch_mp_event_t event)
+static mch_mp_state_t mch_mp_next_state_given_event(const mch_mp_t *machine, mch_mp_event_t event)
 {
 	if(!machine->state == ST_MP_DISABLED && event == EV_MP_DS_INOPERATIONAL)
 		return ST_MP_DISABLED;
@@ -74,7 +74,7 @@ mch_mp_state_t mch_mp_next_state_given_event(mch_mp_t *machine, mch_mp_event_t e
 }
 
 
-void mch_mp_on_enter(mch_mp_t *machine)
+static void mch_mp_on_enter(mch_mp_t *machine)
 {
 	switch(machine->state) {
 		case ST_MP_SWITCH_MODE_HOMING:
@@ -101,7 +101,7 @@ void mch_mp_on_enter(mch_mp_t *machine)
 }
 
 
-void mch_mp_on_exit(mch_mp_t *machine)
+static void mch_mp_on_exit(mch_mp_t *machine)
 {
 	switch(machine->state) {
 		case ST_MP_HH_HOMING:
@@ -113,4 +113,3 @@ void mch_mp_on_exit(mch_mp_t *machine)
 			break;
 	}
 }
-

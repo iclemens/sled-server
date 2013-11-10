@@ -131,7 +131,7 @@ void mch_sdo_abort_callback(void *data, uint16_t index, uint8_t subindex, uint32
 }
 
 
-mch_sdo_state_t mch_sdo_next_state_given_event(mch_sdo_t *machine, mch_sdo_event_t event)
+mch_sdo_state_t mch_sdo_next_state_given_event(const mch_sdo_t *machine, mch_sdo_event_t event)
 {
 	switch(machine->state) {
 		case ST_SDO_DISABLED:

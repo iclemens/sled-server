@@ -15,7 +15,7 @@ void mch_ds_send_control_word(mch_ds_t *machine, uint16_t control_word)
 }
 
 
-mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t event)
+static mch_ds_state_t mch_ds_next_state_given_event(const mch_ds_t *machine, mch_ds_event_t event)
 {
 	if(!machine->state == ST_DS_DISABLED && event == EV_DS_NET_INOPERATIONAL)
 		return ST_DS_DISABLED;
@@ -39,12 +39,12 @@ mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t e
 			break;
 
 		case ST_DS_CLEARING_FAULT:
-      if(event == EV_DS_NOT_READY_TO_SWITCH_ON)
-        return ST_DS_SWITCH_ON_DISABLED;
-      if(event == EV_DS_READY_TO_SWITCH_ON)
-        return ST_DS_READY_TO_SWITCH_ON;
-      if(event == EV_DS_SWITCHED_ON)
-        return ST_DS_SWITCHED_ON;
+			if(event == EV_DS_NOT_READY_TO_SWITCH_ON)
+				return ST_DS_SWITCH_ON_DISABLED;
+			if(event == EV_DS_READY_TO_SWITCH_ON)
+				return ST_DS_READY_TO_SWITCH_ON;
+			if(event == EV_DS_SWITCHED_ON)
+				return ST_DS_SWITCHED_ON;
 			break;
 
 		case ST_DS_UNKNOWN:
@@ -110,7 +110,7 @@ mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t e
 }
 
 
-void mch_ds_on_enter(mch_ds_t *machine)
+static void mch_ds_on_enter(mch_ds_t *machine)
 {
 	switch(machine->state) {
 		case ST_DS_DISABLED:
@@ -155,7 +155,7 @@ void mch_ds_on_enter(mch_ds_t *machine)
 }
 
 
-void mch_ds_on_exit(mch_ds_t *machine)
+static void mch_ds_on_exit(mch_ds_t *machine)
 {
 	switch(machine->state) {
 		case ST_DS_OPERATION_ENABLED:
