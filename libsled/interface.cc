@@ -432,7 +432,7 @@ static void intf_on_read(evutil_socket_t fd, short events, void *intf_v)
 	}
 
 	// A status message was received
-	if(message.Msg.MSGTYPE & MSGTYPE_STATUS == MSGTYPE_STATUS)
+	if((message.Msg.MSGTYPE & MSGTYPE_STATUS) == MSGTYPE_STATUS)
 	{
 		int32_t status = int32_t(CAN_Status(intf->handle));
 
