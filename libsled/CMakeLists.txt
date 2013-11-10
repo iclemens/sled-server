@@ -17,6 +17,7 @@ set(Include_Files sled.h sled_profile.h)
 ############################
 
 find_path(LibPcan_Include libpcan.h)
+include_directories(${LibPcan_Include})
 
 # Generate both static and shared libraries
 add_library(${Name_Libsled} STATIC ${Source_Files})
