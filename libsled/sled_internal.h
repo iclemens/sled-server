@@ -47,6 +47,8 @@ enum field_state_t {
  */
 struct sled_profile_t {
 	bool in_use;
+	bool never_sent;
+
 	int profile;
 
 	int table;

@@ -154,9 +154,9 @@ int sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 		return 0;
 
 	// Load correct profile in slot 0
-	if(sled->current_profile != profile->profile) {
+	if(!profile->never_sent && sled->current_profile != profile->profile) {
 		COPY_MOTION_TASK(profile->profile, 0x00)
-			sled->current_profile = profile->profile;
+		sled->current_profile = profile->profile;
 	}
 
 	WRITE_FIELD_IF_CHANGED(ob_o_p,   OB_O_P,   int32_t(profile->position * 1000.0 * 1000.0));
@@ -177,6 +177,7 @@ int sled_profile_write_pending_changes(sled_t *sled, int profile_id)
 
 	// Copy back to profile (this could be defered to a later time)
 	COPY_MOTION_TASK(0x00, profile->profile);
+	profile->never_sent = false;
 
 	// Write profiles that the current profile depends on...
 	if(profile->next_profile >= 0)
@@ -238,6 +239,7 @@ int sled_profile_create(sled_t *sled)
 		if(!sled->profiles[i].in_use) {
 			sled_profile_clear(sled, i, true);
 			sled->profiles[i].in_use = true;
+			sled->profiles[i].never_sent = true;
 			return i;
 		}
 	}
