@@ -52,6 +52,51 @@ static void intf_log_status(const char *function, int status)
 }
 
 
+static void intf_log_emergency(int emergency)
+{
+	switch(emergency) {
+		case 0x0000: syslog(LOG_ERR, "Error reset or no error (mandatory)"); break;
+		case 0x1000: syslog(LOG_ERR, "Generic error (mandatory)"); break;
+		case 0x1080: syslog(LOG_ERR, "No BTB/RTO (status not ready for operation)"); break;
+		case 0x2330: syslog(LOG_ERR, "Error in ground connection (F22)"); break;
+		case 0x2380: syslog(LOG_ERR, "Error in motor connection (phase fault) (F12)"); break;
+		case 0x3100: syslog(LOG_ERR, "No mains/line-BTB (F16)"); break;
+		case 0x3110: syslog(LOG_ERR, "Overvoltage in DC-bus/DC-link (F02)"); break;
+		case 0x3120: syslog(LOG_ERR, "Undervoltage in DC-bus/DC-link (F05)"); break;
+		case 0x3130: syslog(LOG_ERR, "Supply line phase missing (with PMODE = 2) (F19)"); break;
+		case 0x4110: syslog(LOG_ERR, "Ambient temperature too high (F13)"); break;
+		case 0x4210: syslog(LOG_ERR, "Heat sink temperature too high (F01)"); break;
+		case 0x4310: syslog(LOG_ERR, "Motor temperature too high (F06)"); break;
+		case 0x5111: syslog(LOG_ERR, "Fault in ±15V auxiliary voltage (F07)"); break;
+		case 0x5380: syslog(LOG_ERR, "Fault in A/D converter (F17)"); break;
+		case 0x5400: syslog(LOG_ERR, "Fault in output stage (F14)"); break;
+		case 0x5420: syslog(LOG_ERR, "Ballast (chopper) (F18)"); break;
+		case 0x5441: syslog(LOG_ERR, "Operating error for AS-option (F27)"); break;
+		case 0x5530: syslog(LOG_ERR, "Serial EEPROM (F09)"); break;
+		case 0x6320: syslog(LOG_ERR, "Parameter error"); break;
+		case 0x7111: syslog(LOG_ERR, "Braking error/fault (F11)"); break;
+		case 0x7122: syslog(LOG_ERR, "Commutation error (F25)"); break;
+		case 0x7181: syslog(LOG_ERR, "Could not enable S300/S700"); break;
+		case 0x7303: syslog(LOG_ERR, "Feedback device error (F04)"); break;
+		case 0x7305: syslog(LOG_ERR, "Signal failure digital encoder input (F10)"); break;
+		case 0x8182: syslog(LOG_ERR, "CAN bus off (F23)"); break;
+		case 0x8331: syslog(LOG_ERR, "I2t (torque fault, F15)"); break;
+		case 0x8480: syslog(LOG_ERR, "Overspeed (F08)"); break;
+		case 0x8611: syslog(LOG_ERR, "Lag/following error (n03/F03)"); break;
+		case 0x8681: syslog(LOG_ERR, "Invalid motion task number"); break;
+		case 0xFF01: syslog(LOG_ERR, "Serious exception error (F32)"); break;
+		case 0xFF02: syslog(LOG_ERR, "Error in PDO elements"); break;
+		case 0xFF04: syslog(LOG_ERR, "Slot error (F20)"); break;
+		case 0xFF05: syslog(LOG_ERR, "Handling error (F21)"); break;
+		case 0xFF06: syslog(LOG_ERR, "Warning display as error (F24)"); break;
+		case 0xFF07: syslog(LOG_ERR, "Homing error (drove onto HW limit switch) (F26)"); break;
+		case 0xFF08: syslog(LOG_ERR, "Sercos error (F29)"); break;
+		case 0xFF11: syslog(LOG_ERR, "Emergency timeout failure(F30)"); break;
+		default: syslog(LOG_ERR, "Unknown emergency (%04x)", emergency);
+	}
+}
+
+
 static void intf_clear_sdo_callbacks(intf_t *intf)
 {
   assert(intf);
@@ -334,7 +379,9 @@ static void intf_dispatch_msg(intf_t *intf, can_message_t msg)
 
   // Emergency messages are only logged (not handled)
 	if(function == 0x01) {
-		syslog(LOG_ALERT, "%s() received an emergency message.", __FUNCTION__);
+		int emergency = msg.data[0] + (msg.data[1] << 8);
+		syslog(LOG_ALERT, "%s() received an emergency message (%04x:%02x:%02x).", __FUNCTION__, emergency, msg.data[2], msg.data[3]);
+		intf_log_emergency(emergency);
 	}
 
 	// TPDOs
