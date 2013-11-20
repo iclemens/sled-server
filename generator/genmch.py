@@ -25,51 +25,45 @@ except Exception as e:
 prefix = root.attrib['prefix']
 
 
-####################
-# HEADER GENERATOR #
-####################
+def generate_enum(f, name, values):
+  f.write("enum {} {{\n".format(name))
+  for value in values:
+    f.write("\t{},\n".format(value))
+  f.write("};\n\n")
 
-hfile.write("// WARNING: Automatically generated file! Do not modify!\n")
-hfile.write("#ifndef __{}_H__\n".format(prefix.upper()))
-hfile.write("#define __{}_H__\n\n".format(prefix.upper()))
 
-hfile.write("struct {}_t;\n\n".format(prefix))
+def generate_header(f, data):
+  prefix = data.attrib['prefix']
 
-# Write list of events to header
-hfile.write("enum {}_event_t {{\n".format(prefix))
-for element in root.findall("./events/event"):
-  hfile.write("\t{},\n".format(element.text))
-hfile.write("};\n\n")
+  f.write("// WARNING: Automatically generated file! Do not modify!\n" \
+          "#ifndef __{1}_H__\n" \
+          "#define __{0}_H__\n\n" \
+          "struct {0}_t;\n" \
+          "\n".format(prefix, prefix.upper()))
 
-# Write list of states to header
-hfile.write("enum {}_state_t {{\n".format(prefix))
-for element in root.findall("./states/state"):
-  hfile.write("\t{},\n".format(element.text))
-hfile.write("};\n\n")
+  generate_enum(f, "{}_event_t".format(prefix), [e.text for e in data.findall('./events/event')])
+  generate_enum(f, "{}_state_t".format(prefix), [e.text for e in data.findall('./states/state')])
 
-for element in root.findall("./include"):
-  hfile.write(element.text + "\n")
+  for element in data.findall("./include"):
+    f.write(element.text + "\n")
 
-# Functions
-fields = list()
-for element in root.findall("./fields/field"):
-  fields.append(element.attrib['type'] + element.text)
-args = ", ".join(fields)
+  args = ", ".join([e.attrib['type'] + e.text for e in data.findall("./fields/field")])
 
-hfile.write("{0}_t *{0}_create({1});\n".format(prefix, args))
-hfile.write("void {0}_destroy({0}_t **machine);\n".format(prefix))
-hfile.write("{0}_state_t {0}_active_state({0}_t *machine);\n".format(prefix))
-hfile.write("void {0}_handle_event({0}_t *machine, {0}_event_t event);\n".format(prefix))
-hfile.write("void {0}_set_callback_payload({0}_t *machine, void *payload);\n".format(prefix))
-hfile.write("\n")
+  f.write("{0}_t *{0}_create({1});\n" \
+          "void {0}_destroy({0}_t **machine);\n" \
+          "{0}_state_t {0}_active_state({0}_t *machine);\n" \
+          "void {0}_handle_event({0}_t *machine, {0}_event_t event);\n" \
+          "void {0}_set_callback_payload({0}_t *machine, void *payload);\n" \
+          "\n".format(prefix, args))  
 
-for element in root.findall("./callbacks/callback"):
-  hfile.write("typedef void(*{0}_{1}_handler_t)({0}_t *machine, void *payload);\n".format(prefix, element.text))
-  hfile.write("void {0}_set_{1}_handler({0}_t *machine, {0}_{1}_handler_t handler);\n".format(prefix, element.text))
-  hfile.write("\n")
+  for element in data.findall("./callbacks/callback"):
+    f.write("typedef void(*{0}_{1}_handler_t)({0}_t *machine, void *payload);\n".format(prefix, element.text))
+    f.write("void {0}_set_{1}_handler({0}_t *machine, {0}_{1}_handler_t handler);\n".format(prefix, element.text))
+    f.write("\n")
 
-hfile.write("#endif\n\n")
+  f.write("#endif\n\n")
 
+generate_header(hfile, root)
 
 ####################
 # SOURCE GENERATOR #
@@ -101,6 +95,7 @@ cfile.write("static void {0}_on_exit({0}_t *machine);\n\n".format(prefix))
 
 
 # Create function
+args = ", ".join([e.attrib['type'] + e.text for e in root.findall("./fields/field")])
 cfile.write("{0}_t *{0}_create({1})\n{{\n".format(prefix, args))
 cfile.write("\t{0}_t *machine = new {0}_t();\n\n".format(prefix))
 cfile.write("\tmachine->state = {0};\n".format(root.findall("initial")[0].text))
