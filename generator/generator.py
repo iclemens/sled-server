@@ -1,7 +1,3 @@
-#
-# Generates state machine source
-#  Usage: python genmch.py SOURCE.XML TARGET.C TARGET.H
-#
 
 import sys
 import xml.etree.ElementTree as ElementTree
@@ -120,7 +116,7 @@ def compile_source(data):
            "#include <syslog.h>\n" \
            "\n".format(prefix)
 
-  source += structure_definition(root)
+  source += structure_definition(data)
 
   # Forward declarations
   source += "static {0}_state_t {0}_next_state_given_event({0}_t *machine, {0}_event_t event);\n" \
@@ -128,7 +124,7 @@ def compile_source(data):
             "static void {0}_on_exit({0}_t *machine);\n" \
             "\n".format(prefix)
 
-  source += function_create(root)
+  source += function_create(data)
 
   # Destroy function
   source += "void {0}_destroy({0}_t **machine)\n{{\n" \
@@ -168,29 +164,6 @@ def compile_source(data):
             "}}\n\n".format(prefix)
 
   return source
-
-
-#################
-# Main function #
-#################
-
-
-if len(sys.argv) < 4:
-  print "Invalid argument count. Usage: python genmch.py SOURCE.XML TARGET.C TARGET.H"
-
-try:
-  root = ElementTree.parse(sys.argv[1]).getroot()
-except Exception as e:
-  print "Could not parse input XML: " + str(e.message)
-  sys.exit(1)
-
-# Write header file
-hfile = open(sys.argv[3], 'w')
-hfile.write(compile_header(root))
-
-# Write source file
-cfile = open(sys.argv[2], 'w')
-cfile.write(compile_source(root))
 
 
 
