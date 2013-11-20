@@ -1,13 +1,12 @@
 
-#include "../interface.h"
 #include "mch_net.h"
+#include "mch_net.gen.cc"
+
+#include "../interface.h"
 #include "mch_sdo.h"
 
 #include <stdlib.h>
 #include <stdio.h>
-
-#define MACHINE_FILE() "mch_net_def.h"
-#include "machine_body.h"
 
 
 void mch_net_sdo_abort_callback(void *data, uint16_t index, uint8_t subindex, uint32_t abort)

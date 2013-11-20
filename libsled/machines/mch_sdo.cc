@@ -1,12 +1,15 @@
 
-#include "../interface.h"
+struct intf_t;
+struct sdo_t;
+
 #include "mch_sdo.h"
+#include "mch_sdo.gen.cc"
+
+#include "../interface.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-#include <queue>
 
 
 struct sdo_t {
@@ -21,10 +24,6 @@ struct sdo_t {
 	sdo_write_callback_t write_callback;
 	sdo_read_callback_t read_callback;
 };
-
-
-#define MACHINE_FILE() "mch_sdo_def.h"
-#include "machine_body.h"
 
 
 const char *mch_sdo_abort_to_message(uint32_t code)

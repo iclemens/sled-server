@@ -1,0 +1,51 @@
+<machine prefix="mch_sdo">
+
+  <include><![CDATA[
+#include <stdint.h>
+#include <queue>
+
+typedef void(*sdo_abort_callback_t)(void *data, uint16_t index, uint8_t subindex, uint32_t code);
+typedef void(*sdo_write_callback_t)(void *data, uint16_t index, uint8_t subindex);
+typedef void(*sdo_read_callback_t)(void *data, uint16_t index, uint8_t subindex, uint32_t value);
+
+void mch_sdo_queue_write(mch_sdo_t *machine, uint16_t index, uint8_t subindex, uint32_t value, uint8_t size);
+void mch_sdo_queue_read(mch_sdo_t *machine, uint16_t index, uint8_t subindex);
+
+void mch_sdo_queue_write_with_cb(mch_sdo_t *machine, 
+       uint16_t index, uint8_t subindex, uint32_t value, uint8_t size,
+       sdo_write_callback_t write_callback, sdo_abort_callback_t abort_callback, void *data);
+
+void mch_sdo_queue_read_with_cb(mch_sdo_t *machine, 
+  uint16_t index, uint8_t subindex, uint32_t value,
+  sdo_read_callback_t read_callback, sdo_abort_callback_t abort_callback, void *data);
+]]></include>
+
+  <initial>ST_SDO_DISABLED</initial>
+
+  <events>
+  	<event>EV_NET_SDO_DISABLED</event>	<!-- From net machine (mch_net.cc) -->
+	  <event>EV_NET_SDO_ENABLED</event>		<!-- From net machine (mch_net.cc) -->
+
+  	<event>EV_SDO_ITEM_AVAILABLE</event>	<!-- Internal event -->
+
+	  <event>EV_SDO_READ_RESPONSE</event>		<!-- From CANOpen (interface.cc) -->
+	  <event>EV_SDO_WRITE_RESPONSE</event>	<!-- From CANOpen (interface.cc) -->
+	  <event>EV_SDO_ABORT_RESPONSE</event>  <!-- From CANOpen (interface.cc) -->
+  </events>
+
+  <states>
+	  <state>ST_SDO_DISABLED</state>
+  	<state>ST_SDO_ERROR</state>
+	  <state>ST_SDO_WAITING</state>
+  	<state>ST_SDO_SENDING</state>
+  </states>
+
+  <callbacks />
+
+  <fields>
+    <field type="intf_t *">interface</field>
+    <field_decl type="std::queue&lt;sdo_t *&gt;">sdo_queue</field_decl>
+    <field_decl type="sdo_t *" init="NULL">sdo_active</field_decl>
+  </fields>
+
+</machine>

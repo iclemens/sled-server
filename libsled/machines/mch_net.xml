@@ -1,0 +1,45 @@
+<machine prefix="mch_net">
+
+  <include>struct intf_t; struct mch_sdo_t;</include>
+  <initial>ST_NET_DISABLED</initial>
+
+  <events>
+	  <event>EV_NET_INTF_OPENED</event>		<!-- From interface machine (mch_intf.cc) -->
+  	<event>EV_NET_INTF_CLOSED</event>		<!-- From interface machine (mch_intf.cc) -->
+
+	  <event>EV_NET_UPLOAD_COMPLETE</event>	<!-- Internal -->
+	  <event>EV_NET_UPLOAD_FAILED</event>		<!-- Internal -->
+
+	  <event>EV_NET_STOPPED</event>			<!--  From CANOpen (interface.cc) -->
+	  <event>EV_NET_OPERATIONAL</event>		<!-- From CANOpen (interface.cc) -->
+	  <event>EV_NET_PREOPERATIONAL</event>	<!--  From CANOpen (interface.cc) -->
+
+	  <event>EV_NET_WATCHDOG_FAILED</event>	<!-- From sled.cc -->
+  </events>
+
+  <states>
+	  <state>ST_NET_DISABLED</state>
+
+	  <state>ST_NET_UNKNOWN</state>
+	  <state>ST_NET_STOPPED</state>
+	  <state>ST_NET_PREOPERATIONAL</state>
+	  <state>ST_NET_OPERATIONAL</state>
+
+	  <state>ST_NET_ENTERPREOPERATIONAL</state>
+	  <state>ST_NET_UPLOADCONFIG</state>
+	  <state>ST_NET_STARTREMOTENODE</state>
+  </states>
+
+  <fields>
+    <field type="intf_t *">interface</field>
+    <field type="mch_sdo_t *">mch_sdo</field>
+  </fields>
+
+  <callbacks>
+    <callback>sdos_enabled</callback>
+    <callback>sdos_disabled</callback>
+    <callback>enter_operational</callback>
+    <callback>leave_operational</callback>
+  </callbacks>
+
+</machine>

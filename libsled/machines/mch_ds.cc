@@ -3,19 +3,19 @@
 #include <stdio.h>
 
 #include "../interface.h"
+
+#include "mch_sdo.h"
 #include "mch_ds.h"
-
-#define MACHINE_FILE() "mch_ds_def.h"
-#include "machine_body.h"
+#include "mch_ds.gen.cc"
 
 
-void mch_ds_send_control_word(mch_ds_t *machine, uint16_t control_word)
+static void mch_ds_send_control_word(mch_ds_t *machine, uint16_t control_word)
 {
 	mch_sdo_queue_write(machine->mch_sdo, OB_CONTROL_WORD, 0x00, control_word, 0x02);
 }
 
 
-mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t event)
+static mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t event)
 {
 	if(!machine->state == ST_DS_DISABLED && event == EV_DS_NET_INOPERATIONAL)
 		return ST_DS_DISABLED;
@@ -110,7 +110,7 @@ mch_ds_state_t mch_ds_next_state_given_event(mch_ds_t *machine, mch_ds_event_t e
 }
 
 
-void mch_ds_on_enter(mch_ds_t *machine)
+static void mch_ds_on_enter(mch_ds_t *machine)
 {
 	switch(machine->state) {
 		case ST_DS_DISABLED:
@@ -152,7 +152,7 @@ void mch_ds_on_enter(mch_ds_t *machine)
 }
 
 
-void mch_ds_on_exit(mch_ds_t *machine)
+static void mch_ds_on_exit(mch_ds_t *machine)
 {
 	switch(machine->state) {
 		case ST_DS_OPERATION_ENABLED:
@@ -161,3 +161,4 @@ void mch_ds_on_exit(mch_ds_t *machine)
 			break;
 	}
 }
+

@@ -1,0 +1,51 @@
+<machine prefix="mch_ds">
+  <include><![CDATA[#include "mch_sdo.h"]]></include>
+
+  <initial>ST_DS_DISABLED</initial>
+
+  <events>
+    <event>EV_DS_NET_OPERATIONAL</event> <!--	From NMT machine (mch_net.cc) -->
+  	<event>EV_DS_NET_INOPERATIONAL</event> <!-- From NMT machine (mch_net.cc) -->
+
+	  <event>EV_DS_NOT_READY_TO_SWITCH_ON</event>
+	  <event>EV_DS_READY_TO_SWITCH_ON</event>
+  	<event>EV_DS_SWITCHED_ON</event>
+  	<event>EV_DS_OPERATION_ENABLED</event>
+	  <event>EV_DS_FAULT</event>
+	  <event>EV_DS_FAULT_REACTION_ACTIVE</event>
+	  <event>EV_DS_QUICK_STOP_ACTIVE</event>
+
+	  <event>EV_DS_VOLTAGE_ENABLED</event>
+	  <event>EV_DS_VOLTAGE_DISABLED</event>
+  </events>
+
+  <states>
+  	<state>ST_DS_DISABLED</state>
+	  <state>ST_DS_UNKNOWN</state>
+
+  	<state>ST_DS_FAULT</state>
+	  <state>ST_DS_CLEARING_FAULT</state>
+
+	  <state>ST_DS_READY_TO_SWITCH_ON</state>
+	  <state>ST_DS_SWITCH_ON</state>
+	  <state>ST_DS_SWITCHED_ON</state>
+	  <state>ST_DS_PREPARE_SWITCH_ON</state>
+	  <state>ST_DS_SHUTDOWN</state>
+	  <state>ST_DS_SWITCH_ON_DISABLED</state>
+	  <state>ST_DS_ENABLE_OPERATION</state>
+	  <state>ST_DS_DISABLE_OPERATION</state>
+	  <state>ST_DS_OPERATION_ENABLED</state>
+  </states>
+
+  <fields>
+    <field type="intf_t *">interface</field>
+    <field type="mch_sdo_t *">mch_sdo</field>
+  </fields>
+
+  <callbacks>
+    <callback>operation_enabled</callback>
+	  <callback>operation_disabled</callback>
+  </callbacks>
+
+</machine>
+

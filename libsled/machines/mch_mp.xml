@@ -1,0 +1,43 @@
+<machine prefix="mch_mp">
+
+  <include>struct intf_t; struct mch_sdo_t;</include>
+
+  <initial>ST_MP_DISABLED</initial>
+
+  <states>
+  	<state>ST_MP_DISABLED</state>
+
+  	<state>ST_MP_SWITCH_MODE_HOMING</state>
+  	<state>ST_MP_HH_UNKNOWN</state>
+  	<state>ST_MP_HH_HOMING</state>
+
+  	<state>ST_MP_SWITCH_MODE_PP</state>
+  	<state>ST_MP_PP_IDLE</state>
+	  <state>ST_MP_PP_SP_NACK</state>
+  	<state>ST_MP_PP_SP_ACK</state>
+  </states>
+
+  <events>
+  	<event>EV_MP_DS_OPERATIONAL</event>	<!-- From DS machine (mch_ds.cc) -->
+  	<event>EV_MP_DS_INOPERATIONAL</event> <!-- From DS machine (mch_ds.cc) -->
+
+	  <event>EV_MP_MODE_HOMING</event>
+	  <event>EV_MP_MODE_PP</event>
+
+	  <event>EV_MP_HOMED</event>
+	  <event>EV_MP_NOTHOMED</event>
+
+	  <event>EV_MP_SETPOINT_SET</event>
+	  <event>EV_MP_SETPOINT_ACK</event>
+	  <event>EV_MP_SETPOINT_NACK</event>
+	  <event>EV_MP_TARGET_REACHED</event>
+  </events>
+
+  <fields>
+    <field type="intf_t *">interface</field>
+	  <field type="mch_sdo_t *">mch_sdo</field>
+  </fields>
+
+  <callbacks />
+
+</machine>

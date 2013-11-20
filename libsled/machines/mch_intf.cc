@@ -1,14 +1,10 @@
 
-#include "../interface.h"
-
 #include "mch_intf.h"
+#include "mch_intf.gen.cc"
 
+#include "../interface.h"
 #include <stdlib.h>
 #include <stdio.h>
-
-#define MACHINE_FILE() "mch_intf_def.h"
-#include "machine_body.h"
-
 
 mch_intf_state_t mch_intf_next_state_given_event(mch_intf_t *machine, mch_intf_event_t event)
 {

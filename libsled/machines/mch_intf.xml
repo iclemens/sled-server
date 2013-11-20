@@ -1,0 +1,30 @@
+<machine prefix="mch_intf">
+
+  <include><![CDATA[struct intf_t;]]></include>
+
+  <initial>ST_INTF_CLOSED</initial>
+
+  <states>
+	  <state>ST_INTF_CLOSED</state>
+	  <state>ST_INTF_OPENED</state>
+	  <state>ST_INTF_OPENING</state>
+	  <state>ST_INTF_CLOSING</state>
+  </states>
+
+  <events>
+    <event>EV_INTF_OPEN</event>
+    <event>EV_INTF_CLOSE</event>
+    <event>EV_INTF_OPENED</event>
+    <event>EV_INTF_CLOSED</event>
+  </events>
+
+  <callbacks>
+	  <callback>opened</callback>
+	  <callback>closed</callback>
+  </callbacks>
+
+  <fields>
+	  <field type="intf_t *">interface</field>
+  </fields>
+
+</machine>
