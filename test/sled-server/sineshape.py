@@ -80,12 +80,15 @@ def runTest():
   client.sendCommand("Sinusoid Stop")
 
   #data = createFakeData()
-  print data  
   data = numpy.array(data)
 
   sine = fitSine(data)
 
-  print "Sine error: {}".format(numpy.mean(numpy.abs(data[:, 1] - sine[:, 1])))
+  error = numpy.mean(numpy.abs(data[:, 1] - sine[:, 1]))
+  print "Sine error: {}".format(error)
+
+  if error > 0.0005:
+    print "THIS ERROR IS TOO BIG!!! NO RELIABLE SINE!!!"
 
   pyplot.plot(data[:, 0], data[:, 1])
   pyplot.plot(sine[:, 0], sine[:, 1])
