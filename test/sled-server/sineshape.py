@@ -8,7 +8,7 @@
 #  - Other clients start at random times within the measurement
 #
 
-#from sledclient import SledClient
+from sledclient import SledClient
 import numpy
 import numpy.linalg
 import matplotlib.pyplot as pyplot
@@ -24,12 +24,13 @@ def collectPositions(client, duration = 5.0):
 
   while client.time() - t0 < duration:
     try:
-      time = client.t[-1]
-      position = client.p[-1]
-      samples.append((time, position))
+      ttime = client.t[-1]
+      position = numpy.asarray(client.p[-1])[0][0]
+      samples.append((ttime, position))
     except:
       pass
     time.sleep(0.001)
+  return samples
 
 
 def createFakeData(duration = 5.0, smpfreq = 1000.0, sinfreq = 1.0):
@@ -51,7 +52,7 @@ def connect():
 
 
 def fitSine(data):
-  sinfreq = 1
+  sinfreq = 1/1.6
 
   r = numpy.vstack((
     numpy.sin(2.0 * math.pi * sinfreq * data[:, 0]), 
@@ -67,16 +68,19 @@ def fitSine(data):
 
 
 def runTest():
-  #client = connect()
-
+  client = connect()
+  client.sendCommand("Sinusoid Stop")
   # Move to home position
-  #client.goto(0)
-  #time.sleep(2.1)
+  client.goto(0)
+  time.sleep(2.1)
 
-  #client.sendCommand("Sinusoid Start 0.15 1.6")
+  client.sendCommand("Sinusoid Start 0.15 1.6")
  
-  #data = client.collectPositions()
-  data = createFakeData()
+  data = collectPositions(client)
+  client.sendCommand("Sinusoid Stop")
+
+  #data = createFakeData()
+  print data  
   data = numpy.array(data)
 
   sine = fitSine(data)
