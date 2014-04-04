@@ -57,6 +57,10 @@ mch_mp_state_t mch_mp_next_state_given_event(mch_mp_t *machine, mch_mp_event_t e
 		case ST_MP_PP_IDLE:
 			if(event == EV_MP_SETPOINT_SET)
 				return ST_MP_PP_SP_NACK;
+			#ifdef DIRTY_SINUSOID
+			if(event == EV_MP_SINUSOID_START)
+				return ST_MP_SWITCH_MODE_IP;
+			#endif
 			break;
 
 		case ST_MP_PP_SP_NACK:
@@ -68,6 +72,23 @@ mch_mp_state_t mch_mp_next_state_given_event(mch_mp_t *machine, mch_mp_event_t e
 			if(event == EV_MP_SETPOINT_NACK)
 				return ST_MP_PP_IDLE;
 			break;
+
+		#ifdef DIRTY_SINUSOID
+		case ST_MP_SWITCH_MODE_IP:
+			if(event == EV_MP_MODE_IP)
+				return ST_MP_IP_SINUSOID;
+			break;
+
+		case ST_MP_IP_SINUSOID:
+			if(event == EV_MP_SINUSOID_STOP)
+				return ST_MP_IP_SINUSOID_STOP;
+			break;
+
+		case ST_MP_IP_SINUSOID_STOP:
+			if(event == EV_MP_TARGET_REACHED)
+				return ST_MP_SWITCH_MODE_PP;
+			break;
+		#endif
 	}
 
 	return machine->state;
@@ -94,6 +115,16 @@ void mch_mp_on_enter(mch_mp_t *machine)
 			// Setpoint has been acknowledged, reset new_setpoint.
 			mch_mp_send_control_word(machine, 0x0F | 0x20);
 			break;
+
+		#ifdef DIRTY_SINUSOID
+		case ST_MP_SWITCH_MODE_IP:
+			mch_mp_send_mode_switch(machine, 0x07);
+			break;
+
+		case ST_MP_IP_SINUSOID:
+			mch_sdo_queue_write(machine->mch_sdo, OB_DPRVAR_WO, DPRVAR(10), 0x01, 0x04);
+			break;
+		#endif
 	}
 }
 
@@ -105,6 +136,12 @@ void mch_mp_on_exit(mch_mp_t *machine)
 			// Reset new_setpoint_bit when homing is complete.
 			mch_mp_send_control_word(machine, 0x0F | 0x20);
 			break;
+
+		#ifdef DIRTY_SINUSOID
+		case ST_MP_IP_SINUSOID:
+			mch_sdo_queue_write(machine->mch_sdo, OB_DPRVAR_WO, DPRVAR(10), 0x00, 0x04);
+			break;
+		#endif
 	}
 }
 

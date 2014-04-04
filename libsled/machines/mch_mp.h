@@ -1,6 +1,7 @@
 #ifndef __MCH_MP_H__
 #define __MCH_MP_H__
 
+#include "../config.h"
 #include "mch_sdo.h"
 
 #undef PREFIX

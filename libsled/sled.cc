@@ -1,3 +1,4 @@
+#include "config.h"
 #include "sled_internal.h"
 
 #include <assert.h>
@@ -102,6 +103,11 @@ static void intf_on_tpdo(intf_t *intf, void *payload, int pdo, uint8_t *data)
 				mch_mp_handle_event(sled->mch_mp, EV_MP_HOMED);
 			else
 				mch_mp_handle_event(sled->mch_mp, EV_MP_NOTHOMED);
+		}
+
+		// Interpolated positioning mode
+		if(mode == 0x07) {
+			mch_mp_handle_event(sled->mch_mp, EV_MP_MODE_IP);
 		}
 	}
 
@@ -341,6 +347,7 @@ int sled_sinusoid_start(sled_t *handle, double amplitude, double period)
 	assert(handle);
 	syslog(LOG_DEBUG, "%s(%.3f, %.2f)", __FUNCTION__, amplitude, period);
 
+	#ifndef DIRTY_SINUSOID
 	sled_profile_set_target(handle, handle->sinusoid_there, pos_absolute, handle->last_position + amplitude * 2.0, period / 2.0);
 	sled_profile_set_target(handle, handle->sinusoid_back, pos_absolute, handle->last_position, period / 2.0);
 
@@ -348,6 +355,23 @@ int sled_sinusoid_start(sled_t *handle, double amplitude, double period)
 	sled_profile_set_next(handle, handle->sinusoid_back, handle->sinusoid_there, 0.0, bln_after);
 
 	return sled_profile_execute(handle, handle->sinusoid_there);
+	#else
+	if(mch_mp_active_state(handle->mch_mp) != ST_MP_PP_IDLE) {
+		syslog(LOG_ERR, "%s() unable to start, motor not ide", __FUNCTION__);
+		return -1;
+	}
+
+	// Convert amplitude to micrometers and period to ms
+	int32_t int_ampl = round(2.0 * 1000.0 * 1000.0 * amplitude);
+	int32_t int_period = 0.5 * round(1000.0 * period);
+
+	// Amplitude and period are stored in DP-RAM variables 11 and 12
+	mch_sdo_queue_write(handle->mch_sdo, OB_DPRVAR_WO, DPRVAR(11), int_ampl, 0x04);
+	mch_sdo_queue_write(handle->mch_sdo, OB_DPRVAR_WO, DPRVAR(12), int_period, 0x04);
+
+	mch_mp_handle_event(handle->mch_mp, EV_MP_SINUSOID_START);
+	return 0;
+	#endif
 }
 
 
@@ -359,10 +383,21 @@ int sled_sinusoid_stop(sled_t *handle)
 	assert(handle);
 	syslog(LOG_DEBUG, "%s()", __FUNCTION__);
 
+	#ifndef DIRTY_SINUSOID
 	sled_profile_set_next(handle, handle->sinusoid_there, -1, 0.0, bln_after);
 	sled_profile_set_next(handle, handle->sinusoid_back, -1, 0.0, bln_after);
 
 	return sled_profile_write_pending_changes(handle, handle->sinusoid_there);
+	#else
+	if(mch_mp_active_state(handle->mch_mp) != ST_MP_IP_SINUSOID) {
+		syslog(LOG_ERR, "%s() unable to stop, not started", __FUNCTION__);
+		return -1;
+	}
+
+	mch_mp_handle_event(handle->mch_mp, EV_MP_SINUSOID_STOP);
+
+	return 0;
+	#endif
 }
 
 

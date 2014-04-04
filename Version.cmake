@@ -1,7 +1,7 @@
 
 
 set(Version_Major 1)
-set(Version_Minor 2)
+set(Version_Minor 3)
 set(Version_Rel 1)
 
 
