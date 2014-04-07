@@ -1,0 +1,192 @@
+/////
+// Sinusoid version 2013092510
+//
+// DPRVAR10 - Enable / Disable
+// DPRVAR11 - Amplitude
+// DPRVAR12 - Period
+//
+// Motion profile 0 contains the following cosine:
+//  (-cos(t)+1)* (2^31)  (with t from 0 to pi in 2048 steps)
+//
+PROGRAM PLCINIT
+  // Required to check drive status
+	BYTE MOVE_FLAG := 0;   // Axis moving
+	BYTE HOMED_FLAG := 0;	 // Reference set
+
+	BYTE START_FLAG := 0;	 // Sinusoid started 
+	BYTE CHANGE_FLAG := 0; // Indicates that parameters have been changed  
+
+  //////////////
+  // Constants
+
+  LONG MAX_TAB_POSITION := 0x3FFFFFF;
+
+  // Table length << 10, used to increase time resolution.
+  // Is 0x400000 instead of 0x200000 because we the table
+  // only contains half a table.
+  LONG TIME_MULT := 0x400000;
+
+
+  ///////////////
+  // Parameters
+
+  LONG TABLE_NR = 0;    // Profile to run (0 for sinusoid)
+  LONG PERIOD := 0;
+  LONG AMPLITUDE := 0;
+
+
+  //////////////
+  // Variables
+
+  LONG TIME_ELAPSED := 0;
+  LONG STEP := 0;
+  LONG STEPS_REQUIRED := 0;
+  LONG STEPS_REMAINDER := 0;
+  LONG DIRECTION := 0;
+  LONG ODIRECTION := 0;
+  LONG NEW_SETPOINT := 0;
+  LONG OFFSET := 0;
+  
+  LONG TABLE_INDEX := 0;
+  LONG TABLE_REMAINDER := 0;
+  LONG TABLE_VALUE := 0;
+
+  LONG PLC1_TEMP;
+  LONG PLCMAIN_TEMP; // For PLCMAIN
+
+  ////////////////
+  // Set-up code
+
+  // We'll send a set-point every millisecond
+	COMMAND('PTBASE 4');
+
+	// Initial values
+	AMPLITUDE := DPRVAR11;
+	PERIOD := DPRVAR12;
+	DPRVAR10 := 0;
+END_PROGRAM
+
+
+PROGRAM PLCMAIN
+	// Amplitude has changed
+	IF AMPLITUDE <> DPRVAR11 THEN
+		CHANGE_FLAG := 1;
+	END_IF;
+
+	// Period-time has changed
+	IF PERIOD <> DPRVAR12 THEN
+		CHANGE_FLAG := 1;
+	END_IF;
+
+	// Check whether axis is moving
+	PLCMAIN_TEMP := TRJSTAT & 0x10000;
+
+	IF PLCMAIN_TEMP THEN
+		MOVE_FLAG := 1;
+	END_IF;
+
+	// 0x30000 => Motion task active & Reference point set
+	PLCMAIN_TEMP := TRJSTAT & 0x30000;
+
+	// If the reference is set and the sled is not moving...
+	IF PLCMAIN_TEMP = 0x20000 THEN
+		HOMED_FLAG := 1;
+	ELSE
+		HOMED_FLAG := 0;
+	END_IF;
+END_PROGRAM
+
+
+// Run every millisecond (PLCn)
+PROGRAM PLC1
+  IF STATCODE = 0 THEN
+    IF HOMED_FLAG THEN
+      IF OPMODE = 5 THEN
+
+        IF START_FLAG = 0 THEN            
+          // Start motion if in correct mode
+          IF DPRVAR10 THEN
+            START_FLAG := 1;
+
+            STEP := 0;  // Current step
+          
+            DIRECTION := 0;
+            ODIRECTION := 0;
+          END_IF;
+
+          // Copy changes immediately if movement not started
+          IF CHANGE_FLAG = 1 THEN
+        		AMPLITUDE := DPRVAR11;
+        		PERIOD := DPRVAR12;
+            CHANGE_FLAG := 0;
+          END_IF;
+
+          OFFSET := PFB;
+        ELSE
+          
+          /////////////////////////////
+          // Actual code starts here //            
+          /////////////////////////////
+
+          // Number of milliseconds elapsed since last invocation
+          TIME_ELAPSED := 1;
+
+          // Determine amount of steps to advance given the amount of elapsed time.
+          //  STEPS_REQUIRED = (TIME_ELAPSED * 0x200000) / PERIOD
+          //  STEPS_REMAINDER = (TIME_ELAPSED * 0x200000) % PERIOD
+          FUNCTION5(GEARALL, STEPS_REQUIRED, TIME_ELAPSED, PERIOD, TIME_MULT, STEPS_REMAINDER);
+
+          // Add the number of increments to the current position
+          STEP := STEP + STEPS_REQUIRED;
+          TABLE_INDEX := (STEP >> 10) & 0x7FF;		// High bits are used as index (0..2047)
+          TABLE_REMAINDER := STEP & 0x3FF;    		// Lower 10 bits are used during interpolation
+
+          // Should we go forward or backwards through table?
+          DIRECTION := (STEP >> 21) & 0x01;
+          IF DIRECTION THEN
+            TABLE_INDEX     := 0x7FF - TABLE_INDEX;
+            TABLE_REMAINDER := 0x3FF - TABLE_REMAINDER;
+          END_IF;
+
+          // Direction changed, check for stop signal and apply changes
+          IF DIRECTION <> ODIRECTION THEN
+            IF DPRVAR10 = 0 THEN
+              START_FLAG := 0;
+            END_IF;
+            IF CHANGE_FLAG THEN
+              AMPLITUDE := DPRVAR11;
+              PERIOD := DPRVAR12;
+              CHANGE_FLAG := 0;
+            END_IF;
+          END_IF;         
+          ODIRECTION := DIRECTION;
+
+          // Return the interpolated value at position INDEX.TABREST of the profile table.
+          //  TABLE_VALUE = Table[Index] + ((Table[Index+1]-Table[Index])*Remainder) >> 10
+          FUNCTION4(GETTAB, TABLE_VALUE, TABLE_NR, TABLE_INDEX, TABLE_REMAINDER);
+
+          // Scale output for amplitude
+          //  NEW_SETPOINT = TABLE_VALUE * AMPLITUDE / MAX_TAB_POSITION
+          FUNCTION5(GEARALL, NEW_SETPOINT, TABLE_VALUE, MAX_TAB_POSITION, AMPLITUDE, PLC1_TEMP);
+
+          NEWPOS := NEW_SETPOINT + OFFSET;
+          NEWEPOS := 1;
+
+          ///////////////////////////
+          // Actual code ends here //            
+          ///////////////////////////
+            
+        END_IF; //START_FLAG
+      ELSE
+        DPRVAR10 := 0;
+        START_FLAG := 0;
+      END_IF; // OPMODE
+    ELSE
+      DPRVAR10 := 0;
+      START_FLAG := 0;    
+		END_IF; // HOMED_FLAG
+  ELSE
+    DPRVAR10 := 0;
+    START_FLAG := 0;  
+	END_IF; // STATCODE
+END_PROGRAM
