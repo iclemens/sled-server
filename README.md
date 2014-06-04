@@ -23,6 +23,30 @@ You will also need to compile the pcan linux driver and userspace library:
 	make NET=NO_NETDEV_SUPPORT
 	sudo make install
 
+Motion profiles
+---------------
+
+The sled server requires two motion profiles: a sinusoidal profile at position 0 and a minimum jerk profile at position 2. These profiles need to be generated and then loaded into the drive when first using the sled. To do this, you need access to a Windows computer connected to the S700 drive using either the serial interface or the CAN bus.
+
+First, download the CALCLK utility which converts profile tables in CSV format into SREC. Also download and install the UpgradeTool required to download a new motion profile into the drive.
+
+* http://www.wiki-kollmorgen.eu/wiki/tiki-index.php?page=Tools
+* http://www.wiki-kollmorgen.eu/wiki/DanMoBilder/file/tools/Upgrade_Tool_V2.70.exe
+
+Then use the script in tools/profiles to create a new profile table and upload it to the drive.
+
+	python create_profile.py > profiles.txt
+	calclk4.exe profiles.txt profiles.tab
+	
+PLC program
+-----------
+
+In addition to motion profile, the PLC program (written in IEC 61131) should also be uploaded to the drive. The program is located in libsled/plc/sinusoid.pl3. Before using the UpgradeTool to download the program into the drive, it too has to be converted into SREC format.
+
+You can use the MacroStar software to perform this conversion:
+
+* http://www.wiki-kollmorgen.eu/wiki/tiki-index.php?page=MacroStar+Software
+
 Building
 --------
 
@@ -44,21 +68,6 @@ The server consists of three distinct parts:
 Even though these modules are statically linked, we will keep them as separate libraries for now as this will facilitate testing.
 
 Currently everything works in one thread. Using libevent we wait for file handles (either CAN-Bus or TCP-socket) to become ready to read. Libevent then automatically calls an event handler which reads from the file handle, does some buffering (in case of an incomplete message), and executes the command. In addition, we have registered a timer with libevent which periodically sends sled position to all clients that have signed up to receive it.
-
-Motion profiles
----------------
-
-The sled server requires two motion profiles: a sinusoidal profile at position 0 and a minimum jerk profile at position 2. These profiles need to be generated and then loaded into the drive when first using the sled. To do this, you need access to a Windows computer connected to the S700 drive using either the serial interface or the CAN bus.
-
-First, download the CALCLK utility which converts profile tables in CSV format into SREC. Also download and install the UpgradeTool required to download a new motion profile into the drive.
-
-* http://www.wiki-kollmorgen.eu/wiki/tiki-index.php?page=Tools
-* http://www.wiki-kollmorgen.eu/wiki/DanMoBilder/file/tools/Upgrade_Tool_V2.70.exe
-
-Then use the script in tools/profiles to create a new profile table and upload it to the drive.
-
-	python create_profile.py > profiles.txt
-	calclk4.exe profiles.txt profiles.tab
 
 Copyright and license
 ---------------------
