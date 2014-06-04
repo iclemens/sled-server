@@ -45,18 +45,25 @@ Even though these modules are statically linked, we will keep them as separate l
 
 Currently everything works in one thread. Using libevent we wait for file handles (either CAN-Bus or TCP-socket) to become ready to read. Libevent then automatically calls an event handler which reads from the file handle, does some buffering (in case of an incomplete message), and executes the command. In addition, we have registered a timer with libevent which periodically sends sled position to all clients that have signed up to receive it.
 
-Major issues
-------------
+Motion profiles
+---------------
 
-* None of the code is currently thread-safe. This is not required at the moment, because we do not use threads.
-* Functions that are only used within the file are NOT declared static!
-* We are currently NOT const-correct.
+The sled server requires two motion profiles: a sinusoidal profile at position 0 and a minimum jerk profile at position 2. These profiles need to be generated and then loaded into the drive when first using the sled. To do this, you need access to a Windows computer connected to the S700 drive using either the serial interface or the CAN bus.
+
+First, download the CALCLK utility which converts profile tables in CSV format into SREC. Also download and install the UpgradeTool required to download a new motion profile into the drive.
+
+http://www.wiki-kollmorgen.eu/wiki/tiki-index.php?page=Tools
+http://www.wiki-kollmorgen.eu/wiki/DanMoBilder/file/tools/Upgrade_Tool_V2.70.exe
+
+Then use the script in tools/profiles to create a new profile table and upload it to the drive.
+  python create_profile.py > profiles.txt
+  calclk4.exe profiles.txt profiles.tab
 
 Copyright and license
 ---------------------
 
-* Copyright (c) 2013 Ivar Clemens
-* Copyright (c) 2013 Donders Institute / Radboud University
+* Copyright (c) 2013-2014 Ivar Clemens
+* Copyright (c) 2013-2014 Donders Institute / Radboud University Nijmegen
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
