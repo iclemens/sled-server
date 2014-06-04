@@ -52,12 +52,12 @@ The sled server requires two motion profiles: a sinusoidal profile at position 0
 
 First, download the CALCLK utility which converts profile tables in CSV format into SREC. Also download and install the UpgradeTool required to download a new motion profile into the drive.
 
-http://www.wiki-kollmorgen.eu/wiki/tiki-index.php?page=Tools
-http://www.wiki-kollmorgen.eu/wiki/DanMoBilder/file/tools/Upgrade_Tool_V2.70.exe
+* http://www.wiki-kollmorgen.eu/wiki/tiki-index.php?page=Tools
+* http://www.wiki-kollmorgen.eu/wiki/DanMoBilder/file/tools/Upgrade_Tool_V2.70.exe
 
 Then use the script in tools/profiles to create a new profile table and upload it to the drive.
-  python create_profile.py > profiles.txt
-  calclk4.exe profiles.txt profiles.tab
+	python create_profile.py > profiles.txt
+	calclk4.exe profiles.txt profiles.tab
 
 Copyright and license
 ---------------------
