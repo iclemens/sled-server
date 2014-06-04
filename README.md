@@ -56,6 +56,7 @@ First, download the CALCLK utility which converts profile tables in CSV format i
 * http://www.wiki-kollmorgen.eu/wiki/DanMoBilder/file/tools/Upgrade_Tool_V2.70.exe
 
 Then use the script in tools/profiles to create a new profile table and upload it to the drive.
+
 	python create_profile.py > profiles.txt
 	calclk4.exe profiles.txt profiles.tab
 
